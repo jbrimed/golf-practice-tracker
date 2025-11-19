@@ -13,493 +13,252 @@
             border-bottom: 3px solid transparent;
         }
         .tab-button.active {
-            border-bottom: 3px solid #10b981; /* Emerald-500 */
-            color: #059669; /* Emerald-600 */
+            border-bottom: 3px solid #10b981;
+            color: #059669;
             font-weight: 600;
         }
         .card {
             background-color: white;
             border-radius: 1rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        }
-        input[type="checkbox"]:checked {
-            background-color: #10b981;
-            border-color: #10b981;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
     </style>
 </head>
 <body>
 
-    <div id="app" class="min-h-screen">
-        <!-- Header -->
-        <header class="bg-white shadow-md sticky top-0 z-10">
-            <div class="max-w-4xl mx-auto p-4 flex justify-between items-center">
-                <h1 class="text-2xl font-bold text-gray-800">Practice Tracker</h1>
-                <p id="user-display" class="text-xs text-gray-500 bg-gray-100 p-2 rounded-lg"></p>
-            </div>
-            <nav class="max-w-4xl mx-auto flex space-x-4 px-4">
-                <button class="tab-button py-2 text-gray-600 hover:text-emerald-600" data-tab="quotas">Weekly Quotas</button>
-                <button class="tab-button py-2 text-gray-600 hover:text-emerald-600" data-tab="log">Log Session</button>
-                <button class="tab-button py-2 text-gray-600 hover:text-emerald-600" data-tab="history">History</button>
-            </nav>
-        </header>
+<div id="app" class="min-h-screen">
 
-        <!-- Main Content Area -->
-        <main class="max-w-4xl mx-auto p-4 pb-12">
-            <div id="loading" class="text-center text-gray-500 mt-12">
-                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mx-auto"></div>
-                <p class="mt-2">Loading tracker...</p>
-            </div>
+    <!-- Header -->
+    <header class="bg-white shadow-md sticky top-0 z-10">
+        <div class="max-w-4xl mx-auto p-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-gray-800">Practice Tracker</h1>
+            <p id="user-display" class="text-xs text-gray-500 bg-gray-100 p-2 rounded-lg">Local Mode</p>
+        </div>
 
-            <!-- Tab Content -->
-            <div id="tab-content" class="space-y-6">
-                <!-- Weekly Quotas Tab -->
-                <section id="quotas" class="tab-pane hidden">
-                    <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Weekly Quotas Checklist</h2>
-                    <div class="card p-6 space-y-4">
-                        <div id="quotas-list" class="space-y-4">
-                            <!-- Quotas will be rendered here -->
-                        </div>
-                        <p class="text-sm text-gray-500 pt-4 border-t mt-4">Check off your drills as you complete them each week. Your progress saves automatically.</p>
-                    </div>
-                </section>
+        <!-- Navigation Tabs -->
+        <nav class="max-w-4xl mx-auto flex space-x-4 px-4">
+            <button class="tab-button py-2 text-gray-600 hover:text-emerald-600" data-tab="quotas">Weekly Quotas</button>
+            <button class="tab-button py-2 text-gray-600 hover:text-emerald-600" data-tab="drills">Drill Library</button>
+            <button class="tab-button py-2 text-gray-600 hover:text-emerald-600" data-tab="log">Log Session</button>
+            <button class="tab-button py-2 text-gray-600 hover:text-emerald-600" data-tab="history">History</button>
+        </nav>
+    </header>
 
-                <!-- Log Session Tab -->
-                <section id="log" class="tab-pane hidden">
-                    <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Log a Practice Session</h2>
-                    <form id="session-log-form" class="card p-6 space-y-4">
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto p-4 pb-12">
 
-                        <!-- Log Details -->
-                        <h3 class="font-bold text-lg text-emerald-700">Session Details</h3>
-                        <div>
-                            <label for="log-date" class="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                            <input type="date" id="log-date" required class="w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
-                        </div>
-                        <div>
-                            <label for="log-clubs" class="block text-sm font-medium text-gray-700 mb-1">Clubs Used (e.g., D, 5i, PW)</label>
-                            <input type="text" id="log-clubs" required class="w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Driver, 5-Iron, Putter">
-                        </div>
-                        <div>
-                            <label for="log-intent" class="block text-sm font-medium text-gray-700 mb-1">Primary Intent (e.g., Face control, Strike)</label>
-                            <input type="text" id="log-intent" required class="w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Face control, Start-line consistency">
-                        </div>
+        <!-- Loading Spinner -->
+        <div id="loading" class="text-center text-gray-500 mt-12">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mx-auto"></div>
+            <p class="mt-2">Loading tracker...</p>
+        </div>
 
-                        <!-- Performance Metrics -->
-                        <h3 class="font-bold text-lg text-emerald-700 pt-4 border-t">Performance Metrics</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label for="log-startline-perc" class="block text-sm font-medium text-gray-700 mb-1">Start-line % (Estimate)</label>
-                                <input type="number" id="log-startline-perc" min="0" max="100" required class="w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="e.g., 85">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Strike Pattern</label>
-                                <select id="log-strike-pattern" required class="w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
-                                    <option value="" disabled selected>Select pattern</option>
-                                    <option value="center">Center</option>
-                                    <option value="heel">Heel</option>
-                                    <option value="toe">Toe</option>
-                                    <option value="varied">Varied</option>
-                                </select>
-                            </div>
-                        </div>
+        <div id="tab-content" class="space-y-6 hidden">
 
-                        <!-- Notes and Reflection -->
-                        <h3 class="font-bold text-lg text-emerald-700 pt-4 border-t">Reflection</h3>
-                        <div>
-                            <label for="log-notes" class="block text-sm font-medium text-gray-700 mb-1">Session Notes</label>
-                            <textarea id="log-notes" rows="3" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Did strike shift heel/toe as fatigue set in?"></textarea>
-                        </div>
-                        <div>
-                            <label for="log-trended-left" class="block text-sm font-medium text-gray-700 mb-1">What trended left today?</label>
-                            <input type="text" id="log-trended-left" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="e.g., Long irons, early drivers">
-                        </div>
-                        <div>
-                            <label for="log-stabilized" class="block text-sm font-medium text-gray-700 mb-1">What stabilized sequencing?</label>
-                            <input type="text" id="log-stabilized" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="e.g., 3/4 wedge swing, mid-iron tempo">
-                        </div>
-                        <div>
-                            <label for="log-travel-course" class="block text-sm font-medium text-gray-700 mb-1">What would travel to the course?</label>
-                            <input type="text" id="log-travel-course" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="e.g., Short putting confidence, 8-iron start line">
-                        </div>
+            <!-- WEEKLY QUOTAS -->
+            <section id="quotas" class="tab-pane hidden">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Weekly Quotas</h2>
+                <div class="card p-6 space-y-4">
+                    <div id="quotas-list" class="space-y-4"></div>
+                </div>
+            </section>
 
-                        <button type="submit" class="w-full bg-emerald-600 text-white p-3 rounded-xl font-semibold hover:bg-emerald-700 transition duration-150 mt-4">
-                            Save Session Log
-                        </button>
-                    </form>
-                    <div id="log-message" class="mt-4 hidden p-3 rounded-lg text-sm font-medium"></div>
-                </section>
+            <!-- DRILL LIBRARY -->
+            <section id="drills" class="tab-pane hidden">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Drill Library</h2>
+                <div id="drill-list" class="space-y-6"></div>
+            </section>
 
-                <!-- Session History Tab -->
-                <section id="history" class="tab-pane hidden">
-                    <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Practice History</h2>
-                    <div id="sessions-list" class="space-y-4">
-                        <p id="no-sessions" class="text-center text-gray-500 mt-8 hidden">No sessions logged yet. Head over to the "Log Session" tab to start tracking!</p>
-                        <!-- Logged sessions will be rendered here -->
-                    </div>
-                </section>
+            <!-- LOG SESSION -->
+            <section id="log" class="tab-pane hidden">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Log a Practice Session</h2>
 
-            </div>
-        </main>
-    </div>
+                <form id="session-log-form" class="card p-6 space-y-4">
 
-    <!-- Firebase Imports and Script -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, collection, query, addDoc, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+                    <h3 class="font-bold text-lg text-emerald-700">Session Details</h3>
 
-        // --- GLOBAL VARIABLE OVERRIDES FOR GITHUB PAGES DEPLOYMENT ---
-        // When running outside the development environment (like on GitHub Pages), 
-        // these global variables are missing, which causes Firebase initialization to fail.
-        // We inject empty placeholders to allow the app structure to run without errors.
-        const appId = 'github-pages-default-id';
-        const firebaseConfig = {}; // Empty config prevents parse error
-        const initialAuthToken = null;
-        // -------------------------------------------------------------------
+                    <input type="date" id="log-date" class="w-full p-2 border rounded-lg" required>
+                    <input type="text" id="log-clubs" placeholder="Driver, 7I, SW" class="w-full p-2 border rounded-lg" required>
+                    <input type="text" id="log-intent" placeholder="Face control / start line" class="w-full p-2 border rounded-lg" required>
 
-        setLogLevel('Debug');
-        
-        let db;
-        let auth;
-        let userId = null;
-        let isAuthReady = false;
+                    <h3 class="font-bold text-lg text-emerald-700 pt-4 border-t">Performance</h3>
 
-        const QUOTAS_COLLECTION = 'weekly_quotas';
-        const SESSIONS_COLLECTION = 'sessions';
-        const QUOTAS_DOC_ID = 'current_weekly_status';
+                    <input type="number" id="log-startline-perc" placeholder="Start line %" class="w-full p-2 border rounded-lg" min="0" max="100" required>
 
-        // UPDATED QUOTAS LIST
-        const ALL_QUOTAS = {
-            'driverFadeWindow': 'Driver: Fade Window + Face Spray (2 sessions)',
-            'driverDontGoLeft': 'Driver: Don’t-Go-Left Scoring (1+ session)',
-            'driverFaceCluster': 'Driver: Face Cluster Tracking (1 session)',
-            'driverFairwayFinder': 'Driver: Fairway Finder Challenge (1+ session)',
-            'driverCreative': 'Driver: Creative / Intent Variability (optional)',
-            'ironsStartLine': 'Irons: Start-Line Calibration (all clubs) (2 sessions)',
-            'ironsThreeLength': 'Irons: Three-Length Start Control (1 session)',
-            'ironsClubRotation': 'Irons: Club Rotation Sequence (1 session)',
-            'ironsShotShaping': 'Irons: Shot-Shaping Awareness (optional)',
-            'wedgesDistance': 'Wedges: Distance System (half / ¾ / full) (2 sessions)',
-            'wedgesStrikeCombo': 'Wedges: Strike + Start-Line Combo (1 session)',
-            'wedgesSpecificDistance': 'Wedges: Specific Distance Challenge (optional)',
-            'chippingRandomLies': 'Chipping: Random Lies, One-Ball Reps (1–2 sessions)',
-            'chippingLadder': 'Chipping: Landing Spot Ladder (1+ session)',
-            'chippingPressureLadder': 'Chipping: Pressure Ladder/Restart (optional)',
-            'puttingPath': 'Putting: Path maintenance (1 session)',
-            'puttingPace': 'Putting: Pace w/ die-in speed (1 session)',
+                    <select id="log-strike-pattern" class="w-full p-2 border rounded-lg" required>
+                        <option disabled selected>Select strike pattern</option>
+                        <option value="center">Center</option>
+                        <option value="heel">Heel</option>
+                        <option value="toe">Toe</option>
+                        <option value="varied">Varied</option>
+                    </select>
+
+                    <textarea id="log-notes" placeholder="Session notes..." class="w-full p-2 border rounded-lg"></textarea>
+
+                    <button class="w-full bg-emerald-600 text-white p-3 rounded-xl font-semibold hover:bg-emerald-700">
+                        Save Session
+                    </button>
+                </form>
+
+                <div id="log-message" class="mt-4 hidden p-3 rounded-lg text-sm font-medium"></div>
+
+            </section>
+
+            <!-- HISTORY -->
+            <section id="history" class="tab-pane hidden">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Session History</h2>
+                <div id="sessions-list" class="space-y-4"></div>
+                <p id="no-sessions" class="hidden text-center text-gray-500 mt-8">No sessions logged.</p>
+            </section>
+
+        </div>
+    </main>
+
+</div>
+
+<script type="module">
+    import { PRACTICE_QUOTAS, DRILL_LIBRARY } from "./data.js";
+    import { saveQuotaState, loadQuotaState, saveSession, loadSessions } from "./storage.js";
+
+    // ----- UI Setup -----
+
+    window.onload = () => {
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('tab-content').classList.remove('hidden');
+        document.getElementById('log-date').valueAsDate = new Date();
+
+        switchTab("quotas");
+        renderQuotas();
+        renderDrills();
+        renderSessionHistory();
+
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', (e) =>
+                switchTab(e.target.getAttribute('data-tab'))
+            );
+        });
+
+        document.getElementById("session-log-form").addEventListener("submit", handleSessionSubmit);
+    };
+
+    // ----- Tab Switching -----
+
+    function switchTab(targetTabId) {
+        document.querySelectorAll('.tab-button').forEach(btn => {
+            btn.classList.toggle('active', btn.getAttribute('data-tab') === targetTabId);
+        });
+
+        document.querySelectorAll('.tab-pane').forEach(pane => {
+            pane.classList.toggle('hidden', pane.id !== targetTabId);
+        });
+    }
+
+    // ----- Render Quotas -----
+
+    function renderQuotas() {
+        const list = document.getElementById("quotas-list");
+        list.innerHTML = "";
+
+        const saved = loadQuotaState();
+
+        Object.entries(PRACTICE_QUOTAS).forEach(([category, drills]) => {
+            list.insertAdjacentHTML('beforeend', `<h3 class='font-bold pt-4'>${category}</h3>`);
+
+            drills.forEach(drill => {
+                const checked = saved[drill.key] === true;
+                list.insertAdjacentHTML('beforeend', `
+                    <label class="flex items-center p-3 border rounded-xl cursor-pointer bg-white">
+                        <input type="checkbox" data-key="${drill.key}" ${checked ? "checked" : ""} class="mr-3 quota-checkbox">
+                        <span>${drill.label}</span>
+                    </label>
+                `);
+            });
+        });
+
+        document.querySelectorAll('.quota-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                saveQuotaState(e.target.getAttribute('data-key'), e.target.checked);
+            });
+        });
+    }
+
+    // ----- Render Drill Library -----
+
+    function renderDrills() {
+        const list = document.getElementById("drill-list");
+        list.innerHTML = "";
+
+        Object.entries(DRILL_LIBRARY).forEach(([category, drills]) => {
+            list.insertAdjacentHTML('beforeend', `<h3 class="font-bold pt-6">${category}</h3>`);
+
+            drills.forEach(drill => {
+                list.insertAdjacentHTML('beforeend', `
+                    <details class="card p-4 border">
+                        <summary class="cursor-pointer text-emerald-700 font-semibold">${drill.name}</summary>
+                        <p class="text-sm text-gray-600 mt-3">${drill.description}</p>
+                        <ul class="text-xs mt-3 text-gray-500 list-disc ml-4">
+                            ${drill.criteria.map(c => `<li>${c}</li>`).join("")}
+                        </ul>
+                    </details>
+                `);
+            });
+        });
+    }
+
+    // ----- Save Session -----
+
+    function handleSessionSubmit(event) {
+        event.preventDefault();
+
+        const session = {
+            date: document.getElementById("log-date").value,
+            clubs: document.getElementById("log-clubs").value,
+            intent: document.getElementById("log-intent").value,
+            startline: document.getElementById("log-startline-perc").value,
+            strike: document.getElementById("log-strike-pattern").value,
+            notes: document.getElementById("log-notes").value,
+            timestamp: Date.now()
         };
 
-        // --- Utility Functions ---
+        saveSession(session);
+        renderSessionHistory();
 
-        /**
-         * Safely gets the Firestore document path for a specific collection and document ID.
-         * @param {string} collectionName - The name of the collection (e.g., 'sessions').
-         * @param {string} docId - The ID of the document.
-         * @returns {string} The full Firestore path.
-         */
-        function getDocPath(collectionName, docId) {
-            // Use local storage fallback for persistence if running outside Canvas/Firebase environment
-            return `artifacts/${appId}/users/${userId}/${collectionName}/${docId}`;
+        document.getElementById("log-message").textContent = "Saved!";
+        document.getElementById("log-message").classList.remove("hidden");
+
+        event.target.reset();
+    }
+
+    // ----- Render Session History -----
+
+    function renderSessionHistory() {
+        const sessions = loadSessions();
+        const list = document.getElementById("sessions-list");
+        const none = document.getElementById("no-sessions");
+
+        list.innerHTML = "";
+
+        if (sessions.length === 0) {
+            none.classList.remove("hidden");
+            return;
         }
 
-        /**
-         * Safely gets the Firestore collection path for a specific collection.
-         * @param {string} collectionName - The name of the collection (e.g., 'sessions').
-         * @returns {string} The full Firestore path.
-         */
-        function getCollectionPath(collectionName) {
-            return `artifacts/${appId}/users/${userId}/${collectionName}`;
-        }
+        none.classList.add("hidden");
 
-        /**
-         * Shows a transient message on the log session tab.
-         * @param {string} message - The message to display.
-         * @param {string} type - 'success' or 'error'.
-         */
-        function showLogMessage(message, type) {
-            const msgEl = document.getElementById('log-message');
-            msgEl.textContent = message;
-            msgEl.className = 'mt-4 p-3 rounded-lg text-sm font-medium';
-            msgEl.classList.remove('hidden');
-            if (type === 'success') {
-                msgEl.classList.add('bg-green-100', 'text-green-800');
-            } else {
-                msgEl.classList.add('bg-red-100', 'text-red-800');
-            }
-            setTimeout(() => msgEl.classList.add('hidden'), 5000);
-        }
+        sessions.slice().reverse().forEach(s => {
+            list.insertAdjacentHTML('beforeend', `
+                <div class="card p-5 border">
+                    <h3 class="text-lg font-bold text-emerald-700">${new Date(s.timestamp).toLocaleDateString()}</h3>
+                    <p><strong>Clubs:</strong> ${s.clubs}</p>
+                    <p><strong>Intent:</strong> ${s.intent}</p>
+                    <p><strong>Start-line:</strong> ${s.startline}%</p>
+                    <p><strong>Strike:</strong> ${s.strike}</p>
+                    <p class="mt-2 text-gray-600">${s.notes || 'No notes'}</p>
+                </div>
+            `);
+        });
+    }
 
-        // --- UI Logic ---
-
-        function renderQuotas(currentQuotas) {
-            const list = document.getElementById('quotas-list');
-            list.innerHTML = '';
-            
-            // Group quotas by club category for better readability
-            const quotaGroups = {
-                'Driver': ['driverFadeWindow', 'driverDontGoLeft', 'driverFaceCluster', 'driverFairwayFinder', 'driverCreative'],
-                'Irons': ['ironsStartLine', 'ironsThreeLength', 'ironsClubRotation', 'ironsShotShaping'],
-                'Wedges': ['wedgesDistance', 'wedgesStrikeCombo', 'wedgesSpecificDistance'],
-                'Chipping': ['chippingRandomLies', 'chippingLadder', 'chippingPressureLadder'],
-                'Putting': ['puttingPath', 'puttingPace']
-            };
-
-            Object.entries(quotaGroups).forEach(([groupName, keys]) => {
-                // Add a group heading
-                list.insertAdjacentHTML('beforeend', `<h3 class="text-md font-bold text-gray-700 pt-4 pb-2 border-b border-gray-100">${groupName}</h3>`);
-                
-                keys.forEach(key => {
-                    const description = ALL_QUOTAS[key];
-                    const isChecked = currentQuotas[key] === true;
-                    const isOptional = description.includes('optional');
-                    const backgroundColor = isOptional ? 'bg-yellow-50' : 'bg-white';
-    
-                    const html = `
-                        <div class="flex items-center justify-between p-3 rounded-xl border ${backgroundColor} shadow-sm">
-                            <label for="quota-${key}" class="flex items-center cursor-pointer flex-grow">
-                                <input type="checkbox" id="quota-${key}" data-key="${key}" ${isChecked ? 'checked' : ''} class="h-5 w-5 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500 quota-checkbox">
-                                <span class="ml-3 text-sm font-medium text-gray-700 ${isChecked ? 'line-through text-gray-500' : ''}">${description}</span>
-                            </label>
-                            ${isOptional ? '<span class="text-xs text-yellow-600 bg-yellow-100 px-2 py-0.5 rounded-full ml-2">Optional</span>' : ''}
-                        </div>
-                    `;
-                    list.insertAdjacentHTML('beforeend', html);
-                });
-            });
-
-
-            document.querySelectorAll('.quota-checkbox').forEach(checkbox => {
-                checkbox.addEventListener('change', handleQuotaChange);
-            });
-        }
-
-        function renderSessions(sessions) {
-            const list = document.getElementById('sessions-list');
-            const noSessionsEl = document.getElementById('no-sessions');
-            
-            // Safety check: ensure both elements are found before proceeding
-            if (!list || !noSessionsEl) {
-                console.error("Error: Could not find 'sessions-list' or 'no-sessions' element in DOM.");
-                return;
-            }
-
-            list.innerHTML = '';
-            
-            if (sessions.length === 0) {
-                noSessionsEl.classList.remove('hidden');
-                return;
-            } else {
-                noSessionsEl.classList.add('hidden');
-            }
-
-            sessions.forEach(session => {
-                const date = new Date(session.date).toLocaleDateString();
-                const html = `
-                    <div class="card p-5 border border-gray-200 hover:border-emerald-500 transition duration-150">
-                        <div class="flex justify-between items-start mb-3 border-b pb-2">
-                            <h3 class="text-lg font-bold text-emerald-700">${date} - ${session.clubsUsed}</h3>
-                            <span class="text-xs font-semibold bg-blue-100 text-blue-800 px-2 py-1 rounded-full">Intent: ${session.intent}</span>
-                        </div>
-                        <div class="text-sm space-y-2 text-gray-600">
-                            <p><strong>Start-line %:</strong> ${session.startlinePercentage}%</p>
-                            <p><strong>Strike Pattern:</strong> <span class="capitalize">${session.strikePattern}</span></p>
-                            <p><strong>Session Notes:</strong> ${session.sessionNotes || 'N/A'}</p>
-                            <p class="pt-2 border-t mt-2"><strong>Trended Left:</strong> ${session.reflectionTrendedLeft || 'N/A'}</p>
-                            <p><strong>Stabilized:</strong> ${session.reflectionStabilized || 'N/A'}</p>
-                            <p><strong>Course-Ready:</strong> ${session.reflectionTravelToCourse || 'N/A'}</p>
-                        </div>
-                    </div>
-                `;
-                list.insertAdjacentHTML('beforeend', html);
-            });
-        }
-
-        function switchTab(targetTabId) {
-            // Update buttons
-            document.querySelectorAll('.tab-button').forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.getAttribute('data-tab') === targetTabId) {
-                    btn.classList.add('active');
-                }
-            });
-
-            // Update content
-            document.querySelectorAll('.tab-pane').forEach(pane => {
-                pane.classList.add('hidden');
-                if (pane.id === targetTabId) {
-                    pane.classList.remove('hidden');
-                }
-            });
-        }
-
-        // --- Firestore Handlers ---
-
-        async function handleQuotaChange(event) {
-            if (!userId) {
-                console.warn("Firebase not configured. Data is not saved.");
-                return showLogMessage('App is running locally. Progress will not save to the cloud.', 'error');
-            }
-            
-            const key = event.target.getAttribute('data-key');
-            const isChecked = event.target.checked;
-            const quotaRef = doc(db, getDocPath(QUOTAS_COLLECTION, QUOTAS_DOC_ID));
-            
-            try {
-                // Use setDoc with merge to update only the specific key
-                await setDoc(quotaRef, { [key]: isChecked, lastUpdated: serverTimestamp() }, { merge: true });
-                console.log(`Quota ${key} updated successfully.`);
-            } catch (error) {
-                console.error("Error updating quota:", error);
-                // Revert checkbox state on error
-                event.target.checked = !isChecked; 
-                showLogMessage('Failed to update quota. Check connection and try again.', 'error');
-            }
-        }
-
-        async function handleSessionSubmit(event) {
-            event.preventDefault();
-            if (!userId) {
-                console.warn("Firebase not configured. Data is not saved.");
-                return showLogMessage('App is running locally. Progress will not save to the cloud.', 'error');
-            }
-            
-            const form = event.target;
-            const sessionData = {
-                date: form['log-date'].value,
-                clubsUsed: form['log-clubs'].value.trim(),
-                intent: form['log-intent'].value.trim(),
-                startlinePercentage: form['log-startline-perc'].value,
-                strikePattern: form['log-strike-pattern'].value,
-                sessionNotes: form['log-notes'].value.trim(),
-                reflectionTrendedLeft: form['log-trended-left'].value.trim(),
-                reflectionStabilized: form['log-stabilized'].value.trim(), 
-                reflectionTravelToCourse: form['log-travel-course'].value.trim(),
-                userId: userId,
-                timestamp: serverTimestamp()
-            };
-
-            const sessionsCollectionRef = collection(db, getCollectionPath(SESSIONS_COLLECTION));
-            
-            try {
-                await addDoc(sessionsCollectionRef, sessionData);
-                showLogMessage('Session logged successfully!', 'success');
-                form.reset();
-                // Reset date to today after submission
-                document.getElementById('log-date').valueAsDate = new Date();
-            } catch (error) {
-                console.error("Error adding document:", error);
-                showLogMessage('Failed to save session log. Please try again.', 'error');
-            }
-        }
-
-        // --- Firebase Initialization and Auth ---
-
-        async function initFirebase() {
-            try {
-                // If firebaseConfig is empty (our current case), initialization will fail.
-                // We wrap it in a check to ensure it doesn't throw the initial error.
-                if (Object.keys(firebaseConfig).length === 0) {
-                    console.error("Firebase configuration is empty. The app will run, but data persistence is disabled.");
-                    // Set ready state manually to load the UI, but userId remains null.
-                    document.getElementById('loading').classList.add('hidden');
-                    document.getElementById('log-date').valueAsDate = new Date();
-                    document.getElementById('user-display').textContent = `User ID: N/A (Local)`;
-                    isAuthReady = true;
-                    switchTab('quotas');
-                    renderQuotas({}); // Render empty quotas list
-                    renderSessions([]); // Render empty sessions list
-                    return; 
-                }
-
-
-                // 1. Initialize Firebase App and Services
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app); 
-                auth = getAuth(app); 
-
-                // 2. Initial Authentication
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
-
-                // 3. Auth State Listener
-                onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        document.getElementById('user-display').textContent = `User ID: ${userId}`;
-                        isAuthReady = true;
-                        
-                        // Load data listeners now that auth is ready
-                        setupDataListeners();
-                        document.getElementById('loading').classList.add('hidden');
-                        // Set today's date on the log form
-                        document.getElementById('log-date').valueAsDate = new Date();
-                        // Initialize tab view
-                        switchTab('quotas');
-                    } else {
-                        // Fallback/Anonymous logic if needed, but the token handles primary auth.
-                        userId = crypto.randomUUID(); // Fallback for path construction, although rules might restrict access.
-                        document.getElementById('user-display').textContent = `User ID (Anon/Temp): ${userId}`;
-                        isAuthReady = true;
-                        console.error("User not fully authenticated, using temporary ID. Data saving may fail without proper rules.");
-                    }
-                });
-            } catch (error) {
-                console.error("Firebase initialization failed:", error);
-                document.getElementById('loading').innerHTML = `<p class="text-red-600">Error initializing the app. See console for details.</p>`;
-            }
-        }
-
-        function setupDataListeners() {
-            if (!isAuthReady || !userId) return;
-            
-            // Listener for Weekly Quotas
-            const quotaRef = doc(db, getDocPath(QUOTAS_COLLECTION, QUOTAS_DOC_ID));
-            onSnapshot(quotaRef, (doc) => {
-                const quotas = doc.data() || {};
-                renderQuotas(quotas);
-            }, (error) => {
-                console.error("Error listening to quotas:", error);
-            });
-
-            // Listener for Session History
-            const sessionsCollectionRef = collection(db, getCollectionPath(SESSIONS_COLLECTION));
-            // Note: We avoid orderBy in Firestore queries as mandated, and sort client-side.
-            onSnapshot(sessionsCollectionRef, (snapshot) => {
-                const sessions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                
-                // Sort client-side by date/timestamp, descending
-                sessions.sort((a, b) => {
-                    // Handle serverTimestamp which is stored as a Timestamp object
-                    const timeA = a.timestamp?.toDate ? a.timestamp.toDate().getTime() : new Date(a.date).getTime();
-                    const timeB = b.timestamp?.toDate ? b.timestamp.toDate().getTime() : new Date(b.date).getTime();
-                    return timeB - timeA;
-                });
-                
-                renderSessions(sessions);
-            }, (error) => {
-                console.error("Error listening to sessions:", error);
-            });
-        }
-
-
-        // --- Event Listeners and Initial Call ---
-
-        window.onload = () => {
-            initFirebase();
-            
-            // Tab switching logic
-            document.querySelectorAll('.tab-button').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    switchTab(e.target.getAttribute('data-tab'));
-                });
-            });
-
-            // Session logging form submit
-            document.getElementById('session-log-form').addEventListener('submit', handleSessionSubmit);
-        };
-    </script>
+</script>
 </body>
 </html>
