@@ -1,263 +1,712 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Golf Practice Tracker</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f4f7f9; }
-        .tab-button {
-            transition: all 0.2s ease;
-            border-bottom: 3px solid transparent;
-        }
-        .tab-button.active {
-            border-bottom: 3px solid #10b981;
-            color: #059669;
-            font-weight: 600;
-        }
-        .card {
-            background-color: white;
-            border-radius: 1rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Golf Practice Planner</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; background-color: #f4f7f9; }
+    .tab-button {
+      transition: all 0.2s ease;
+      border-bottom: 3px solid transparent;
+    }
+    .tab-button.active {
+      border-bottom: 3px solid #10b981;
+      color: #059669;
+      font-weight: 600;
+    }
+    .card {
+      background-color: white;
+      border-radius: 1rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+  </style>
 </head>
 <body>
 
 <div id="app" class="min-h-screen">
 
-    <!-- Header -->
-    <header class="bg-white shadow-md sticky top-0 z-10">
-        <div class="max-w-4xl mx-auto p-4 flex justify-between items-center">
-            <h1 class="text-2xl font-bold text-gray-800">Practice Tracker</h1>
-            <p id="user-display" class="text-xs text-gray-500 bg-gray-100 p-2 rounded-lg">Local Mode</p>
-        </div>
+  <!-- HEADER -->
+  <header class="bg-white shadow-md sticky top-0 z-10">
+    <div class="max-w-5xl mx-auto p-4 flex justify-between items-center">
+      <h1 class="text-2xl font-bold text-gray-800">Golf Practice Planner</h1>
+      <p id="user-display" class="text-xs text-gray-500 bg-gray-100 p-2 rounded-lg">
+        Local Mode
+      </p>
+    </div>
+    <nav class="max-w-5xl mx-auto flex space-x-4 px-4">
+      <button class="tab-button py-2 text-gray-600 hover:text-emerald-600" data-tab="plan">Plan</button>
+      <button class="tab-button py-2 text-gray-600 hover:text-emerald-600" data-tab="checklist">Weekly Checklist</button>
+      <button class="tab-button py-2 text-gray-600 hover:text-emerald-600" data-tab="drills">Drill Library</button>
+      <button class="tab-button py-2 text-gray-600 hover:text-emerald-600" data-tab="log">Drill Log</button>
+      <button class="tab-button py-2 text-gray-600 hover:text-emerald-600" data-tab="history">History</button>
+    </nav>
+  </header>
 
-        <!-- Navigation Tabs -->
-        <nav class="max-w-4xl mx-auto flex space-x-4 px-4">
-            <button class="tab-button py-2 text-gray-600 hover:text-emerald-600" data-tab="quotas">Weekly Quotas</button>
-            <button class="tab-button py-2 text-gray-600 hover:text-emerald-600" data-tab="drills">Drill Library</button>
-            <button class="tab-button py-2 text-gray-600 hover:text-emerald-600" data-tab="log">Log Session</button>
-            <button class="tab-button py-2 text-gray-600 hover:text-emerald-600" data-tab="history">History</button>
-        </nav>
-    </header>
+  <!-- MAIN -->
+  <main class="max-w-5xl mx-auto p-4 pb-12">
 
-    <!-- Main Content -->
-    <main class="max-w-4xl mx-auto p-4 pb-12">
+    <div id="loading" class="text-center text-gray-500 mt-12">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mx-auto"></div>
+      <p class="mt-2">Loading...</p>
+    </div>
 
-        <!-- Loading Spinner -->
-        <div id="loading" class="text-center text-gray-500 mt-12">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mx-auto"></div>
-            <p class="mt-2">Loading tracker...</p>
-        </div>
+    <div id="tab-content" class="space-y-6 hidden">
 
-        <div id="tab-content" class="space-y-6 hidden">
+      <!-- PLAN TAB (WIZARD) -->
+      <section id="plan" class="tab-pane hidden">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Build Weekly Plan</h2>
+        <div class="card p-6 space-y-6">
 
-            <!-- WEEKLY QUOTAS -->
-            <section id="quotas" class="tab-pane hidden">
-                <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Weekly Quotas</h2>
-                <div class="card p-6 space-y-4">
-                    <div id="quotas-list" class="space-y-4"></div>
-                </div>
-            </section>
+          <!-- Step 1: Time -->
+          <div>
+            <h3 class="font-semibold text-emerald-700 mb-2">1. Weekly Practice Time</h3>
+            <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+              <input type="number" id="plan-minutes" class="w-32 p-2 border rounded-lg" min="30" step="15" placeholder="Minutes">
+              <span class="text-sm text-gray-500">Total minutes you can realistically practice per week.</span>
+            </div>
+          </div>
 
-            <!-- DRILL LIBRARY -->
-            <section id="drills" class="tab-pane hidden">
-                <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Drill Library</h2>
-                <div id="drill-list" class="space-y-6"></div>
-            </section>
+          <!-- Step 2: Skills -->
+          <div>
+            <h3 class="font-semibold text-emerald-700 mb-2">2. Focus Skills</h3>
+            <div id="skills-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+              <!-- Skills checkboxes injected here -->
+            </div>
+          </div>
 
-            <!-- LOG SESSION -->
-            <section id="log" class="tab-pane hidden">
-                <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Log a Practice Session</h2>
+          <!-- Step 3: Show Drills -->
+          <div>
+            <h3 class="font-semibold text-emerald-700 mb-2">3. Choose Drills & Frequency</h3>
+            <button id="plan-show-drills" class="mb-4 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700">
+              Show Drills For Selected Skills
+            </button>
+            <p id="plan-warning" class="text-xs text-red-600 hidden mb-2"></p>
+            <div id="plan-drill-list" class="space-y-4">
+              <!-- Filtered drills + frequency inputs -->
+            </div>
+          </div>
 
-                <form id="session-log-form" class="card p-6 space-y-4">
-
-                    <h3 class="font-bold text-lg text-emerald-700">Session Details</h3>
-
-                    <input type="date" id="log-date" class="w-full p-2 border rounded-lg" required>
-                    <input type="text" id="log-clubs" placeholder="Driver, 7I, SW" class="w-full p-2 border rounded-lg" required>
-                    <input type="text" id="log-intent" placeholder="Face control / start line" class="w-full p-2 border rounded-lg" required>
-
-                    <h3 class="font-bold text-lg text-emerald-700 pt-4 border-t">Performance</h3>
-
-                    <input type="number" id="log-startline-perc" placeholder="Start line %" class="w-full p-2 border rounded-lg" min="0" max="100" required>
-
-                    <select id="log-strike-pattern" class="w-full p-2 border rounded-lg" required>
-                        <option disabled selected>Select strike pattern</option>
-                        <option value="center">Center</option>
-                        <option value="heel">Heel</option>
-                        <option value="toe">Toe</option>
-                        <option value="varied">Varied</option>
-                    </select>
-
-                    <textarea id="log-notes" placeholder="Session notes..." class="w-full p-2 border rounded-lg"></textarea>
-
-                    <button class="w-full bg-emerald-600 text-white p-3 rounded-xl font-semibold hover:bg-emerald-700">
-                        Save Session
-                    </button>
-                </form>
-
-                <div id="log-message" class="mt-4 hidden p-3 rounded-lg text-sm font-medium"></div>
-
-            </section>
-
-            <!-- HISTORY -->
-            <section id="history" class="tab-pane hidden">
-                <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Session History</h2>
-                <div id="sessions-list" class="space-y-4"></div>
-                <p id="no-sessions" class="hidden text-center text-gray-500 mt-8">No sessions logged.</p>
-            </section>
+          <!-- Plan summary + save -->
+          <div class="border-t pt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <p class="text-sm text-gray-600">
+              Planned time: <span id="plan-total-minutes">0</span> min
+              (<span id="plan-target-minutes">0</span> min target)
+            </p>
+            <div class="flex gap-3">
+              <button id="plan-save" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700">
+                Save Plan
+              </button>
+              <button id="plan-reset" class="px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm hover:bg-red-200">
+                Reset Plan & Progress
+              </button>
+            </div>
+          </div>
 
         </div>
-    </main>
+      </section>
+
+      <!-- WEEKLY CHECKLIST TAB -->
+      <section id="checklist" class="tab-pane hidden">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Weekly Checklist</h2>
+        <div id="checklist-empty" class="card p-6 text-sm text-gray-500 hidden">
+          No plan saved yet. Go to the <span class="font-semibold">Plan</span> tab to build your weekly drills.
+        </div>
+        <div id="checklist-content" class="card p-6 space-y-4 hidden">
+          <p class="text-sm text-gray-600 mb-2">
+            Each drill shows target sessions per week and how many you’ve marked as completed.
+          </p>
+          <div id="checklist-list" class="space-y-3"></div>
+        </div>
+      </section>
+
+      <!-- DRILL LIBRARY TAB -->
+      <section id="drills" class="tab-pane hidden">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Drill Library</h2>
+        <div class="flex flex-wrap gap-3 mb-4 text-sm">
+          <select id="drill-filter-skill" class="p-2 border rounded-lg">
+            <option value="">All Skills</option>
+          </select>
+          <select id="drill-filter-club" class="p-2 border rounded-lg">
+            <option value="">All Clubs</option>
+            <option value="driver">Driver</option>
+            <option value="long_irons">Long Irons / 5W</option>
+            <option value="irons">Mid/Short Irons</option>
+            <option value="wedges">Wedges</option>
+            <option value="short_game">Chipping</option>
+            <option value="putter">Putting</option>
+          </select>
+          <select id="drill-filter-env" class="p-2 border rounded-lg">
+            <option value="">All Environments</option>
+            <option value="net">Net</option>
+            <option value="range">Range</option>
+            <option value="sim">Simulator</option>
+            <option value="green">Putting/Chipping Green</option>
+            <option value="home">Home / Indoor</option>
+          </select>
+        </div>
+        <div id="drill-list" class="space-y-4">
+          <!-- Drill cards -->
+        </div>
+      </section>
+
+      <!-- DRILL LOG TAB -->
+      <section id="log" class="tab-pane hidden">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Log Drill Result</h2>
+        <form id="drill-log-form" class="card p-6 space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Drill</label>
+            <select id="log-drill-id" class="w-full p-2 border rounded-lg" required>
+              <option value="" disabled selected>Select drill</option>
+            </select>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+              <input type="date" id="log-date" class="w-full p-2 border rounded-lg" required>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Score / Points</label>
+              <input type="number" id="log-score" class="w-full p-2 border rounded-lg" required>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Reps (optional)</label>
+              <input type="number" id="log-reps" class="w-full p-2 border rounded-lg">
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <textarea id="log-notes" class="w-full p-2 border rounded-lg" rows="2" placeholder="What went well? What broke?"></textarea>
+          </div>
+          <button class="w-full bg-emerald-600 text-white p-3 rounded-xl font-semibold hover:bg-emerald-700">
+            Save Drill Result
+          </button>
+        </form>
+        <div id="log-message" class="mt-4 hidden p-3 rounded-lg text-sm font-medium"></div>
+      </section>
+
+      <!-- HISTORY TAB -->
+      <section id="history" class="tab-pane hidden">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Drill History</h2>
+        <div id="history-empty" class="card p-6 text-sm text-gray-500 hidden">
+          No drill results logged yet. After you complete a drill, log it in the <span class="font-semibold">Drill Log</span> tab.
+        </div>
+        <div id="history-content" class="space-y-4 hidden">
+          <div id="history-list" class="space-y-4"></div>
+        </div>
+      </section>
+
+    </div>
+  </main>
 
 </div>
 
 <script type="module">
-    import { PRACTICE_QUOTAS, DRILL_LIBRARY } from "./data.js";
-    import { saveQuotaState, loadQuotaState, saveSession, loadSessions } from "./storage.js";
+  import { SKILLS, DRILLS } from './data.js';
+  import {
+    loadPlan, savePlan, resetAllData,
+    loadChecklistProgress, toggleChecklistEntry,
+    loadDrillLogs, saveDrillLog
+  } from './storage.js';
 
-    // ----- UI Setup -----
+  // ---------- INIT ----------
+  window.onload = () => {
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('tab-content').classList.remove('hidden');
+    document.getElementById('log-date').valueAsDate = new Date();
 
-    window.onload = () => {
-        document.getElementById('loading').classList.add('hidden');
-        document.getElementById('tab-content').classList.remove('hidden');
-        document.getElementById('log-date').valueAsDate = new Date();
+    setupTabs();
+    populateSkills();
+    populateDrillFilterSkills();
+    renderPlanFromStorage();
+    renderChecklist();
+    renderDrillLibrary();
+    populateDrillSelect();
+    renderHistory();
 
-        switchTab("quotas");
-        renderQuotas();
-        renderDrills();
-        renderSessionHistory();
+    // Events
+    document.getElementById('plan-show-drills').addEventListener('click', showFilteredDrills);
+    document.getElementById('plan-save').addEventListener('click', handleSavePlan);
+    document.getElementById('plan-reset').addEventListener('click', handleResetPlan);
+    document.getElementById('plan-minutes').addEventListener('input', updatePlanTargetDisplay);
 
-        document.querySelectorAll('.tab-button').forEach(button => {
-            button.addEventListener('click', (e) =>
-                switchTab(e.target.getAttribute('data-tab'))
-            );
-        });
+    document.getElementById('drill-filter-skill').addEventListener('change', renderDrillLibrary);
+    document.getElementById('drill-filter-club').addEventListener('change', renderDrillLibrary);
+    document.getElementById('drill-filter-env').addEventListener('change', renderDrillLibrary);
 
-        document.getElementById("session-log-form").addEventListener("submit", handleSessionSubmit);
+    document.getElementById('drill-log-form').addEventListener('submit', handleDrillLogSubmit);
+  };
+
+  // ---------- TABS ----------
+  function setupTabs() {
+    const defaultTab = 'plan';
+    document.querySelectorAll('.tab-button').forEach(btn => {
+      btn.addEventListener('click', e => {
+        const target = e.target.getAttribute('data-tab');
+        switchTab(target);
+      });
+    });
+    switchTab(defaultTab);
+  }
+
+  function switchTab(targetId) {
+    document.querySelectorAll('.tab-button').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-tab') === targetId);
+    });
+    document.querySelectorAll('.tab-pane').forEach(pane => {
+      pane.classList.toggle('hidden', pane.id !== targetId);
+    });
+  }
+
+  // ---------- PLAN WIZARD ----------
+
+  function populateSkills() {
+    const container = document.getElementById('skills-list');
+    container.innerHTML = '';
+    SKILLS.forEach(skill => {
+      container.insertAdjacentHTML('beforeend', `
+        <label class="flex items-center p-2 border rounded-lg bg-white cursor-pointer">
+          <input type="checkbox" value="${skill.id}" class="mr-2 plan-skill-checkbox">
+          <span class="text-sm">
+            <span class="font-semibold">${skill.label}</span>
+            <span class="block text-xs text-gray-500">${skill.description}</span>
+          </span>
+        </label>
+      `);
+    });
+  }
+
+  function getSelectedSkillIds() {
+    return Array.from(document.querySelectorAll('.plan-skill-checkbox'))
+      .filter(cb => cb.checked)
+      .map(cb => cb.value);
+  }
+
+  function showFilteredDrills() {
+    const selectedSkills = new Set(getSelectedSkillIds());
+    const container = document.getElementById('plan-drill-list');
+    const minutesInput = document.getElementById('plan-minutes');
+    const warning = document.getElementById('plan-warning');
+
+    warning.classList.add('hidden');
+    container.innerHTML = '';
+
+    if (!minutesInput.value) {
+      warning.textContent = 'Enter weekly minutes first.';
+      warning.classList.remove('hidden');
+      return;
+    }
+
+    if (selectedSkills.size === 0) {
+      warning.textContent = 'Select at least one skill focus.';
+      warning.classList.remove('hidden');
+      return;
+    }
+
+    // Filter drills that match any of the selected skills
+    const filtered = DRILLS.filter(d =>
+      d.skills.some(skillId => selectedSkills.has(skillId))
+    );
+
+    if (filtered.length === 0) {
+      container.innerHTML = `<p class="text-sm text-gray-500">No drills match these skills (yet).</p>`;
+      return;
+    }
+
+    // Group by club for readability
+    const byClub = {};
+    filtered.forEach(d => {
+      if (!byClub[d.club]) byClub[d.club] = [];
+      byClub[d.club].push(d);
+    });
+
+    Object.entries(byClub).forEach(([club, drills]) => {
+      container.insertAdjacentHTML('beforeend', `
+        <h4 class="font-semibold text-gray-700 mt-4 mb-1">${clubLabel(club)}</h4>
+      `);
+
+      drills.forEach(drill => {
+        container.insertAdjacentHTML('beforeend', `
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded-xl bg-white gap-3">
+            <div class="text-sm">
+              <p class="font-semibold text-emerald-700">${drill.name}</p>
+              <p class="text-xs text-gray-500">
+                Skills: ${drill.skills.map(id => skillLabel(id)).join(', ')} • ${drill.duration} min
+              </p>
+              <p class="text-xs text-gray-400">${drill.summary || ''}</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <label class="text-xs text-gray-600">Times / week:</label>
+              <input type="number" min="0" max="7" step="1"
+                     class="plan-drill-frequency w-16 p-1 border rounded-lg text-sm"
+                     data-drill-id="${drill.id}"
+                     value="0">
+            </div>
+          </div>
+        `);
+      });
+    });
+
+    // Attach change listeners to recalc minutes
+    document.querySelectorAll('.plan-drill-frequency').forEach(input => {
+      input.addEventListener('input', updatePlannedMinutes);
+    });
+
+    updatePlanTargetDisplay();
+    updatePlannedMinutes();
+  }
+
+  function clubLabel(club) {
+    const map = {
+      driver: 'Driver',
+      long_irons: 'Long Irons / 5W',
+      irons: 'Mid/Short Irons',
+      wedges: 'Wedges',
+      short_game: 'Chipping / Short Game',
+      putter: 'Putting'
     };
+    return map[club] || club;
+  }
 
-    // ----- Tab Switching -----
+  function skillLabel(id) {
+    const s = SKILLS.find(s => s.id === id);
+    return s ? s.label : id;
+  }
 
-    function switchTab(targetTabId) {
-        document.querySelectorAll('.tab-button').forEach(btn => {
-            btn.classList.toggle('active', btn.getAttribute('data-tab') === targetTabId);
-        });
+  function updatePlanTargetDisplay() {
+    const targetSpan = document.getElementById('plan-target-minutes');
+    const val = parseInt(document.getElementById('plan-minutes').value || '0', 10);
+    targetSpan.textContent = isNaN(val) ? '0' : val.toString();
+  }
 
-        document.querySelectorAll('.tab-pane').forEach(pane => {
-            pane.classList.toggle('hidden', pane.id !== targetTabId);
-        });
+  function updatePlannedMinutes() {
+    const freqInputs = document.querySelectorAll('.plan-drill-frequency');
+    let total = 0;
+    freqInputs.forEach(input => {
+      const freq = parseInt(input.value || '0', 10);
+      if (freq > 0) {
+        const drill = DRILLS.find(d => d.id === input.dataset.drillId);
+        if (drill) total += freq * drill.duration;
+      }
+    });
+    document.getElementById('plan-total-minutes').textContent = total.toString();
+  }
+
+  function handleSavePlan() {
+    const minutes = parseInt(document.getElementById('plan-minutes').value || '0', 10);
+    const selectedSkills = getSelectedSkillIds();
+    const freqInputs = Array.from(document.querySelectorAll('.plan-drill-frequency'));
+
+    const drills = freqInputs
+      .map(input => ({
+        drillId: input.dataset.drillId,
+        timesPerWeek: parseInt(input.value || '0', 10)
+      }))
+      .filter(x => x.timesPerWeek > 0);
+
+    if (!minutes || minutes <= 0) {
+      alert('Enter a valid weekly minutes value.');
+      return;
+    }
+    if (selectedSkills.length === 0) {
+      alert('Select at least one skill focus.');
+      return;
+    }
+    if (drills.length === 0) {
+      alert('Choose at least one drill with times/week > 0.');
+      return;
     }
 
-    // ----- Render Quotas -----
+    savePlan({ minutes, skills: selectedSkills, drills });
+    alert('Plan saved.');
+    renderChecklist();
+    renderHistory(); // in case we want to show plan context later
+  }
 
-    function renderQuotas() {
-        const list = document.getElementById("quotas-list");
-        list.innerHTML = "";
+  function handleResetPlan() {
+    if (!confirm('Reset plan and all checklist/drill progress?')) return;
+    resetAllData();
+    // Re-render everything from scratch
+    document.getElementById('plan-minutes').value = '';
+    document.getElementById('plan-drill-list').innerHTML = '';
+    document.querySelectorAll('.plan-skill-checkbox').forEach(cb => cb.checked = false);
+    document.getElementById('plan-total-minutes').textContent = '0';
+    document.getElementById('plan-target-minutes').textContent = '0';
+    renderChecklist();
+    renderDrillLibrary();
+    populateDrillSelect();
+    renderHistory();
+  }
 
-        const saved = loadQuotaState();
+  function renderPlanFromStorage() {
+    const plan = loadPlan();
+    if (!plan) return;
+    document.getElementById('plan-minutes').value = plan.minutes;
+    updatePlanTargetDisplay();
 
-        Object.entries(PRACTICE_QUOTAS).forEach(([category, drills]) => {
-            list.insertAdjacentHTML('beforeend', `<h3 class='font-bold pt-4'>${category}</h3>`);
+    // Mark skills
+    const ids = new Set(plan.skills);
+    document.querySelectorAll('.plan-skill-checkbox').forEach(cb => {
+      cb.checked = ids.has(cb.value);
+    });
 
-            drills.forEach(drill => {
-                const checked = saved[drill.key] === true;
-                list.insertAdjacentHTML('beforeend', `
-                    <label class="flex items-center p-3 border rounded-xl cursor-pointer bg-white">
-                        <input type="checkbox" data-key="${drill.key}" ${checked ? "checked" : ""} class="mr-3 quota-checkbox">
-                        <span>${drill.label}</span>
-                    </label>
-                `);
-            });
-        });
+    // Render drill frequencies
+    showFilteredDrills();
+    const freqMap = new Map(plan.drills.map(d => [d.drillId, d.timesPerWeek]));
+    document.querySelectorAll('.plan-drill-frequency').forEach(input => {
+      const id = input.dataset.drillId;
+      if (freqMap.has(id)) input.value = freqMap.get(id);
+    });
+    updatePlannedMinutes();
+  }
 
-        document.querySelectorAll('.quota-checkbox').forEach(checkbox => {
-            checkbox.addEventListener('change', (e) => {
-                saveQuotaState(e.target.getAttribute('data-key'), e.target.checked);
-            });
-        });
+  // ---------- CHECKLIST ----------
+
+  function renderChecklist() {
+    const plan = loadPlan();
+    const empty = document.getElementById('checklist-empty');
+    const content = document.getElementById('checklist-content');
+    const list = document.getElementById('checklist-list');
+
+    if (!plan) {
+      empty.classList.remove('hidden');
+      content.classList.add('hidden');
+      list.innerHTML = '';
+      return;
     }
 
-    // ----- Render Drill Library -----
+    empty.classList.add('hidden');
+    content.classList.remove('hidden');
+    list.innerHTML = '';
 
-    function renderDrills() {
-        const list = document.getElementById("drill-list");
-        list.innerHTML = "";
+    const progress = loadChecklistProgress(); // { drillId: completedCount }
 
-        Object.entries(DRILL_LIBRARY).forEach(([category, drills]) => {
-            list.insertAdjacentHTML('beforeend', `<h3 class="font-bold pt-6">${category}</h3>`);
+    // Group by club for readability
+    const byClub = {};
+    plan.drills.forEach(entry => {
+      const drill = DRILLS.find(d => d.id === entry.drillId);
+      if (!drill) return;
+      if (!byClub[drill.club]) byClub[drill.club] = [];
+      byClub[drill.club].push({ drill, timesPerWeek: entry.timesPerWeek });
+    });
 
-            drills.forEach(drill => {
-                list.insertAdjacentHTML('beforeend', `
-                    <details class="card p-4 border">
-                        <summary class="cursor-pointer text-emerald-700 font-semibold">${drill.name}</summary>
-                        <p class="text-sm text-gray-600 mt-3">${drill.description}</p>
-                        <ul class="text-xs mt-3 text-gray-500 list-disc ml-4">
-                            ${drill.criteria.map(c => `<li>${c}</li>`).join("")}
-                        </ul>
-                    </details>
-                `);
-            });
-        });
+    Object.entries(byClub).forEach(([club, entries]) => {
+      list.insertAdjacentHTML('beforeend', `
+        <h4 class="font-semibold text-gray-700 mt-4 mb-1">${clubLabel(club)}</h4>
+      `);
+
+      entries.forEach(({ drill, timesPerWeek }) => {
+        const completed = progress[drill.id] || 0;
+        const ratio = `${completed}/${timesPerWeek}`;
+        const done = completed >= timesPerWeek;
+
+        list.insertAdjacentHTML('beforeend', `
+          <div class="flex items-center justify-between p-3 border rounded-xl bg-white">
+            <div class="text-sm">
+              <p class="font-semibold text-emerald-700">${drill.name}</p>
+              <p class="text-xs text-gray-500">
+                Target: ${timesPerWeek} × • Duration: ${drill.duration} min • Skills: ${drill.skills.map(skillLabel).join(', ')}
+              </p>
+              <p class="text-xs text-gray-400">${drill.summary || ''}</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs ${done ? 'text-emerald-600' : 'text-gray-600'}">${ratio} done</span>
+              <button
+                class="px-2 py-1 text-xs rounded-md border ${done ? 'border-gray-300 text-gray-400' : 'border-emerald-600 text-emerald-600 hover:bg-emerald-50'}"
+                data-check-drill-id="${drill.id}"
+                ${done ? 'disabled' : ''}>
+                Mark One Done
+              </button>
+            </div>
+          </div>
+        `);
+      });
+    });
+
+    document.querySelectorAll('[data-check-drill-id]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        toggleChecklistEntry(btn.getAttribute('data-check-drill-id'));
+        renderChecklist();
+      });
+    });
+  }
+
+  // ---------- DRILL LIBRARY ----------
+
+  function populateDrillFilterSkills() {
+    const select = document.getElementById('drill-filter-skill');
+    SKILLS.forEach(skill => {
+      select.insertAdjacentHTML('beforeend', `
+        <option value="${skill.id}">${skill.label}</option>
+      `);
+    });
+  }
+
+  function renderDrillLibrary() {
+    const list = document.getElementById('drill-list');
+    const skillFilter = document.getElementById('drill-filter-skill').value;
+    const clubFilter = document.getElementById('drill-filter-club').value;
+    const envFilter = document.getElementById('drill-filter-env').value;
+
+    let filtered = DRILLS.slice();
+    if (skillFilter) filtered = filtered.filter(d => d.skills.includes(skillFilter));
+    if (clubFilter) filtered = filtered.filter(d => d.club === clubFilter);
+    if (envFilter) filtered = filtered.filter(d => d.environment.includes(envFilter));
+
+    if (filtered.length === 0) {
+      list.innerHTML = `<p class="text-sm text-gray-500">No drills match this filter.</p>`;
+      return;
     }
 
-    // ----- Save Session -----
+    // Group by club
+    const byClub = {};
+    filtered.forEach(d => {
+      if (!byClub[d.club]) byClub[d.club] = [];
+      byClub[d.club].push(d);
+    });
 
-    function handleSessionSubmit(event) {
-        event.preventDefault();
+    list.innerHTML = '';
+    Object.entries(byClub).forEach(([club, drills]) => {
+      list.insertAdjacentHTML('beforeend', `<h3 class="font-semibold text-gray-700 mt-4 mb-1">${clubLabel(club)}</h3>`);
+      drills.forEach(drill => {
+        list.insertAdjacentHTML('beforeend', `
+          <details class="card p-4 border">
+            <summary class="cursor-pointer text-emerald-700 font-semibold">
+              ${drill.name}
+              <span class="ml-2 text-xs text-gray-500 font-normal">(${drill.duration} min)</span>
+            </summary>
+            <p class="text-sm text-gray-600 mt-2">${drill.description}</p>
+            <p class="text-xs text-gray-500 mt-2">
+              Skills: ${drill.skills.map(skillLabel).join(', ')} • Env: ${drill.environment.join(', ')}
+            </p>
+            <p class="text-xs text-gray-400 mt-1">
+              Scoring: ${drill.scoring?.type || 'points'} — ${drill.summary || ''}
+            </p>
+            <ul class="text-xs mt-2 text-gray-500 list-disc ml-4">
+              ${(drill.instructions || []).map(step => `<li>${step}</li>`).join('')}
+            </ul>
+          </details>
+        `);
+      });
+    });
+  }
 
-        const session = {
-            date: document.getElementById("log-date").value,
-            clubs: document.getElementById("log-clubs").value,
-            intent: document.getElementById("log-intent").value,
-            startline: document.getElementById("log-startline-perc").value,
-            strike: document.getElementById("log-strike-pattern").value,
-            notes: document.getElementById("log-notes").value,
-            timestamp: Date.now()
-        };
+  // ---------- DRILL LOG ----------
 
-        saveSession(session);
-        renderSessionHistory();
+  function populateDrillSelect() {
+    const select = document.getElementById('log-drill-id');
+    const current = select.value;
+    select.innerHTML = `<option value="" disabled ${current ? '' : 'selected'}>Select drill</option>`;
+    DRILLS.forEach(d => {
+      select.insertAdjacentHTML('beforeend', `
+        <option value="${d.id}">${d.name} (${clubLabel(d.club)})</option>
+      `);
+    });
+  }
 
-        document.getElementById("log-message").textContent = "Saved!";
-        document.getElementById("log-message").classList.remove("hidden");
+  function handleDrillLogSubmit(evt) {
+    evt.preventDefault();
+    const id = document.getElementById('log-drill-id').value;
+    const date = document.getElementById('log-date').value;
+    const score = parseFloat(document.getElementById('log-score').value);
+    const repsStr = document.getElementById('log-reps').value;
+    const reps = repsStr ? parseInt(repsStr, 10) : null;
+    const notes = document.getElementById('log-notes').value.trim();
 
-        event.target.reset();
+    if (!id || !date || isNaN(score)) {
+      alert('Drill, date, and score are required.');
+      return;
     }
 
-    // ----- Render Session History -----
+    saveDrillLog({
+      drillId: id,
+      date,
+      score,
+      reps,
+      notes,
+      timestamp: Date.now()
+    });
 
-    function renderSessionHistory() {
-        const sessions = loadSessions();
-        const list = document.getElementById("sessions-list");
-        const none = document.getElementById("no-sessions");
+    const msg = document.getElementById('log-message');
+    msg.textContent = 'Drill result saved.';
+    msg.className = 'mt-4 p-3 rounded-lg text-sm font-medium bg-emerald-100 text-emerald-800';
+    msg.classList.remove('hidden');
 
-        list.innerHTML = "";
+    setTimeout(() => msg.classList.add('hidden'), 4000);
+    evt.target.reset();
+    document.getElementById('log-date').valueAsDate = new Date();
 
-        if (sessions.length === 0) {
-            none.classList.remove("hidden");
-            return;
-        }
+    renderHistory();
+    renderChecklist(); // In case you want completions tied to logs later
+  }
 
-        none.classList.add("hidden");
+  // ---------- HISTORY ----------
 
-        sessions.slice().reverse().forEach(s => {
-            list.insertAdjacentHTML('beforeend', `
-                <div class="card p-5 border">
-                    <h3 class="text-lg font-bold text-emerald-700">${new Date(s.timestamp).toLocaleDateString()}</h3>
-                    <p><strong>Clubs:</strong> ${s.clubs}</p>
-                    <p><strong>Intent:</strong> ${s.intent}</p>
-                    <p><strong>Start-line:</strong> ${s.startline}%</p>
-                    <p><strong>Strike:</strong> ${s.strike}</p>
-                    <p class="mt-2 text-gray-600">${s.notes || 'No notes'}</p>
-                </div>
-            `);
-        });
+  function renderHistory() {
+    const logs = loadDrillLogs();
+    const empty = document.getElementById('history-empty');
+    const content = document.getElementById('history-content');
+    const list = document.getElementById('history-list');
+
+    if (!logs || logs.length === 0) {
+      empty.classList.remove('hidden');
+      content.classList.add('hidden');
+      list.innerHTML = '';
+      return;
     }
+
+    empty.classList.add('hidden');
+    content.classList.remove('hidden');
+    list.innerHTML = '';
+
+    // Group by drill
+    const byDrill = {};
+    logs.forEach(log => {
+      if (!byDrill[log.drillId]) byDrill[log.drillId] = [];
+      byDrill[log.drillId].push(log);
+    });
+
+    Object.entries(byDrill).forEach(([drillId, entries]) => {
+      const drill = DRILLS.find(d => d.id === drillId);
+      const name = drill ? drill.name : drillId;
+
+      // Sort by timestamp desc
+      entries.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+      const scores = entries.map(e => e.score);
+      const avgScore = (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1);
+
+      let html = `
+        <div class="card p-5 border">
+          <div class="flex justify-between items-center mb-2">
+            <h3 class="text-lg font-bold text-emerald-700">${name}</h3>
+            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+              Avg score: ${avgScore} (${scores.length} entries)
+            </span>
+          </div>
+          <div class="space-y-1 text-sm text-gray-600">
+      `;
+
+      entries.slice(0, 5).forEach(e => {
+        const dateStr = e.date || new Date(e.timestamp).toLocaleDateString();
+        html += `
+          <p>
+            <span class="font-semibold">${dateStr}:</span>
+            Score ${e.score}${e.reps ? ` • Reps: ${e.reps}` : ''}${e.notes ? ` — ${e.notes}` : ''}
+          </p>
+        `;
+      });
+
+      if (entries.length > 5) {
+        html += `<p class="text-xs text-gray-400 mt-1">${entries.length - 5} more entries not shown.</p>`;
+      }
+
+      html += `</div></div>`;
+      list.insertAdjacentHTML('beforeend', html);
+    });
+  }
 
 </script>
 </body>

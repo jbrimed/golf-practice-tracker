@@ -1,22 +1,60 @@
-const QUOTA_KEY = "golf-practice-quotas";
-const SESSION_KEY = "golf-practice-sessions";
+const PLAN_KEY = "golf_plan_v1";
+const CHECKLIST_KEY = "golf_checklist_progress_v1";
+const DRILL_LOG_KEY = "golf_drill_logs_v1";
 
-export function saveQuotaState(key, value) {
-    const data = loadQuotaState();
-    data[key] = value;
-    localStorage.setItem(QUOTA_KEY, JSON.stringify(data));
+export function loadPlan() {
+  try {
+    return JSON.parse(localStorage.getItem(PLAN_KEY) || "null");
+  } catch {
+    return null;
+  }
 }
 
-export function loadQuotaState() {
-    return JSON.parse(localStorage.getItem(QUOTA_KEY) || "{}");
+export function savePlan(plan) {
+  localStorage.setItem(PLAN_KEY, JSON.stringify(plan));
 }
 
-export function saveSession(session) {
-    const sessions = loadSessions();
-    sessions.push(session);
-    localStorage.setItem(SESSION_KEY, JSON.stringify(sessions));
+export function resetAllData() {
+  localStorage.removeItem(PLAN_KEY);
+  localStorage.removeItem(CHECKLIST_KEY);
+  localStorage.removeItem(DRILL_LOG_KEY);
 }
 
-export function loadSessions() {
-    return JSON.parse(localStorage.getItem(SESSION_KEY) || "[]");
+// -------- CHECKLIST PROGRESS --------
+// stored as { drillId: completedCount }
+
+export function loadChecklistProgress() {
+  try {
+    return JSON.parse(localStorage.getItem(CHECKLIST_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+export function saveChecklistProgress(progress) {
+  localStorage.setItem(CHECKLIST_KEY, JSON.stringify(progress));
+}
+
+export function toggleChecklistEntry(drillId) {
+  const progress = loadChecklistProgress();
+  const current = progress[drillId] || 0;
+  progress[drillId] = current + 1;
+  saveChecklistProgress(progress);
+}
+
+// -------- DRILL LOGS --------
+// array of { drillId, date, score, reps, notes, timestamp }
+
+export function loadDrillLogs() {
+  try {
+    return JSON.parse(localStorage.getItem(DRILL_LOG_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+export function saveDrillLog(entry) {
+  const logs = loadDrillLogs();
+  logs.push(entry);
+  localStorage.setItem(DRILL_LOG_KEY, JSON.stringify(logs));
 }
