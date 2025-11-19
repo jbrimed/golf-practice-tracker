@@ -361,7 +361,8 @@
                 strikePattern: form['log-strike-pattern'].value,
                 sessionNotes: form['log-notes'].value.trim(),
                 reflectionTrendedLeft: form['log-trended-left'].value.trim(),
-                reflectionStabilized: form:['log-stabilized'].value.trim(),
+                // CORRECTED TYPO: Changed form:['log-stabilized'] to form['log-stabilized']
+                reflectionStabilized: form['log-stabilized'].value.trim(), 
                 reflectionTravelToCourse: form['log-travel-course'].value.trim(),
                 userId: userId,
                 timestamp: serverTimestamp()
