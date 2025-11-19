@@ -1,509 +1,478 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title></title>
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="2575.5">
-  <style type="text/css">
-    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 14.0px Menlo; color: #6d6d6d; -webkit-text-stroke: #6d6d6d}
-    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 14.0px Menlo; color: #6b0001; -webkit-text-stroke: #6b0001}
-    p.p3 {margin: 0.0px 0.0px 0.0px 0.0px; font: 14.0px Menlo; color: #fb0007; -webkit-text-stroke: #fb0007}
-    p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; font: 14.0px Menlo; color: #0000ff; -webkit-text-stroke: #0000ff}
-    p.p5 {margin: 0.0px 0.0px 0.0px 0.0px; font: 14.0px Menlo; -webkit-text-stroke: #000000}
-    p.p6 {margin: 0.0px 0.0px 0.0px 0.0px; font: 14.0px Menlo; color: #18702b; -webkit-text-stroke: #18702b}
-    p.p7 {margin: 0.0px 0.0px 0.0px 0.0px; font: 14.0px Menlo; color: #4d5055; -webkit-text-stroke: #4d5055}
-    p.p8 {margin: 0.0px 0.0px 0.0px 0.0px; font: 14.0px Menlo; color: #137646; -webkit-text-stroke: #137646}
-    p.p9 {margin: 0.0px 0.0px 0.0px 0.0px; font: 14.0px Menlo; -webkit-text-stroke: #000000; min-height: 16.0px}
-    p.p10 {margin: 0.0px 0.0px 0.0px 0.0px; font: 14.0px Menlo; color: #0e6e6d; -webkit-text-stroke: #0e6e6d}
-    span.s1 {font-kerning: none; background-color: #ecf1f7}
-    span.s2 {font-kerning: none; color: #fb0007; background-color: #ecf1f7; -webkit-text-stroke: 0px #fb0007}
-    span.s3 {font-kerning: none; color: #2a2a2a; background-color: #ecf1f7; -webkit-text-stroke: 0px #2a2a2a}
-    span.s4 {font-kerning: none; color: #000000; background-color: #ecf1f7; -webkit-text-stroke: 0px #000000}
-    span.s5 {font-kerning: none; color: #0000ff; background-color: #ecf1f7; -webkit-text-stroke: 0px #0000ff}
-    span.s6 {font-kerning: none; color: #6b0001; background-color: #ecf1f7; -webkit-text-stroke: 0px #6b0001}
-    span.s7 {font-kerning: none; color: #6f0ec3; background-color: #ecf1f7; -webkit-text-stroke: 0px #6f0ec3}
-    span.s8 {font-kerning: none; color: #093c94; background-color: #ecf1f7; -webkit-text-stroke: 0px #093c94}
-    span.s9 {font-kerning: none; color: #18702b; background-color: #ecf1f7; -webkit-text-stroke: 0px #18702b}
-    span.s10 {font-kerning: none; color: #137646; background-color: #ecf1f7; -webkit-text-stroke: 0px #137646}
-    span.s11 {font-kerning: none; color: #4d5055; background-color: #ecf1f7; -webkit-text-stroke: 0px #4d5055}
-    span.s12 {font-kerning: none}
-    span.s13 {font-kerning: none; color: #0e6e6d; background-color: #ecf1f7; -webkit-text-stroke: 0px #0e6e6d}
-    span.s14 {font-kerning: none; color: #a4450b; background-color: #ecf1f7; -webkit-text-stroke: 0px #a4450b}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Golf Practice Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f4f7f9; }
+        .tab-button {
+            transition: all 0.2s ease;
+            border-bottom: 3px solid transparent;
+        }
+        .tab-button.active {
+            border-bottom: 3px solid #10b981; /* Emerald-500 */
+            color: #059669; /* Emerald-600 */
+            font-weight: 600;
+        }
+        .card {
+            background-color: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        input[type="checkbox"]:checked {
+            background-color: #10b981;
+            border-color: #10b981;
+        }
+    </style>
 </head>
 <body>
-<p class="p1"><span class="s1">&lt;!DOCTYPE</span><span class="s2"> html</span><span class="s1">&gt;</span></p>
-<p class="p2"><span class="s3">&lt;</span><span class="s1">html</span><span class="s4"> </span><span class="s2">lang</span><span class="s3">=</span><span class="s5">"en"</span><span class="s3">&gt;</span></p>
-<p class="p2"><span class="s3">&lt;</span><span class="s1">head</span><span class="s3">&gt;</span></p>
-<p class="p3"><span class="s4"><span class="Apple-converted-space">    </span></span><span class="s3">&lt;</span><span class="s6">meta</span><span class="s4"> </span><span class="s1">charset</span><span class="s3">=</span><span class="s5">"UTF-8"</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">    </span></span><span class="s3">&lt;</span><span class="s6">meta</span><span class="s4"> </span><span class="s2">name</span><span class="s3">=</span><span class="s1">"viewport"</span><span class="s4"> </span><span class="s2">content</span><span class="s3">=</span><span class="s1">"width=device-width, initial-scale=1.0"</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">    </span></span><span class="s3">&lt;</span><span class="s6">title</span><span class="s3">&gt;</span><span class="s1">Golf Practice Tracker</span><span class="s3">&lt;/</span><span class="s6">title</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">    </span></span><span class="s3">&lt;</span><span class="s6">script</span><span class="s4"> </span><span class="s2">src</span><span class="s3">=</span><span class="s1">"https://cdn.tailwindcss.com"</span><span class="s3">&gt;&lt;/</span><span class="s6">script</span><span class="s3">&gt;</span></p>
-<p class="p2"><span class="s4"><span class="Apple-converted-space">    </span></span><span class="s3">&lt;</span><span class="s1">style</span><span class="s3">&gt;</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">        </span></span><span class="s7">@import</span><span class="s4"> </span><span class="s8">url</span><span class="s4">(</span><span class="s1">'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap'</span><span class="s4">);</span></p>
-<p class="p3"><span class="s4"><span class="Apple-converted-space">        </span></span><span class="s6">body</span><span class="s4"> { </span><span class="s1">font-family:</span><span class="s4"> </span><span class="s9">'Inter'</span><span class="s4">, </span><span class="s8">sans-serif</span><span class="s4">; </span><span class="s1">background-color:</span><span class="s4"> </span><span class="s8">#f4f7f9</span><span class="s4">; }</span></p>
-<p class="p2"><span class="s4"><span class="Apple-converted-space">        </span></span><span class="s1">.tab-button</span><span class="s4"> {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s2">transition:</span><span class="s1"> </span><span class="s8">all</span><span class="s1"> </span><span class="s10">0.2s</span><span class="s1"> </span><span class="s8">ease</span><span class="s1">;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s2">border-bottom:</span><span class="s1"> </span><span class="s10">3px</span><span class="s1"> </span><span class="s8">solid</span><span class="s1"> </span><span class="s8">transparent</span><span class="s1">;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p2"><span class="s4"><span class="Apple-converted-space">        </span></span><span class="s1">.tab-button.active</span><span class="s4"> {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s2">border-bottom:</span><span class="s1"> </span><span class="s10">3px</span><span class="s1"> </span><span class="s8">solid</span><span class="s1"> </span><span class="s8">#10b981</span><span class="s1">; </span><span class="s11">/* Emerald-500 */</span></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s2">color:</span><span class="s4"> </span><span class="s8">#059669</span><span class="s4">; </span><span class="s1">/* Emerald-600 */</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s2">font-weight:</span><span class="s1"> </span><span class="s10">600</span><span class="s1">;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span></span><span class="s6">.card</span><span class="s1"> {</span></p>
-<p class="p3"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s1">background-color:</span><span class="s4"> </span><span class="s8">white</span><span class="s4">;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s2">border-radius:</span><span class="s1"> </span><span class="s10">1rem</span><span class="s1">;</span></p>
-<p class="p8"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s2">box-shadow:</span><span class="s4"> </span><span class="s1">0</span><span class="s4"> </span><span class="s1">10px</span><span class="s4"> </span><span class="s1">15px</span><span class="s4"> </span><span class="s1">-3px</span><span class="s4"> </span><span class="s8">rgba(</span><span class="s1">0</span><span class="s4">, </span><span class="s1">0</span><span class="s4">, </span><span class="s1">0</span><span class="s4">, </span><span class="s1">0.1</span><span class="s8">)</span><span class="s4">, </span><span class="s1">0</span><span class="s4"> </span><span class="s1">4px</span><span class="s4"> </span><span class="s1">6px</span><span class="s4"> </span><span class="s1">-2px</span><span class="s4"> </span><span class="s8">rgba(</span><span class="s1">0</span><span class="s4">, </span><span class="s1">0</span><span class="s4">, </span><span class="s1">0</span><span class="s4">, </span><span class="s1">0.05</span><span class="s8">)</span><span class="s4">;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span></span><span class="s6">input</span><span class="s1">[</span><span class="s8">type</span><span class="s1">=</span><span class="s9">"checkbox"</span><span class="s1">]</span><span class="s6">:checked</span><span class="s1"> {</span></p>
-<p class="p3"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s1">background-color:</span><span class="s4"> </span><span class="s8">#10b981</span><span class="s4">;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s2">border-color:</span><span class="s1"> </span><span class="s8">#10b981</span><span class="s1">;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p2"><span class="s4"><span class="Apple-converted-space">    </span></span><span class="s3">&lt;/</span><span class="s1">style</span><span class="s3">&gt;</span></p>
-<p class="p2"><span class="s3">&lt;/</span><span class="s1">head</span><span class="s3">&gt;</span></p>
-<p class="p2"><span class="s3">&lt;</span><span class="s1">body</span><span class="s3">&gt;</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">    </span></span><span class="s3">&lt;</span><span class="s6">div</span><span class="s4"> </span><span class="s2">id</span><span class="s3">=</span><span class="s1">"app"</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"min-h-screen"</span><span class="s3">&gt;</span></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">        </span></span><span class="s1">&lt;!-- Header --&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">        </span></span><span class="s3">&lt;</span><span class="s6">header</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"bg-white shadow-md sticky top-0 z-10"</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s3">&lt;</span><span class="s6">div</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"max-w-4xl mx-auto p-4 flex justify-between items-center"</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                </span></span><span class="s3">&lt;</span><span class="s6">h1</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"text-2xl font-bold text-gray-800"</span><span class="s3">&gt;</span><span class="s4">Practice Tracker</span><span class="s3">&lt;/</span><span class="s6">h1</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                </span></span><span class="s3">&lt;</span><span class="s6">p</span><span class="s4"> </span><span class="s2">id</span><span class="s3">=</span><span class="s1">"user-display"</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"text-xs text-gray-500 bg-gray-100 p-2 rounded-lg"</span><span class="s3">&gt;&lt;/</span><span class="s6">p</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s3">&lt;/</span><span class="s6">div</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s3">&lt;</span><span class="s6">nav</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"max-w-4xl mx-auto flex space-x-4 px-4"</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                </span></span><span class="s3">&lt;</span><span class="s6">button</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"tab-button py-2 text-gray-600 hover:text-emerald-600"</span><span class="s4"> </span><span class="s2">data-tab</span><span class="s3">=</span><span class="s1">"quotas"</span><span class="s3">&gt;</span><span class="s4">Weekly Quotas</span><span class="s3">&lt;/</span><span class="s6">button</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                </span></span><span class="s3">&lt;</span><span class="s6">button</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"tab-button py-2 text-gray-600 hover:text-emerald-600"</span><span class="s4"> </span><span class="s2">data-tab</span><span class="s3">=</span><span class="s1">"log"</span><span class="s3">&gt;</span><span class="s4">Log Session</span><span class="s3">&lt;/</span><span class="s6">button</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                </span></span><span class="s3">&lt;</span><span class="s6">button</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"tab-button py-2 text-gray-600 hover:text-emerald-600"</span><span class="s4"> </span><span class="s2">data-tab</span><span class="s3">=</span><span class="s1">"history"</span><span class="s3">&gt;</span><span class="s4">History</span><span class="s3">&lt;/</span><span class="s6">button</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s3">&lt;/</span><span class="s6">nav</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span></span><span class="s3">&lt;/</span><span class="s6">header</span><span class="s3">&gt;</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">        </span></span><span class="s1">&lt;!-- Main Content Area --&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">        </span></span><span class="s3">&lt;</span><span class="s6">main</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"max-w-4xl mx-auto p-4 pb-12"</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s3">&lt;</span><span class="s6">div</span><span class="s4"> </span><span class="s2">id</span><span class="s3">=</span><span class="s1">"loading"</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"text-center text-gray-500 mt-12"</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                </span></span><span class="s3">&lt;</span><span class="s6">div</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mx-auto"</span><span class="s3">&gt;&lt;/</span><span class="s6">div</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span></span><span class="s3">&lt;</span><span class="s6">p</span><span class="s1"> </span><span class="s2">class</span><span class="s3">=</span><span class="s5">"mt-2"</span><span class="s3">&gt;</span><span class="s1">Loading tracker...</span><span class="s3">&lt;/</span><span class="s6">p</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s3">&lt;/</span><span class="s6">div</span><span class="s3">&gt;</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s1">&lt;!-- Tab Content --&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s3">&lt;</span><span class="s6">div</span><span class="s4"> </span><span class="s2">id</span><span class="s3">=</span><span class="s1">"tab-content"</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"space-y-6"</span><span class="s3">&gt;</span></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">                </span></span><span class="s1">&lt;!-- Weekly Quotas Tab --&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                </span></span><span class="s3">&lt;</span><span class="s6">section</span><span class="s4"> </span><span class="s2">id</span><span class="s3">=</span><span class="s1">"quotas"</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"tab-pane hidden"</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                    </span></span><span class="s3">&lt;</span><span class="s6">h2</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"text-xl font-semibold text-gray-800 mb-4 border-b pb-2"</span><span class="s3">&gt;</span><span class="s4">Weekly Quotas Checklist</span><span class="s3">&lt;/</span><span class="s6">h2</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                    </span></span><span class="s3">&lt;</span><span class="s6">div</span><span class="s1"> </span><span class="s2">class</span><span class="s3">=</span><span class="s5">"card p-6 space-y-4"</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span></span><span class="s3">&lt;</span><span class="s6">div</span><span class="s1"> </span><span class="s2">id</span><span class="s3">=</span><span class="s5">"quotas-list"</span><span class="s1"> </span><span class="s2">class</span><span class="s3">=</span><span class="s5">"space-y-4"</span><span class="s3">&gt;</span></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">                            </span></span><span class="s1">&lt;!-- Quotas will be rendered here --&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span></span><span class="s3">&lt;/</span><span class="s6">div</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span></span><span class="s3">&lt;</span><span class="s6">p</span><span class="s1"> </span><span class="s2">class</span><span class="s3">=</span><span class="s5">"text-sm text-gray-500 pt-4 border-t mt-4"</span><span class="s3">&gt;</span><span class="s1">Check off your drills as you complete them each week. Your progress saves automatically.</span><span class="s3">&lt;/</span><span class="s6">p</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                    </span></span><span class="s3">&lt;/</span><span class="s6">div</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span></span><span class="s3">&lt;/</span><span class="s6">section</span><span class="s3">&gt;</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">                </span></span><span class="s1">&lt;!-- Log Session Tab --&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                </span></span><span class="s3">&lt;</span><span class="s6">section</span><span class="s4"> </span><span class="s2">id</span><span class="s3">=</span><span class="s1">"log"</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"tab-pane hidden"</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                    </span></span><span class="s3">&lt;</span><span class="s6">h2</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"text-xl font-semibold text-gray-800 mb-4 border-b pb-2"</span><span class="s3">&gt;</span><span class="s4">Log a Practice Session</span><span class="s3">&lt;/</span><span class="s6">h2</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                    </span></span><span class="s3">&lt;</span><span class="s6">form</span><span class="s4"> </span><span class="s2">id</span><span class="s3">=</span><span class="s1">"session-log-form"</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"card p-6 space-y-4"</span><span class="s3">&gt;</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span></span><span class="s11">&lt;!-- Log Details --&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span></span><span class="s3">&lt;</span><span class="s6">h3</span><span class="s1"> </span><span class="s2">class</span><span class="s3">=</span><span class="s5">"font-bold text-lg text-emerald-700"</span><span class="s3">&gt;</span><span class="s1">Session Details</span><span class="s3">&lt;/</span><span class="s6">h3</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span></span><span class="s3">&lt;</span><span class="s6">div</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                            </span></span><span class="s3">&lt;</span><span class="s6">label</span><span class="s4"> </span><span class="s2">for</span><span class="s3">=</span><span class="s1">"log-date"</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"block text-sm font-medium text-gray-700 mb-1"</span><span class="s3">&gt;</span><span class="s4">Date</span><span class="s3">&lt;/</span><span class="s6">label</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                            </span></span><span class="s3">&lt;</span><span class="s6">input</span><span class="s4"> </span><span class="s2">type</span><span class="s3">=</span><span class="s1">"date"</span><span class="s4"> </span><span class="s2">id</span><span class="s3">=</span><span class="s1">"log-date"</span><span class="s4"> </span><span class="s2">required</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500"</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span></span><span class="s3">&lt;/</span><span class="s6">div</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span></span><span class="s3">&lt;</span><span class="s6">div</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                            </span></span><span class="s3">&lt;</span><span class="s6">label</span><span class="s1"> </span><span class="s2">for</span><span class="s3">=</span><span class="s5">"log-clubs"</span><span class="s1"> </span><span class="s2">class</span><span class="s3">=</span><span class="s5">"block text-sm font-medium text-gray-700 mb-1"</span><span class="s3">&gt;</span><span class="s1">Clubs Used (e.g., D, 5i, PW)</span><span class="s3">&lt;/</span><span class="s6">label</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                            </span></span><span class="s3">&lt;</span><span class="s6">input</span><span class="s4"> </span><span class="s2">type</span><span class="s3">=</span><span class="s1">"text"</span><span class="s4"> </span><span class="s2">id</span><span class="s3">=</span><span class="s1">"log-clubs"</span><span class="s4"> </span><span class="s2">required</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500"</span><span class="s4"> </span><span class="s2">placeholder</span><span class="s3">=</span><span class="s1">"Driver, 5-Iron, Putter"</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span></span><span class="s3">&lt;/</span><span class="s6">div</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span></span><span class="s3">&lt;</span><span class="s6">div</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                            </span></span><span class="s3">&lt;</span><span class="s6">label</span><span class="s1"> </span><span class="s2">for</span><span class="s3">=</span><span class="s5">"log-intent"</span><span class="s1"> </span><span class="s2">class</span><span class="s3">=</span><span class="s5">"block text-sm font-medium text-gray-700 mb-1"</span><span class="s3">&gt;</span><span class="s1">Primary Intent (e.g., Face control, Strike)</span><span class="s3">&lt;/</span><span class="s6">label</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                            </span></span><span class="s3">&lt;</span><span class="s6">input</span><span class="s4"> </span><span class="s2">type</span><span class="s3">=</span><span class="s1">"text"</span><span class="s4"> </span><span class="s2">id</span><span class="s3">=</span><span class="s1">"log-intent"</span><span class="s4"> </span><span class="s2">required</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500"</span><span class="s4"> </span><span class="s2">placeholder</span><span class="s3">=</span><span class="s1">"Face control, Start-line consistency"</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span></span><span class="s3">&lt;/</span><span class="s6">div</span><span class="s3">&gt;</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">                        </span></span><span class="s1">&lt;!-- Performance Metrics --&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                        </span></span><span class="s3">&lt;</span><span class="s6">h3</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"font-bold text-lg text-emerald-700 pt-4 border-t"</span><span class="s3">&gt;</span><span class="s4">Performance Metrics</span><span class="s3">&lt;/</span><span class="s6">h3</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                        </span></span><span class="s3">&lt;</span><span class="s6">div</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"grid grid-cols-1 sm:grid-cols-2 gap-4"</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                            </span></span><span class="s3">&lt;</span><span class="s6">div</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                                </span></span><span class="s3">&lt;</span><span class="s6">label</span><span class="s4"> </span><span class="s2">for</span><span class="s3">=</span><span class="s1">"log-startline-perc"</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"block text-sm font-medium text-gray-700 mb-1"</span><span class="s3">&gt;</span><span class="s4">Start-line % (Estimate)</span><span class="s3">&lt;/</span><span class="s6">label</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                                </span></span><span class="s3">&lt;</span><span class="s6">input</span><span class="s4"> </span><span class="s2">type</span><span class="s3">=</span><span class="s1">"number"</span><span class="s4"> </span><span class="s2">id</span><span class="s3">=</span><span class="s1">"log-startline-perc"</span><span class="s4"> </span><span class="s2">min</span><span class="s3">=</span><span class="s1">"0"</span><span class="s4"> </span><span class="s2">max</span><span class="s3">=</span><span class="s1">"100"</span><span class="s4"> </span><span class="s2">required</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500"</span><span class="s4"> </span><span class="s2">placeholder</span><span class="s3">=</span><span class="s1">"e.g., 85"</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                            </span></span><span class="s3">&lt;/</span><span class="s6">div</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                            </span></span><span class="s3">&lt;</span><span class="s6">div</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                                </span></span><span class="s3">&lt;</span><span class="s6">label</span><span class="s1"> </span><span class="s2">class</span><span class="s3">=</span><span class="s5">"block text-sm font-medium text-gray-700 mb-1"</span><span class="s3">&gt;</span><span class="s1">Strike Pattern</span><span class="s3">&lt;/</span><span class="s6">label</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                                </span></span><span class="s3">&lt;</span><span class="s6">select</span><span class="s4"> </span><span class="s2">id</span><span class="s3">=</span><span class="s1">"log-strike-pattern"</span><span class="s4"> </span><span class="s2">required</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500"</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                                    </span></span><span class="s3">&lt;</span><span class="s6">option</span><span class="s1"> </span><span class="s2">value</span><span class="s3">=</span><span class="s5">""</span><span class="s1"> </span><span class="s2">disabled</span><span class="s1"> </span><span class="s2">selected</span><span class="s3">&gt;</span><span class="s1">Select pattern</span><span class="s3">&lt;/</span><span class="s6">option</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                                    </span></span><span class="s3">&lt;</span><span class="s6">option</span><span class="s1"> </span><span class="s2">value</span><span class="s3">=</span><span class="s5">"center"</span><span class="s3">&gt;</span><span class="s1">Center</span><span class="s3">&lt;/</span><span class="s6">option</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                                    </span></span><span class="s3">&lt;</span><span class="s6">option</span><span class="s1"> </span><span class="s2">value</span><span class="s3">=</span><span class="s5">"heel"</span><span class="s3">&gt;</span><span class="s1">Heel</span><span class="s3">&lt;/</span><span class="s6">option</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                                    </span></span><span class="s3">&lt;</span><span class="s6">option</span><span class="s1"> </span><span class="s2">value</span><span class="s3">=</span><span class="s5">"toe"</span><span class="s3">&gt;</span><span class="s1">Toe</span><span class="s3">&lt;/</span><span class="s6">option</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                                    </span></span><span class="s3">&lt;</span><span class="s6">option</span><span class="s1"> </span><span class="s2">value</span><span class="s3">=</span><span class="s5">"varied"</span><span class="s3">&gt;</span><span class="s1">Varied</span><span class="s3">&lt;/</span><span class="s6">option</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                                </span></span><span class="s3">&lt;/</span><span class="s6">select</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                            </span></span><span class="s3">&lt;/</span><span class="s6">div</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span></span><span class="s3">&lt;/</span><span class="s6">div</span><span class="s3">&gt;</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">                        </span></span><span class="s1">&lt;!-- Notes and Reflection --&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                        </span></span><span class="s3">&lt;</span><span class="s6">h3</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"font-bold text-lg text-emerald-700 pt-4 border-t"</span><span class="s3">&gt;</span><span class="s4">Reflection</span><span class="s3">&lt;/</span><span class="s6">h3</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span></span><span class="s3">&lt;</span><span class="s6">div</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                            </span></span><span class="s3">&lt;</span><span class="s6">label</span><span class="s4"> </span><span class="s2">for</span><span class="s3">=</span><span class="s1">"log-notes"</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"block text-sm font-medium text-gray-700 mb-1"</span><span class="s3">&gt;</span><span class="s4">Session Notes</span><span class="s3">&lt;/</span><span class="s6">label</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                            </span></span><span class="s3">&lt;</span><span class="s6">textarea</span><span class="s4"> </span><span class="s2">id</span><span class="s3">=</span><span class="s1">"log-notes"</span><span class="s4"> </span><span class="s2">rows</span><span class="s3">=</span><span class="s1">"3"</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500"</span><span class="s4"> </span><span class="s2">placeholder</span><span class="s3">=</span><span class="s1">"Did strike shift heel/toe as fatigue set in?"</span><span class="s3">&gt;&lt;/</span><span class="s6">textarea</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span></span><span class="s3">&lt;/</span><span class="s6">div</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span></span><span class="s3">&lt;</span><span class="s6">div</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                            </span></span><span class="s3">&lt;</span><span class="s6">label</span><span class="s4"> </span><span class="s2">for</span><span class="s3">=</span><span class="s1">"log-trended-left"</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"block text-sm font-medium text-gray-700 mb-1"</span><span class="s3">&gt;</span><span class="s4">What trended left today?</span><span class="s3">&lt;/</span><span class="s6">label</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                            </span></span><span class="s3">&lt;</span><span class="s6">input</span><span class="s4"> </span><span class="s2">type</span><span class="s3">=</span><span class="s1">"text"</span><span class="s4"> </span><span class="s2">id</span><span class="s3">=</span><span class="s1">"log-trended-left"</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500"</span><span class="s4"> </span><span class="s2">placeholder</span><span class="s3">=</span><span class="s1">"e.g., Long irons, early drivers"</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span></span><span class="s3">&lt;/</span><span class="s6">div</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span></span><span class="s3">&lt;</span><span class="s6">div</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                            </span></span><span class="s3">&lt;</span><span class="s6">label</span><span class="s4"> </span><span class="s2">for</span><span class="s3">=</span><span class="s1">"log-stabilized"</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"block text-sm font-medium text-gray-700 mb-1"</span><span class="s3">&gt;</span><span class="s4">What stabilized sequencing?</span><span class="s3">&lt;/</span><span class="s6">label</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                            </span></span><span class="s3">&lt;</span><span class="s6">input</span><span class="s4"> </span><span class="s2">type</span><span class="s3">=</span><span class="s1">"text"</span><span class="s4"> </span><span class="s2">id</span><span class="s3">=</span><span class="s1">"log-stabilized"</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500"</span><span class="s4"> </span><span class="s2">placeholder</span><span class="s3">=</span><span class="s1">"e.g., 3/4 wedge swing, mid-iron tempo"</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span></span><span class="s3">&lt;/</span><span class="s6">div</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span></span><span class="s3">&lt;</span><span class="s6">div</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                            </span></span><span class="s3">&lt;</span><span class="s6">label</span><span class="s4"> </span><span class="s2">for</span><span class="s3">=</span><span class="s1">"log-travel-course"</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"block text-sm font-medium text-gray-700 mb-1"</span><span class="s3">&gt;</span><span class="s4">What would travel to the course?</span><span class="s3">&lt;/</span><span class="s6">label</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                            </span></span><span class="s3">&lt;</span><span class="s6">input</span><span class="s4"> </span><span class="s2">type</span><span class="s3">=</span><span class="s1">"text"</span><span class="s4"> </span><span class="s2">id</span><span class="s3">=</span><span class="s1">"log-travel-course"</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500"</span><span class="s4"> </span><span class="s2">placeholder</span><span class="s3">=</span><span class="s1">"e.g., Short putting confidence, 8-iron start line"</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span></span><span class="s3">&lt;/</span><span class="s6">div</span><span class="s3">&gt;</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                        </span></span><span class="s3">&lt;</span><span class="s6">button</span><span class="s4"> </span><span class="s2">type</span><span class="s3">=</span><span class="s1">"submit"</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"w-full bg-emerald-600 text-white p-3 rounded-xl font-semibold hover:bg-emerald-700 transition duration-150 mt-4"</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                            </span>Save Session Log</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span></span><span class="s3">&lt;/</span><span class="s6">button</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                    </span></span><span class="s3">&lt;/</span><span class="s6">form</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                    </span></span><span class="s3">&lt;</span><span class="s6">div</span><span class="s4"> </span><span class="s2">id</span><span class="s3">=</span><span class="s1">"log-message"</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"mt-4 hidden p-3 rounded-lg text-sm font-medium"</span><span class="s3">&gt;&lt;/</span><span class="s6">div</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span></span><span class="s3">&lt;/</span><span class="s6">section</span><span class="s3">&gt;</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">                </span></span><span class="s1">&lt;!-- Session History Tab --&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                </span></span><span class="s3">&lt;</span><span class="s6">section</span><span class="s4"> </span><span class="s2">id</span><span class="s3">=</span><span class="s1">"history"</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"tab-pane hidden"</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                    </span></span><span class="s3">&lt;</span><span class="s6">h2</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"text-xl font-semibold text-gray-800 mb-4 border-b pb-2"</span><span class="s3">&gt;</span><span class="s4">Practice History</span><span class="s3">&lt;/</span><span class="s6">h2</span><span class="s3">&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">                    </span></span><span class="s3">&lt;</span><span class="s6">div</span><span class="s4"> </span><span class="s2">id</span><span class="s3">=</span><span class="s1">"sessions-list"</span><span class="s4"> </span><span class="s2">class</span><span class="s3">=</span><span class="s1">"space-y-4"</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span></span><span class="s3">&lt;</span><span class="s6">p</span><span class="s1"> </span><span class="s2">id</span><span class="s3">=</span><span class="s5">"no-sessions"</span><span class="s1"> </span><span class="s2">class</span><span class="s3">=</span><span class="s5">"text-center text-gray-500 mt-8 hidden"</span><span class="s3">&gt;</span><span class="s1">No sessions logged yet. Head over to the "Log Session" tab to start tracking!</span><span class="s3">&lt;/</span><span class="s6">p</span><span class="s3">&gt;</span></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">                        </span></span><span class="s1">&lt;!-- Logged sessions will be rendered here --&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                    </span></span><span class="s3">&lt;/</span><span class="s6">div</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span></span><span class="s3">&lt;/</span><span class="s6">section</span><span class="s3">&gt;</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s3">&lt;/</span><span class="s6">div</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span></span><span class="s3">&lt;/</span><span class="s6">main</span><span class="s3">&gt;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">    </span></span><span class="s3">&lt;/</span><span class="s6">div</span><span class="s3">&gt;</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">    </span></span><span class="s1">&lt;!-- Firebase Imports and Script --&gt;</span></p>
-<p class="p4"><span class="s4"><span class="Apple-converted-space">    </span></span><span class="s3">&lt;</span><span class="s6">script</span><span class="s4"> </span><span class="s2">type</span><span class="s3">=</span><span class="s1">"module"</span><span class="s3">&gt;</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">        </span></span><span class="s7">import</span><span class="s4"> { initializeApp } </span><span class="s7">from</span><span class="s4"> </span><span class="s1">"https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"</span><span class="s4">;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span></span><span class="s7">import</span><span class="s1"> { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } </span><span class="s7">from</span><span class="s1"> </span><span class="s9">"https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"</span><span class="s1">;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span></span><span class="s7">import</span><span class="s1"> { getFirestore, doc, setDoc, onSnapshot, collection, query, addDoc, serverTimestamp, setLogLevel } </span><span class="s7">from</span><span class="s1"> </span><span class="s9">"https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"</span><span class="s1">;</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">        </span></span><span class="s1">// IMPORTANT: Global Variables MUST be used for Firebase configuration and authentication</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span></span><span class="s7">const</span><span class="s1"> appId = </span><span class="s7">typeof</span><span class="s1"> __app_id !== </span><span class="s9">'undefined'</span><span class="s1"> ? __app_id : </span><span class="s9">'default-app-id'</span><span class="s1">;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span></span><span class="s7">const</span><span class="s1"> firebaseConfig = </span><span class="s13">JSON</span><span class="s1">.parse(</span><span class="s7">typeof</span><span class="s1"> __firebase_config !== </span><span class="s9">'undefined'</span><span class="s1"> ? __firebase_config : </span><span class="s9">'{}'</span><span class="s1">);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span></span><span class="s7">const</span><span class="s1"> initialAuthToken = </span><span class="s7">typeof</span><span class="s1"> __initial_auth_token !== </span><span class="s9">'undefined'</span><span class="s1"> ? __initial_auth_token : </span><span class="s7">null</span><span class="s1">;</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span>setLogLevel(</span><span class="s9">'Debug'</span><span class="s1">);</span></p>
-<p class="p9"><span class="s1"><span class="Apple-converted-space">        </span></span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span></span><span class="s7">let</span><span class="s1"> db;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span></span><span class="s7">let</span><span class="s1"> auth;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span></span><span class="s7">let</span><span class="s1"> userId = </span><span class="s7">null</span><span class="s1">;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span></span><span class="s7">let</span><span class="s1"> isAuthReady = </span><span class="s7">false</span><span class="s1">;</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p10"><span class="s4"><span class="Apple-converted-space">        </span></span><span class="s7">const</span><span class="s4"> </span><span class="s1">QUOTAS_COLLECTION</span><span class="s4"> = </span><span class="s9">'weekly_quotas'</span><span class="s4">;</span></p>
-<p class="p10"><span class="s4"><span class="Apple-converted-space">        </span></span><span class="s7">const</span><span class="s4"> </span><span class="s1">SESSIONS_COLLECTION</span><span class="s4"> = </span><span class="s9">'sessions'</span><span class="s4">;</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">        </span></span><span class="s7">const</span><span class="s4"> </span><span class="s13">QUOTAS_DOC_ID</span><span class="s4"> = </span><span class="s1">'current_weekly_status'</span><span class="s4">;</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">        </span></span><span class="s1">// UPDATED QUOTAS LIST</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span></span><span class="s7">const</span><span class="s1"> </span><span class="s13">ALL_QUOTAS</span><span class="s1"> = {</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s1">'driverFadeWindow'</span><span class="s4">: </span><span class="s1">'Driver: Fade Window + Face Spray (2 sessions)'</span><span class="s4">,</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s1">'driverDontGoLeft'</span><span class="s4">: </span><span class="s1">'Driver: Don’t-Go-Left Scoring (1+ session)'</span><span class="s4">,</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s1">'driverFaceCluster'</span><span class="s4">: </span><span class="s1">'Driver: Face Cluster Tracking (1 session)'</span><span class="s4">,</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s1">'driverFairwayFinder'</span><span class="s4">: </span><span class="s1">'Driver: Fairway Finder Challenge (1+ session)'</span><span class="s4">,</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s1">'driverCreative'</span><span class="s4">: </span><span class="s1">'Driver: Creative / Intent Variability (optional)'</span><span class="s4">,</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s1">'ironsStartLine'</span><span class="s4">: </span><span class="s1">'Irons: Start-Line Calibration (all clubs) (2 sessions)'</span><span class="s4">,</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s1">'ironsThreeLength'</span><span class="s4">: </span><span class="s1">'Irons: Three-Length Start Control (1 session)'</span><span class="s4">,</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s1">'ironsClubRotation'</span><span class="s4">: </span><span class="s1">'Irons: Club Rotation Sequence (1 session)'</span><span class="s4">,</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s1">'ironsShotShaping'</span><span class="s4">: </span><span class="s1">'Irons: Shot-Shaping Awareness (optional)'</span><span class="s4">,</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s1">'wedgesDistance'</span><span class="s4">: </span><span class="s1">'Wedges: Distance System (half / ¾ / full) (2 sessions)'</span><span class="s4">,</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s1">'wedgesStrikeCombo'</span><span class="s4">: </span><span class="s1">'Wedges: Strike + Start-Line Combo (1 session)'</span><span class="s4">,</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s1">'wedgesSpecificDistance'</span><span class="s4">: </span><span class="s1">'Wedges: Specific Distance Challenge (optional)'</span><span class="s4">,</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s1">'chippingRandomLies'</span><span class="s4">: </span><span class="s1">'Chipping: Random Lies, One-Ball Reps (1–2 sessions)'</span><span class="s4">,</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s1">'chippingLadder'</span><span class="s4">: </span><span class="s1">'Chipping: Landing Spot Ladder (1+ session)'</span><span class="s4">,</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s1">'chippingPressureLadder'</span><span class="s4">: </span><span class="s1">'Chipping: Pressure Ladder/Restart (optional)'</span><span class="s4">,</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s1">'puttingPath'</span><span class="s4">: </span><span class="s1">'Putting: Path maintenance (1 session)'</span><span class="s4">,</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s1">'puttingPace'</span><span class="s4">: </span><span class="s1">'Putting: Pace w/ die-in speed (1 session)'</span><span class="s4">,</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span>};</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">        </span></span><span class="s1">// --- Utility Functions ---</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span></span><span class="s11">/**</span></p>
-<p class="p7"><span class="s1"><span class="Apple-converted-space">         </span>* Safely gets the Firestore document path for a specific collection and document ID.</span></p>
-<p class="p7"><span class="s1"><span class="Apple-converted-space">         </span>* @param {string} collectionName - The name of the collection (e.g., 'sessions').</span></p>
-<p class="p7"><span class="s1"><span class="Apple-converted-space">         </span>* @param {string} docId - The ID of the document.</span></p>
-<p class="p7"><span class="s1"><span class="Apple-converted-space">         </span>* @returns {string} The full Firestore path.</span></p>
-<p class="p7"><span class="s1"><span class="Apple-converted-space">         </span>*/</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span></span><span class="s7">function</span><span class="s1"> getDocPath(collectionName, docId) {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s7">return</span><span class="s1"> </span><span class="s9">`artifacts/</span><span class="s1">${appId}</span><span class="s9">/users/</span><span class="s1">${userId}</span><span class="s9">/</span><span class="s1">${collectionName}</span><span class="s9">/</span><span class="s1">${docId}</span><span class="s9">`</span><span class="s1">;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span></span><span class="s11">/**</span></p>
-<p class="p7"><span class="s1"><span class="Apple-converted-space">         </span>* Safely gets the Firestore collection path for a specific collection.</span></p>
-<p class="p7"><span class="s1"><span class="Apple-converted-space">         </span>* @param {string} collectionName - The name of the collection (e.g., 'sessions').</span></p>
-<p class="p7"><span class="s1"><span class="Apple-converted-space">         </span>* @returns {string} The full Firestore path.</span></p>
-<p class="p7"><span class="s1"><span class="Apple-converted-space">         </span>*/</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span></span><span class="s7">function</span><span class="s1"> getCollectionPath(collectionName) {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s7">return</span><span class="s1"> </span><span class="s9">`artifacts/</span><span class="s1">${appId}</span><span class="s9">/users/</span><span class="s1">${userId}</span><span class="s9">/</span><span class="s1">${collectionName}</span><span class="s9">`</span><span class="s1">;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span></span><span class="s11">/**</span></p>
-<p class="p7"><span class="s1"><span class="Apple-converted-space">         </span>* Shows a transient message on the log session tab.</span></p>
-<p class="p7"><span class="s1"><span class="Apple-converted-space">         </span>* @param {string} message - The message to display.</span></p>
-<p class="p7"><span class="s1"><span class="Apple-converted-space">         </span>* @param {string} type - 'success' or 'error'.</span></p>
-<p class="p7"><span class="s1"><span class="Apple-converted-space">         </span>*/</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span></span><span class="s7">function</span><span class="s1"> showLogMessage(message, type) {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s7">const</span><span class="s1"> msgEl = document.getElementById(</span><span class="s9">'log-message'</span><span class="s1">);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>msgEl.textContent = message;</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">            </span>msgEl.className = </span><span class="s1">'mt-4 p-3 rounded-lg text-sm font-medium'</span><span class="s4">;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>msgEl.classList.remove(</span><span class="s9">'hidden'</span><span class="s1">);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s7">if</span><span class="s1"> (type === </span><span class="s9">'success'</span><span class="s1">) {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>msgEl.classList.add(</span><span class="s9">'bg-green-100'</span><span class="s1">, </span><span class="s9">'text-green-800'</span><span class="s1">);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>} </span><span class="s7">else</span><span class="s1"> {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>msgEl.classList.add(</span><span class="s9">'bg-red-100'</span><span class="s1">, </span><span class="s9">'text-red-800'</span><span class="s1">);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>}</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>setTimeout(() =&gt; msgEl.classList.add(</span><span class="s9">'hidden'</span><span class="s1">), </span><span class="s14">5000</span><span class="s1">);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">        </span></span><span class="s1">// --- UI Logic ---</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span></span><span class="s7">function</span><span class="s1"> renderQuotas(currentQuotas) {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s7">const</span><span class="s1"> list = document.getElementById(</span><span class="s9">'quotas-list'</span><span class="s1">);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>list.innerHTML = </span><span class="s9">''</span><span class="s1">;</span></p>
-<p class="p9"><span class="s1"><span class="Apple-converted-space">            </span></span></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s1">// Group quotas by club category for better readability</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s7">const</span><span class="s1"> quotaGroups = {</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">                </span></span><span class="s1">'Driver'</span><span class="s4">: [</span><span class="s1">'driverFadeWindow'</span><span class="s4">, </span><span class="s1">'driverDontGoLeft'</span><span class="s4">, </span><span class="s1">'driverFaceCluster'</span><span class="s4">, </span><span class="s1">'driverFairwayFinder'</span><span class="s4">, </span><span class="s1">'driverCreative'</span><span class="s4">],</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">                </span></span><span class="s1">'Irons'</span><span class="s4">: [</span><span class="s1">'ironsStartLine'</span><span class="s4">, </span><span class="s1">'ironsThreeLength'</span><span class="s4">, </span><span class="s1">'ironsClubRotation'</span><span class="s4">, </span><span class="s1">'ironsShotShaping'</span><span class="s4">],</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">                </span></span><span class="s1">'Wedges'</span><span class="s4">: [</span><span class="s1">'wedgesDistance'</span><span class="s4">, </span><span class="s1">'wedgesStrikeCombo'</span><span class="s4">, </span><span class="s1">'wedgesSpecificDistance'</span><span class="s4">],</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">                </span></span><span class="s1">'Chipping'</span><span class="s4">: [</span><span class="s1">'chippingRandomLies'</span><span class="s4">, </span><span class="s1">'chippingLadder'</span><span class="s4">, </span><span class="s1">'chippingPressureLadder'</span><span class="s4">],</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">                </span></span><span class="s1">'Putting'</span><span class="s4">: [</span><span class="s1">'puttingPath'</span><span class="s4">, </span><span class="s1">'puttingPace'</span><span class="s4">]</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>};</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s13">Object</span><span class="s1">.entries(quotaGroups).forEach(([groupName, keys]) =&gt; {</span></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">                </span></span><span class="s1">// Add a group heading</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">                </span>list.insertAdjacentHTML(</span><span class="s1">'beforeend'</span><span class="s4">, </span><span class="s1">`&lt;h3 class="text-md font-bold text-gray-700 pt-4 pb-2 border-b border-gray-100"&gt;</span><span class="s4">${groupName}</span><span class="s1">&lt;/h3&gt;`</span><span class="s4">);</span></p>
-<p class="p9"><span class="s1"><span class="Apple-converted-space">                </span></span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>keys.forEach(key =&gt; {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                    </span></span><span class="s7">const</span><span class="s1"> description = </span><span class="s13">ALL_QUOTAS</span><span class="s1">[key];</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                    </span></span><span class="s7">const</span><span class="s1"> isChecked = currentQuotas[key] === </span><span class="s7">true</span><span class="s1">;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                    </span></span><span class="s7">const</span><span class="s1"> isOptional = description.includes(</span><span class="s9">'optional'</span><span class="s1">);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                    </span></span><span class="s7">const</span><span class="s1"> backgroundColor = isOptional ? </span><span class="s9">'bg-yellow-50'</span><span class="s1"> : </span><span class="s9">'bg-white'</span><span class="s1">;</span></p>
-<p class="p9"><span class="s1"><span class="Apple-converted-space">    </span></span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                    </span></span><span class="s7">const</span><span class="s1"> html = </span><span class="s9">`</span></p>
-<p class="p6"><span class="s1"><span class="Apple-converted-space">                        </span>&lt;div class="flex items-center justify-between p-3 rounded-xl border </span><span class="s4">${backgroundColor}</span><span class="s1"> shadow-sm"&gt;</span></p>
-<p class="p6"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;label for="quota-</span><span class="s4">${key}</span><span class="s1">" class="flex items-center cursor-pointer flex-grow"&gt;</span></p>
-<p class="p6"><span class="s1"><span class="Apple-converted-space">                                </span>&lt;input type="checkbox" id="quota-</span><span class="s4">${key}</span><span class="s1">" data-key="</span><span class="s4">${key}</span><span class="s1">" </span><span class="s4">${isChecked ? </span><span class="s1">'checked'</span><span class="s4"> : </span><span class="s1">''</span><span class="s4">}</span><span class="s1"> class="h-5 w-5 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500 quota-checkbox"&gt;</span></p>
-<p class="p6"><span class="s1"><span class="Apple-converted-space">                                </span>&lt;span class="ml-3 text-sm font-medium text-gray-700 </span><span class="s4">${isChecked ? </span><span class="s1">'line-through text-gray-500'</span><span class="s4"> : </span><span class="s1">''</span><span class="s4">}</span><span class="s1">"&gt;</span><span class="s4">${description}</span><span class="s1">&lt;/span&gt;</span></p>
-<p class="p6"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;/label&gt;</span></p>
-<p class="p6"><span class="s1"><span class="Apple-converted-space">                            </span></span><span class="s4">${isOptional ? </span><span class="s1">'&lt;span class="text-xs text-yellow-600 bg-yellow-100 px-2 py-0.5 rounded-full ml-2"&gt;Optional&lt;/span&gt;'</span><span class="s4"> : </span><span class="s1">''</span><span class="s4">}</span></p>
-<p class="p6"><span class="s1"><span class="Apple-converted-space">                        </span>&lt;/div&gt;</span></p>
-<p class="p6"><span class="s1"><span class="Apple-converted-space">                    </span>`</span><span class="s4">;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                    </span>list.insertAdjacentHTML(</span><span class="s9">'beforeend'</span><span class="s1">, html);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>});</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>});</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>document.querySelectorAll(</span><span class="s9">'.quota-checkbox'</span><span class="s1">).forEach(checkbox =&gt; {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>checkbox.addEventListener(</span><span class="s9">'change'</span><span class="s1">, handleQuotaChange);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>});</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span></span><span class="s7">function</span><span class="s1"> renderSessions(sessions) {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s7">const</span><span class="s1"> list = document.getElementById(</span><span class="s9">'sessions-list'</span><span class="s1">);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>list.innerHTML = </span><span class="s9">''</span><span class="s1">;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s7">const</span><span class="s1"> noSessionsEl = document.getElementById(</span><span class="s9">'no-sessions'</span><span class="s1">);</span></p>
-<p class="p9"><span class="s1"><span class="Apple-converted-space">            </span></span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s7">if</span><span class="s1"> (sessions.length === </span><span class="s14">0</span><span class="s1">) {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>noSessionsEl.classList.remove(</span><span class="s9">'hidden'</span><span class="s1">);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span></span><span class="s7">return</span><span class="s1">;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>} </span><span class="s7">else</span><span class="s1"> {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>noSessionsEl.classList.add(</span><span class="s9">'hidden'</span><span class="s1">);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>}</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>sessions.forEach(session =&gt; {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span></span><span class="s7">const</span><span class="s1"> date = </span><span class="s7">new</span><span class="s1"> </span><span class="s13">Date</span><span class="s1">(session.date).toLocaleDateString();</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span></span><span class="s7">const</span><span class="s1"> html = </span><span class="s9">`</span></p>
-<p class="p6"><span class="s1"><span class="Apple-converted-space">                    </span>&lt;div class="card p-5 border border-gray-200 hover:border-emerald-500 transition duration-150"&gt;</span></p>
-<p class="p6"><span class="s1"><span class="Apple-converted-space">                        </span>&lt;div class="flex justify-between items-start mb-3 border-b pb-2"&gt;</span></p>
-<p class="p6"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;h3 class="text-lg font-bold text-emerald-700"&gt;</span><span class="s4">${date}</span><span class="s1"> - </span><span class="s4">${session.clubsUsed}</span><span class="s1">&lt;/h3&gt;</span></p>
-<p class="p6"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;span class="text-xs font-semibold bg-blue-100 text-blue-800 px-2 py-1 rounded-full"&gt;Intent: </span><span class="s4">${session.intent}</span><span class="s1">&lt;/span&gt;</span></p>
-<p class="p6"><span class="s1"><span class="Apple-converted-space">                        </span>&lt;/div&gt;</span></p>
-<p class="p6"><span class="s1"><span class="Apple-converted-space">                        </span>&lt;div class="text-sm space-y-2 text-gray-600"&gt;</span></p>
-<p class="p6"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;p&gt;&lt;strong&gt;Start-line %:&lt;/strong&gt; </span><span class="s4">${session.startlinePercentage}</span><span class="s1">%&lt;/p&gt;</span></p>
-<p class="p6"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;p&gt;&lt;strong&gt;Strike Pattern:&lt;/strong&gt; &lt;span class="capitalize"&gt;</span><span class="s4">${session.strikePattern}</span><span class="s1">&lt;/span&gt;&lt;/p&gt;</span></p>
-<p class="p6"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;p&gt;&lt;strong&gt;Session Notes:&lt;/strong&gt; </span><span class="s4">${session.sessionNotes || </span><span class="s1">'N/A'</span><span class="s4">}</span><span class="s1">&lt;/p&gt;</span></p>
-<p class="p6"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;p class="pt-2 border-t mt-2"&gt;&lt;strong&gt;Trended Left:&lt;/strong&gt; </span><span class="s4">${session.reflectionTrendedLeft || </span><span class="s1">'N/A'</span><span class="s4">}</span><span class="s1">&lt;/p&gt;</span></p>
-<p class="p6"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;p&gt;&lt;strong&gt;Stabilized:&lt;/strong&gt; </span><span class="s4">${session.reflectionStabilized || </span><span class="s1">'N/A'</span><span class="s4">}</span><span class="s1">&lt;/p&gt;</span></p>
-<p class="p6"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;p&gt;&lt;strong&gt;Course-Ready:&lt;/strong&gt; </span><span class="s4">${session.reflectionTravelToCourse || </span><span class="s1">'N/A'</span><span class="s4">}</span><span class="s1">&lt;/p&gt;</span></p>
-<p class="p6"><span class="s1"><span class="Apple-converted-space">                        </span>&lt;/div&gt;</span></p>
-<p class="p6"><span class="s1"><span class="Apple-converted-space">                    </span>&lt;/div&gt;</span></p>
-<p class="p6"><span class="s1"><span class="Apple-converted-space">                </span>`</span><span class="s4">;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>list.insertAdjacentHTML(</span><span class="s9">'beforeend'</span><span class="s1">, html);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>});</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span></span><span class="s7">function</span><span class="s1"> switchTab(targetTabId) {</span></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s1">// Update buttons</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>document.querySelectorAll(</span><span class="s9">'.tab-button'</span><span class="s1">).forEach(btn =&gt; {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>btn.classList.remove(</span><span class="s9">'active'</span><span class="s1">);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span></span><span class="s7">if</span><span class="s1"> (btn.getAttribute(</span><span class="s9">'data-tab'</span><span class="s1">) === targetTabId) {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                    </span>btn.classList.add(</span><span class="s9">'active'</span><span class="s1">);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>}</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>});</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s1">// Update content</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>document.querySelectorAll(</span><span class="s9">'.tab-pane'</span><span class="s1">).forEach(pane =&gt; {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>pane.classList.add(</span><span class="s9">'hidden'</span><span class="s1">);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span></span><span class="s7">if</span><span class="s1"> (pane.id === targetTabId) {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                    </span>pane.classList.remove(</span><span class="s9">'hidden'</span><span class="s1">);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>}</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>});</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">        </span></span><span class="s1">// --- Firestore Handlers ---</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span></span><span class="s7">async</span><span class="s1"> </span><span class="s7">function</span><span class="s1"> handleQuotaChange(event) {</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s7">if</span><span class="s4"> (!userId) </span><span class="s7">return</span><span class="s4"> showLogMessage(</span><span class="s1">'Authentication required to save data.'</span><span class="s4">, </span><span class="s1">'error'</span><span class="s4">);</span></p>
-<p class="p9"><span class="s1"><span class="Apple-converted-space">            </span></span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s7">const</span><span class="s1"> key = event.target.getAttribute(</span><span class="s9">'data-key'</span><span class="s1">);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s7">const</span><span class="s1"> isChecked = event.target.checked;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s7">const</span><span class="s1"> quotaRef = doc(db, getDocPath(</span><span class="s13">QUOTAS_COLLECTION</span><span class="s1">, </span><span class="s13">QUOTAS_DOC_ID</span><span class="s1">));</span></p>
-<p class="p9"><span class="s1"><span class="Apple-converted-space">            </span></span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s7">try</span><span class="s1"> {</span></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">                </span></span><span class="s1">// Use setDoc with merge to update only the specific key</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span></span><span class="s7">await</span><span class="s1"> setDoc(quotaRef, { [key]: isChecked, lastUpdated: serverTimestamp() }, { merge: </span><span class="s7">true</span><span class="s1"> });</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>console.log(</span><span class="s9">`Quota </span><span class="s1">${key}</span><span class="s9"> updated successfully.`</span><span class="s1">);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>} </span><span class="s7">catch</span><span class="s1"> (error) {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>console.error(</span><span class="s9">"Error updating quota:"</span><span class="s1">, error);</span></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">                </span></span><span class="s1">// Revert checkbox state on error</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>event.target.checked = !isChecked;<span class="Apple-converted-space"> </span></span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">                </span>showLogMessage(</span><span class="s1">'Failed to update quota. Check connection and try again.'</span><span class="s4">, </span><span class="s1">'error'</span><span class="s4">);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>}</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span></span><span class="s7">async</span><span class="s1"> </span><span class="s7">function</span><span class="s1"> handleSessionSubmit(event) {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>event.preventDefault();</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s7">if</span><span class="s4"> (!userId) </span><span class="s7">return</span><span class="s4"> showLogMessage(</span><span class="s1">'Authentication required to save data.'</span><span class="s4">, </span><span class="s1">'error'</span><span class="s4">);</span></p>
-<p class="p9"><span class="s1"><span class="Apple-converted-space">            </span></span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s7">const</span><span class="s1"> form = event.target;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s7">const</span><span class="s1"> sessionData = {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>date: form[</span><span class="s9">'log-date'</span><span class="s1">].value,</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>clubsUsed: form[</span><span class="s9">'log-clubs'</span><span class="s1">].value.trim(),</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>intent: form[</span><span class="s9">'log-intent'</span><span class="s1">].value.trim(),</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>startlinePercentage: form[</span><span class="s9">'log-startline-perc'</span><span class="s1">].value,</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>strikePattern: form[</span><span class="s9">'log-strike-pattern'</span><span class="s1">].value,</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>sessionNotes: form[</span><span class="s9">'log-notes'</span><span class="s1">].value.trim(),</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>reflectionTrendedLeft: form[</span><span class="s9">'log-trended-left'</span><span class="s1">].value.trim(),</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>reflectionStabilized: form[</span><span class="s9">'log-stabilized'</span><span class="s1">].value.trim(),</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>reflectionTravelToCourse: form[</span><span class="s9">'log-travel-course'</span><span class="s1">].value.trim(),</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>userId: userId,</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>timestamp: serverTimestamp()</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>};</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s7">const</span><span class="s1"> sessionsCollectionRef = collection(db, getCollectionPath(</span><span class="s13">SESSIONS_COLLECTION</span><span class="s1">));</span></p>
-<p class="p9"><span class="s1"><span class="Apple-converted-space">            </span></span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s7">try</span><span class="s1"> {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span></span><span class="s7">await</span><span class="s1"> addDoc(sessionsCollectionRef, sessionData);</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">                </span>showLogMessage(</span><span class="s1">'Session logged successfully!'</span><span class="s4">, </span><span class="s1">'success'</span><span class="s4">);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>form.reset();</span></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">                </span></span><span class="s1">// Reset date to today after submission</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>document.getElementById(</span><span class="s9">'log-date'</span><span class="s1">).valueAsDate = </span><span class="s7">new</span><span class="s1"> </span><span class="s13">Date</span><span class="s1">();</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>} </span><span class="s7">catch</span><span class="s1"> (error) {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>console.error(</span><span class="s9">"Error adding document:"</span><span class="s1">, error);</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">                </span>showLogMessage(</span><span class="s1">'Failed to save session log. Please try again.'</span><span class="s4">, </span><span class="s1">'error'</span><span class="s4">);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>}</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">        </span></span><span class="s1">// --- Firebase Initialization and Auth ---</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span></span><span class="s7">async</span><span class="s1"> </span><span class="s7">function</span><span class="s1"> initFirebase() {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s7">try</span><span class="s1"> {</span></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">                </span></span><span class="s1">// 1. Initialize Firebase App and Services</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span></span><span class="s7">const</span><span class="s1"> app = initializeApp(firebaseConfig);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>db = getFirestore(app);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>auth = getAuth(app);</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">                </span></span><span class="s1">// 2. Initial Authentication</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span></span><span class="s7">if</span><span class="s1"> (initialAuthToken) {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                    </span></span><span class="s7">await</span><span class="s1"> signInWithCustomToken(auth, initialAuthToken);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>} </span><span class="s7">else</span><span class="s1"> {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                    </span></span><span class="s7">await</span><span class="s1"> signInAnonymously(auth);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>}</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">                </span></span><span class="s1">// 3. Auth State Listener</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>onAuthStateChanged(auth, (user) =&gt; {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                    </span></span><span class="s7">if</span><span class="s1"> (user) {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span>userId = user.uid;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span>document.getElementById(</span><span class="s9">'user-display'</span><span class="s1">).textContent = </span><span class="s9">`User ID: </span><span class="s1">${userId}</span><span class="s9">`</span><span class="s1">;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span>isAuthReady = </span><span class="s7">true</span><span class="s1">;</span></p>
-<p class="p9"><span class="s1"><span class="Apple-converted-space">                        </span></span></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">                        </span></span><span class="s1">// Load data listeners now that auth is ready</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span>setupDataListeners();</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span>document.getElementById(</span><span class="s9">'loading'</span><span class="s1">).classList.add(</span><span class="s9">'hidden'</span><span class="s1">);</span></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">                        </span></span><span class="s1">// Set today's date on the log form</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span>document.getElementById(</span><span class="s9">'log-date'</span><span class="s1">).valueAsDate = </span><span class="s7">new</span><span class="s1"> </span><span class="s13">Date</span><span class="s1">();</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span></span><span class="s11">// Initialize tab view</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span>switchTab(</span><span class="s9">'quotas'</span><span class="s1">);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                    </span>} </span><span class="s7">else</span><span class="s1"> {</span></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">                        </span></span><span class="s1">// Fallback/Anonymous logic if needed, but the token handles primary auth.</span></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">                        </span>userId = crypto.randomUUID(); </span><span class="s1">// Fallback for path construction, although rules might restrict access.</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span>document.getElementById(</span><span class="s9">'user-display'</span><span class="s1">).textContent = </span><span class="s9">`User ID (Anon/Temp): </span><span class="s1">${userId}</span><span class="s9">`</span><span class="s1">;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                        </span>isAuthReady = </span><span class="s7">true</span><span class="s1">;</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">                        </span>console.error(</span><span class="s1">"User not fully authenticated, using temporary ID. Data saving may fail without proper rules."</span><span class="s4">);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                    </span>}</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>});</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>} </span><span class="s7">catch</span><span class="s1"> (error) {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>console.error(</span><span class="s9">"Firebase initialization failed:"</span><span class="s1">, error);</span></p>
-<p class="p6"><span class="s4"><span class="Apple-converted-space">                </span>document.getElementById(</span><span class="s1">'loading'</span><span class="s4">).innerHTML = </span><span class="s1">`&lt;p class="text-red-600"&gt;Error initializing the app. See console for details.&lt;/p&gt;`</span><span class="s4">;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>}</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span></span><span class="s7">function</span><span class="s1"> setupDataListeners() {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s7">if</span><span class="s1"> (!isAuthReady || !userId) </span><span class="s7">return</span><span class="s1">;</span></p>
-<p class="p9"><span class="s1"><span class="Apple-converted-space">            </span></span></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s1">// Listener for Weekly Quotas</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s7">const</span><span class="s1"> quotaRef = doc(db, getDocPath(</span><span class="s13">QUOTAS_COLLECTION</span><span class="s1">, </span><span class="s13">QUOTAS_DOC_ID</span><span class="s1">));</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>onSnapshot(quotaRef, (doc) =&gt; {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span></span><span class="s7">const</span><span class="s1"> quotas = doc.data() || {};</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>renderQuotas(quotas);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>}, (error) =&gt; {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>console.error(</span><span class="s9">"Error listening to quotas:"</span><span class="s1">, error);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>});</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s1">// Listener for Session History</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span></span><span class="s7">const</span><span class="s1"> sessionsCollectionRef = collection(db, getCollectionPath(</span><span class="s13">SESSIONS_COLLECTION</span><span class="s1">));</span></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s1">// Note: We avoid orderBy in Firestore queries as mandated, and sort client-side.</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>onSnapshot(sessionsCollectionRef, (snapshot) =&gt; {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span></span><span class="s7">const</span><span class="s1"> sessions = snapshot.docs.map(doc =&gt; ({ id: doc.id, ...doc.data() }));</span></p>
-<p class="p9"><span class="s1"><span class="Apple-converted-space">                </span></span></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">                </span></span><span class="s1">// Sort client-side by date/timestamp, descending</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>sessions.sort((a, b) =&gt; {</span></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">                    </span></span><span class="s1">// Handle serverTimestamp which is stored as a Timestamp object</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                    </span></span><span class="s7">const</span><span class="s1"> timeA = a.timestamp?.toDate ? a.timestamp.toDate().getTime() : </span><span class="s7">new</span><span class="s1"> </span><span class="s13">Date</span><span class="s1">(a.date).getTime();</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                    </span></span><span class="s7">const</span><span class="s1"> timeB = b.timestamp?.toDate ? b.timestamp.toDate().getTime() : </span><span class="s7">new</span><span class="s1"> </span><span class="s13">Date</span><span class="s1">(b.date).getTime();</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                    </span></span><span class="s7">return</span><span class="s1"> timeB - timeA;</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>});</span></p>
-<p class="p9"><span class="s1"><span class="Apple-converted-space">                </span></span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>renderSessions(sessions);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>}, (error) =&gt; {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>console.error(</span><span class="s9">"Error listening to sessions:"</span><span class="s1">, error);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>});</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">        </span></span><span class="s1">// --- Event Listeners and Initial Call ---</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span>window.onload = () =&gt; {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>initFirebase();</span></p>
-<p class="p9"><span class="s1"><span class="Apple-converted-space">            </span></span></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s1">// Tab switching logic</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>document.querySelectorAll(</span><span class="s9">'.tab-button'</span><span class="s1">).forEach(button =&gt; {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>button.addEventListener(</span><span class="s9">'click'</span><span class="s1">, (e) =&gt; {</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                    </span>switchTab(e.target.getAttribute(</span><span class="s9">'data-tab'</span><span class="s1">));</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">                </span>});</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>});</span></p>
-<p class="p9"><span class="s12"></span><br></p>
-<p class="p7"><span class="s4"><span class="Apple-converted-space">            </span></span><span class="s1">// Session logging form submit</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">            </span>document.getElementById(</span><span class="s9">'session-log-form'</span><span class="s1">).addEventListener(</span><span class="s9">'submit'</span><span class="s1">, handleSessionSubmit);</span></p>
-<p class="p5"><span class="s1"><span class="Apple-converted-space">        </span>};</span></p>
-<p class="p2"><span class="s4"><span class="Apple-converted-space">    </span></span><span class="s3">&lt;/</span><span class="s1">script</span><span class="s3">&gt;</span></p>
-<p class="p2"><span class="s3">&lt;/</span><span class="s1">body</span><span class="s3">&gt;</span></p>
-<p class="p2"><span class="s3">&lt;/</span><span class="s1">html</span><span class="s3">&gt;</span></p>
+
+    <div id="app" class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-md sticky top-0 z-10">
+            <div class="max-w-4xl mx-auto p-4 flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-gray-800">Practice Tracker</h1>
+                <p id="user-display" class="text-xs text-gray-500 bg-gray-100 p-2 rounded-lg"></p>
+            </div>
+            <nav class="max-w-4xl mx-auto flex space-x-4 px-4">
+                <button class="tab-button py-2 text-gray-600 hover:text-emerald-600" data-tab="quotas">Weekly Quotas</button>
+                <button class="tab-button py-2 text-gray-600 hover:text-emerald-600" data-tab="log">Log Session</button>
+                <button class="tab-button py-2 text-gray-600 hover:text-emerald-600" data-tab="history">History</button>
+            </nav>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="max-w-4xl mx-auto p-4 pb-12">
+            <div id="loading" class="text-center text-gray-500 mt-12">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mx-auto"></div>
+                <p class="mt-2">Loading tracker...</p>
+            </div>
+
+            <!-- Tab Content -->
+            <div id="tab-content" class="space-y-6">
+                <!-- Weekly Quotas Tab -->
+                <section id="quotas" class="tab-pane hidden">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Weekly Quotas Checklist</h2>
+                    <div class="card p-6 space-y-4">
+                        <div id="quotas-list" class="space-y-4">
+                            <!-- Quotas will be rendered here -->
+                        </div>
+                        <p class="text-sm text-gray-500 pt-4 border-t mt-4">Check off your drills as you complete them each week. Your progress saves automatically.</p>
+                    </div>
+                </section>
+
+                <!-- Log Session Tab -->
+                <section id="log" class="tab-pane hidden">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Log a Practice Session</h2>
+                    <form id="session-log-form" class="card p-6 space-y-4">
+
+                        <!-- Log Details -->
+                        <h3 class="font-bold text-lg text-emerald-700">Session Details</h3>
+                        <div>
+                            <label for="log-date" class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                            <input type="date" id="log-date" required class="w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
+                        </div>
+                        <div>
+                            <label for="log-clubs" class="block text-sm font-medium text-gray-700 mb-1">Clubs Used (e.g., D, 5i, PW)</label>
+                            <input type="text" id="log-clubs" required class="w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Driver, 5-Iron, Putter">
+                        </div>
+                        <div>
+                            <label for="log-intent" class="block text-sm font-medium text-gray-700 mb-1">Primary Intent (e.g., Face control, Strike)</label>
+                            <input type="text" id="log-intent" required class="w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Face control, Start-line consistency">
+                        </div>
+
+                        <!-- Performance Metrics -->
+                        <h3 class="font-bold text-lg text-emerald-700 pt-4 border-t">Performance Metrics</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="log-startline-perc" class="block text-sm font-medium text-gray-700 mb-1">Start-line % (Estimate)</label>
+                                <input type="number" id="log-startline-perc" min="0" max="100" required class="w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="e.g., 85">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Strike Pattern</label>
+                                <select id="log-strike-pattern" required class="w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
+                                    <option value="" disabled selected>Select pattern</option>
+                                    <option value="center">Center</option>
+                                    <option value="heel">Heel</option>
+                                    <option value="toe">Toe</option>
+                                    <option value="varied">Varied</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Notes and Reflection -->
+                        <h3 class="font-bold text-lg text-emerald-700 pt-4 border-t">Reflection</h3>
+                        <div>
+                            <label for="log-notes" class="block text-sm font-medium text-gray-700 mb-1">Session Notes</label>
+                            <textarea id="log-notes" rows="3" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Did strike shift heel/toe as fatigue set in?"></textarea>
+                        </div>
+                        <div>
+                            <label for="log-trended-left" class="block text-sm font-medium text-gray-700 mb-1">What trended left today?</label>
+                            <input type="text" id="log-trended-left" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="e.g., Long irons, early drivers">
+                        </div>
+                        <div>
+                            <label for="log-stabilized" class="block text-sm font-medium text-gray-700 mb-1">What stabilized sequencing?</label>
+                            <input type="text" id="log-stabilized" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="e.g., 3/4 wedge swing, mid-iron tempo">
+                        </div>
+                        <div>
+                            <label for="log-travel-course" class="block text-sm font-medium text-gray-700 mb-1">What would travel to the course?</label>
+                            <input type="text" id="log-travel-course" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="e.g., Short putting confidence, 8-iron start line">
+                        </div>
+
+                        <button type="submit" class="w-full bg-emerald-600 text-white p-3 rounded-xl font-semibold hover:bg-emerald-700 transition duration-150 mt-4">
+                            Save Session Log
+                        </button>
+                    </form>
+                    <div id="log-message" class="mt-4 hidden p-3 rounded-lg text-sm font-medium"></div>
+                </section>
+
+                <!-- Session History Tab -->
+                <section id="history" class="tab-pane hidden">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Practice History</h2>
+                    <div id="sessions-list" class="space-y-4">
+                        <p id="no-sessions" class="text-center text-gray-500 mt-8 hidden">No sessions logged yet. Head over to the "Log Session" tab to start tracking!</p>
+                        <!-- Logged sessions will be rendered here -->
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Firebase Imports and Script -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, query, addDoc, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // IMPORTANT: Global Variables MUST be used for Firebase configuration and authentication
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        setLogLevel('Debug');
+        
+        let db;
+        let auth;
+        let userId = null;
+        let isAuthReady = false;
+
+        const QUOTAS_COLLECTION = 'weekly_quotas';
+        const SESSIONS_COLLECTION = 'sessions';
+        const QUOTAS_DOC_ID = 'current_weekly_status';
+
+        // UPDATED QUOTAS LIST
+        const ALL_QUOTAS = {
+            'driverFadeWindow': 'Driver: Fade Window + Face Spray (2 sessions)',
+            'driverDontGoLeft': 'Driver: Don’t-Go-Left Scoring (1+ session)',
+            'driverFaceCluster': 'Driver: Face Cluster Tracking (1 session)',
+            'driverFairwayFinder': 'Driver: Fairway Finder Challenge (1+ session)',
+            'driverCreative': 'Driver: Creative / Intent Variability (optional)',
+            'ironsStartLine': 'Irons: Start-Line Calibration (all clubs) (2 sessions)',
+            'ironsThreeLength': 'Irons: Three-Length Start Control (1 session)',
+            'ironsClubRotation': 'Irons: Club Rotation Sequence (1 session)',
+            'ironsShotShaping': 'Irons: Shot-Shaping Awareness (optional)',
+            'wedgesDistance': 'Wedges: Distance System (half / ¾ / full) (2 sessions)',
+            'wedgesStrikeCombo': 'Wedges: Strike + Start-Line Combo (1 session)',
+            'wedgesSpecificDistance': 'Wedges: Specific Distance Challenge (optional)',
+            'chippingRandomLies': 'Chipping: Random Lies, One-Ball Reps (1–2 sessions)',
+            'chippingLadder': 'Chipping: Landing Spot Ladder (1+ session)',
+            'chippingPressureLadder': 'Chipping: Pressure Ladder/Restart (optional)',
+            'puttingPath': 'Putting: Path maintenance (1 session)',
+            'puttingPace': 'Putting: Pace w/ die-in speed (1 session)',
+        };
+
+        // --- Utility Functions ---
+
+        /**
+         * Safely gets the Firestore document path for a specific collection and document ID.
+         * @param {string} collectionName - The name of the collection (e.g., 'sessions').
+         * @param {string} docId - The ID of the document.
+         * @returns {string} The full Firestore path.
+         */
+        function getDocPath(collectionName, docId) {
+            return `artifacts/${appId}/users/${userId}/${collectionName}/${docId}`;
+        }
+
+        /**
+         * Safely gets the Firestore collection path for a specific collection.
+         * @param {string} collectionName - The name of the collection (e.g., 'sessions').
+         * @returns {string} The full Firestore path.
+         */
+        function getCollectionPath(collectionName) {
+            return `artifacts/${appId}/users/${userId}/${collectionName}`;
+        }
+
+        /**
+         * Shows a transient message on the log session tab.
+         * @param {string} message - The message to display.
+         * @param {string} type - 'success' or 'error'.
+         */
+        function showLogMessage(message, type) {
+            const msgEl = document.getElementById('log-message');
+            msgEl.textContent = message;
+            msgEl.className = 'mt-4 p-3 rounded-lg text-sm font-medium';
+            msgEl.classList.remove('hidden');
+            if (type === 'success') {
+                msgEl.classList.add('bg-green-100', 'text-green-800');
+            } else {
+                msgEl.classList.add('bg-red-100', 'text-red-800');
+            }
+            setTimeout(() => msgEl.classList.add('hidden'), 5000);
+        }
+
+        // --- UI Logic ---
+
+        function renderQuotas(currentQuotas) {
+            const list = document.getElementById('quotas-list');
+            list.innerHTML = '';
+            
+            // Group quotas by club category for better readability
+            const quotaGroups = {
+                'Driver': ['driverFadeWindow', 'driverDontGoLeft', 'driverFaceCluster', 'driverFairwayFinder', 'driverCreative'],
+                'Irons': ['ironsStartLine', 'ironsThreeLength', 'ironsClubRotation', 'ironsShotShaping'],
+                'Wedges': ['wedgesDistance', 'wedgesStrikeCombo', 'wedgesSpecificDistance'],
+                'Chipping': ['chippingRandomLies', 'chippingLadder', 'chippingPressureLadder'],
+                'Putting': ['puttingPath', 'puttingPace']
+            };
+
+            Object.entries(quotaGroups).forEach(([groupName, keys]) => {
+                // Add a group heading
+                list.insertAdjacentHTML('beforeend', `<h3 class="text-md font-bold text-gray-700 pt-4 pb-2 border-b border-gray-100">${groupName}</h3>`);
+                
+                keys.forEach(key => {
+                    const description = ALL_QUOTAS[key];
+                    const isChecked = currentQuotas[key] === true;
+                    const isOptional = description.includes('optional');
+                    const backgroundColor = isOptional ? 'bg-yellow-50' : 'bg-white';
+    
+                    const html = `
+                        <div class="flex items-center justify-between p-3 rounded-xl border ${backgroundColor} shadow-sm">
+                            <label for="quota-${key}" class="flex items-center cursor-pointer flex-grow">
+                                <input type="checkbox" id="quota-${key}" data-key="${key}" ${isChecked ? 'checked' : ''} class="h-5 w-5 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500 quota-checkbox">
+                                <span class="ml-3 text-sm font-medium text-gray-700 ${isChecked ? 'line-through text-gray-500' : ''}">${description}</span>
+                            </label>
+                            ${isOptional ? '<span class="text-xs text-yellow-600 bg-yellow-100 px-2 py-0.5 rounded-full ml-2">Optional</span>' : ''}
+                        </div>
+                    `;
+                    list.insertAdjacentHTML('beforeend', html);
+                });
+            });
+
+
+            document.querySelectorAll('.quota-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', handleQuotaChange);
+            });
+        }
+
+        function renderSessions(sessions) {
+            const list = document.getElementById('sessions-list');
+            const noSessionsEl = document.getElementById('no-sessions');
+            
+            // Safety check: ensure both elements are found before proceeding
+            if (!list || !noSessionsEl) {
+                console.error("Error: Could not find 'sessions-list' or 'no-sessions' element in DOM.");
+                return;
+            }
+
+            list.innerHTML = '';
+            
+            if (sessions.length === 0) {
+                noSessionsEl.classList.remove('hidden');
+                return;
+            } else {
+                noSessionsEl.classList.add('hidden');
+            }
+
+            sessions.forEach(session => {
+                const date = new Date(session.date).toLocaleDateString();
+                const html = `
+                    <div class="card p-5 border border-gray-200 hover:border-emerald-500 transition duration-150">
+                        <div class="flex justify-between items-start mb-3 border-b pb-2">
+                            <h3 class="text-lg font-bold text-emerald-700">${date} - ${session.clubsUsed}</h3>
+                            <span class="text-xs font-semibold bg-blue-100 text-blue-800 px-2 py-1 rounded-full">Intent: ${session.intent}</span>
+                        </div>
+                        <div class="text-sm space-y-2 text-gray-600">
+                            <p><strong>Start-line %:</strong> ${session.startlinePercentage}%</p>
+                            <p><strong>Strike Pattern:</strong> <span class="capitalize">${session.strikePattern}</span></p>
+                            <p><strong>Session Notes:</strong> ${session.sessionNotes || 'N/A'}</p>
+                            <p class="pt-2 border-t mt-2"><strong>Trended Left:</strong> ${session.reflectionTrendedLeft || 'N/A'}</p>
+                            <p><strong>Stabilized:</strong> ${session.reflectionStabilized || 'N/A'}</p>
+                            <p><strong>Course-Ready:</strong> ${session.reflectionTravelToCourse || 'N/A'}</p>
+                        </div>
+                    </div>
+                `;
+                list.insertAdjacentHTML('beforeend', html);
+            });
+        }
+
+        function switchTab(targetTabId) {
+            // Update buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.getAttribute('data-tab') === targetTabId) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // Update content
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.add('hidden');
+                if (pane.id === targetTabId) {
+                    pane.classList.remove('hidden');
+                }
+            });
+        }
+
+        // --- Firestore Handlers ---
+
+        async function handleQuotaChange(event) {
+            if (!userId) return showLogMessage('Authentication required to save data.', 'error');
+            
+            const key = event.target.getAttribute('data-key');
+            const isChecked = event.target.checked;
+            const quotaRef = doc(db, getDocPath(QUOTAS_COLLECTION, QUOTAS_DOC_ID));
+            
+            try {
+                // Use setDoc with merge to update only the specific key
+                await setDoc(quotaRef, { [key]: isChecked, lastUpdated: serverTimestamp() }, { merge: true });
+                console.log(`Quota ${key} updated successfully.`);
+            } catch (error) {
+                console.error("Error updating quota:", error);
+                // Revert checkbox state on error
+                event.target.checked = !isChecked; 
+                showLogMessage('Failed to update quota. Check connection and try again.', 'error');
+            }
+        }
+
+        async function handleSessionSubmit(event) {
+            event.preventDefault();
+            if (!userId) return showLogMessage('Authentication required to save data.', 'error');
+            
+            const form = event.target;
+            const sessionData = {
+                date: form['log-date'].value,
+                clubsUsed: form['log-clubs'].value.trim(),
+                intent: form['log-intent'].value.trim(),
+                startlinePercentage: form['log-startline-perc'].value,
+                strikePattern: form['log-strike-pattern'].value,
+                sessionNotes: form['log-notes'].value.trim(),
+                reflectionTrendedLeft: form['log-trended-left'].value.trim(),
+                reflectionStabilized: form:['log-stabilized'].value.trim(),
+                reflectionTravelToCourse: form['log-travel-course'].value.trim(),
+                userId: userId,
+                timestamp: serverTimestamp()
+            };
+
+            const sessionsCollectionRef = collection(db, getCollectionPath(SESSIONS_COLLECTION));
+            
+            try {
+                await addDoc(sessionsCollectionRef, sessionData);
+                showLogMessage('Session logged successfully!', 'success');
+                form.reset();
+                // Reset date to today after submission
+                document.getElementById('log-date').valueAsDate = new Date();
+            } catch (error) {
+                console.error("Error adding document:", error);
+                showLogMessage('Failed to save session log. Please try again.', 'error');
+            }
+        }
+
+        // --- Firebase Initialization and Auth ---
+
+        async function initFirebase() {
+            try {
+                // 1. Initialize Firebase App and Services
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app); // Initialization moved inside here
+                auth = getAuth(app); // Initialization moved inside here
+
+                // 2. Initial Authentication
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                // 3. Auth State Listener
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        document.getElementById('user-display').textContent = `User ID: ${userId}`;
+                        isAuthReady = true;
+                        
+                        // Load data listeners now that auth is ready
+                        setupDataListeners();
+                        document.getElementById('loading').classList.add('hidden');
+                        // Set today's date on the log form
+                        document.getElementById('log-date').valueAsDate = new Date();
+                        // Initialize tab view
+                        switchTab('quotas');
+                    } else {
+                        // Fallback/Anonymous logic if needed, but the token handles primary auth.
+                        userId = crypto.randomUUID(); // Fallback for path construction, although rules might restrict access.
+                        document.getElementById('user-display').textContent = `User ID (Anon/Temp): ${userId}`;
+                        isAuthReady = true;
+                        console.error("User not fully authenticated, using temporary ID. Data saving may fail without proper rules.");
+                    }
+                });
+            } catch (error) {
+                console.error("Firebase initialization failed:", error);
+                document.getElementById('loading').innerHTML = `<p class="text-red-600">Error initializing the app. See console for details.</p>`;
+            }
+        }
+
+        function setupDataListeners() {
+            if (!isAuthReady || !userId) return;
+            
+            // Listener for Weekly Quotas
+            const quotaRef = doc(db, getDocPath(QUOTAS_COLLECTION, QUOTAS_DOC_ID));
+            onSnapshot(quotaRef, (doc) => {
+                const quotas = doc.data() || {};
+                renderQuotas(quotas);
+            }, (error) => {
+                console.error("Error listening to quotas:", error);
+            });
+
+            // Listener for Session History
+            const sessionsCollectionRef = collection(db, getCollectionPath(SESSIONS_COLLECTION));
+            // Note: We avoid orderBy in Firestore queries as mandated, and sort client-side.
+            onSnapshot(sessionsCollectionRef, (snapshot) => {
+                const sessions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                // Sort client-side by date/timestamp, descending
+                sessions.sort((a, b) => {
+                    // Handle serverTimestamp which is stored as a Timestamp object
+                    const timeA = a.timestamp?.toDate ? a.timestamp.toDate().getTime() : new Date(a.date).getTime();
+                    const timeB = b.timestamp?.toDate ? b.timestamp.toDate().getTime() : new Date(b.date).getTime();
+                    return timeB - timeA;
+                });
+                
+                renderSessions(sessions);
+            }, (error) => {
+                console.error("Error listening to sessions:", error);
+            });
+        }
+
+
+        // --- Event Listeners and Initial Call ---
+
+        window.onload = () => {
+            initFirebase();
+            
+            // Tab switching logic
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    switchTab(e.target.getAttribute('data-tab'));
+                });
+            });
+
+            // Session logging form submit
+            document.getElementById('session-log-form').addEventListener('submit', handleSessionSubmit);
+        };
+    </script>
 </body>
 </html>
