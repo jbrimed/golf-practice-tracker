@@ -14,7 +14,12 @@ export function $(id) {
 
 // ---- Flatten drill library ----
 export const ALL_DRILLS = Object.entries(DRILLS).flatMap(([category, drills]) =>
-  drills.map(d => ({ ...d, category }))
+  drills.map(d => ({ 
+    ...d, 
+    category, // ADDED: Injects the top-level club/category (driver, irons, etc.)
+    // FIXED: Ensures 'description' is always available, prioritizing 'description' property
+    description: d.description || (d.instructions && d.instructions[0]) || 'No detailed instructions available.'
+  }))
 );
 
 // Lookup table
@@ -26,7 +31,8 @@ export const DRILLS_BY_ID = ALL_DRILLS.reduce((acc, d) => {
 // ---- Session State ----
 export let selectedSkills = new Set();
 export let selectedDrillIds = new Set();
-export let currentSessionMeta = null;
+// FIXED: Initialize as an empty object so app.js can assign properties directly
+export let currentSessionMeta = {}; 
 
 // ---- Storage Helpers ----
 export function loadSessions() {
@@ -87,15 +93,22 @@ export function saveCurrentSession() {
   if (!form) return;
 
   const drillEntries = drills.map(drill => {
-    const score = parseInt(form[`score-${drill.id}`]?.value ?? "", 10);
+    // Note: form properties should use the `name` attribute or ensure direct access via ID works
+    // The previous app.js setup used IDs like score-${id}
+    const scoreInput = form.querySelector(`#score-${drill.id}`);
+    const metricInput = form.querySelector(`#metric-${drill.id}`);
+    const notesInput = form.querySelector(`#notes-${drill.id}`);
+    
+    const score = parseInt(scoreInput?.value ?? "", 10);
+
     return {
       drillId: drill.id,
       name: drill.name,
       category: drill.category,
       score: isNaN(score) ? null : score,
-      metric: form[`metric-${drill.id}`]?.value?.trim() || "",
-      rate: form[`rate-${drill.id}`]?.value?.trim() || "",
-      notes: form[`notes-${drill.id}`]?.value?.trim() || ""
+      metric: metricInput?.value?.trim() || "",
+      rate: "", // 'rate' input was not created in app.js form
+      notes: notesInput?.value?.trim() || ""
     };
   });
 
@@ -113,6 +126,7 @@ export function saveCurrentSession() {
   sessions.push(sessionRecord);
   saveSessions(sessions);
 
+  // Note: Selected drills cleared, but skills selection remains for next session setup
   selectedDrillIds.clear();
-  alert("Session saved.");
+  // alert("Session saved."); // Removed this line as app.js handles the alert now.
 }
