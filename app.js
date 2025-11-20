@@ -33,8 +33,14 @@ function initTabs() {
   });
 
   // Default to session tab
-  document.querySelector('.tab-button[data-tab="session"]').classList.add("active");
-  document.getElementById("session").classList.remove("hidden");
+  const defaultTab = document.querySelector('.tab-button[data-tab="session"]');
+  if (defaultTab) {
+    defaultTab.classList.add("active");
+  }
+  const sessionPane = document.getElementById("session");
+  if (sessionPane) {
+    sessionPane.classList.remove("hidden");
+  }
 }
 
 // --- Skills UI ---
@@ -144,16 +150,36 @@ function renderSelectedDrills() {
     return;
   }
 
-  const ul = document.createElement("ul");
-  ul.className = "list-disc ml-5 text-sm text-gray-700";
-
   DRILLS.filter((d) => selectedDrillIds.has(d.id)).forEach((drill) => {
-    const li = document.createElement("li");
-    li.textContent = `${drill.name} (${drill.duration} min)`;
-    ul.appendChild(li);
-  });
+    const card = document.createElement("div");
+    card.className = "border rounded-lg p-3 mb-2 bg-gray-50";
 
-  container.appendChild(ul);
+    card.innerHTML = `
+      <p class="text-sm font-semibold text-gray-800 mb-1">${drill.name}</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+        <div>
+          <label class="block text-gray-600 mb-1">Score / Result</label>
+          <input
+            type="text"
+            class="drill-score-input w-full border border-gray-300 rounded p-1"
+            data-id="${drill.id}"
+            placeholder="e.g., 7/10, +5, 14 pts"
+          />
+        </div>
+        <div>
+          <label class="block text-gray-600 mb-1">Drill Notes</label>
+          <input
+            type="text"
+            class="drill-notes-input w-full border border-gray-300 rounded p-1"
+            data-id="${drill.id}"
+            placeholder="Patterns, misses, feels..."
+          />
+        </div>
+      </div>
+    `;
+
+    container.appendChild(card);
+  });
 }
 
 // --- Drill Library tab ---
@@ -195,9 +221,10 @@ function initSaveSession() {
         ? dateInput.value
         : new Date().toISOString().slice(0, 10);
 
-    const hours = hoursInput && hoursInput.value
-      ? parseFloat(hoursInput.value)
-      : null;
+    const hours =
+      hoursInput && hoursInput.value
+        ? parseFloat(hoursInput.value)
+        : null;
 
     const location = locInput ? locInput.value : "unspecified";
     const notes = notesInput ? notesInput.value.trim() : "";
@@ -207,12 +234,27 @@ function initSaveSession() {
       return;
     }
 
+    const drillResults = Array.from(selectedDrillIds).map((id) => {
+      const scoreInput = document.querySelector(
+        `.drill-score-input[data-id="${id}"]`
+      );
+      const notesInputForDrill = document.querySelector(
+        `.drill-notes-input[data-id="${id}"]`
+      );
+      return {
+        id,
+        score: scoreInput ? scoreInput.value.trim() : "",
+        notes: notesInputForDrill ? notesInputForDrill.value.trim() : ""
+      };
+    });
+
     const session = {
       date,
       hours,
       location,
       skills: Array.from(selectedSkills),
-      drills: Array.from(selectedDrillIds),
+      drills: drillResults.map((r) => r.id), // for backward compatibility
+      drillResults,
       notes,
       createdAt: new Date().toISOString()
     };
@@ -243,7 +285,7 @@ function renderHistory() {
   if (!container) return;
 
   const sessions = loadSessions().slice().sort((a, b) => {
-    return new Date(b.createdAt) - new Date(a.createdAt);
+    return new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date);
   });
 
   container.innerHTML = "";
@@ -264,8 +306,32 @@ function renderHistory() {
 
     const dateStr = new Date(session.date || session.createdAt).toLocaleDateString();
 
-    const skillLabels = (session.skills || []).map((id) => skillMap.get(id) || id);
-    const drillNames = (session.drills || []).map((id) => drillMap.get(id) || id);
+    const skillLabels = (session.skills || []).map(
+      (id) => skillMap.get(id) || id
+    );
+    const drillNames = (session.drills || []).map(
+      (id) => drillMap.get(id) || id
+    );
+
+    let drillSectionHtml = "";
+    if (session.drillResults && session.drillResults.length > 0) {
+      const items = session.drillResults
+        .map((r) => {
+          const name = drillMap.get(r.id) || r.id;
+          const scorePart = r.score ? ` — <span class="font-semibold">${r.score}</span>` : "";
+          const notePart = r.notes ? ` <span class="text-gray-500">(${r.notes})</span>` : "";
+          return `<li>${name}${scorePart}${notePart}</li>`;
+        })
+        .join("");
+      drillSectionHtml = `
+        <p class="text-sm text-gray-700"><strong>Drills:</strong></p>
+        <ul class="list-disc ml-5 text-sm text-gray-700">${items}</ul>
+      `;
+    } else {
+      drillSectionHtml = `
+        <p class="text-sm text-gray-700"><strong>Drills:</strong> ${drillNames.join(", ")}</p>
+      `;
+    }
 
     card.innerHTML = `
       <div class="flex justify-between items-center">
@@ -274,7 +340,7 @@ function renderHistory() {
       </div>
       <p class="text-xs text-gray-500">Time: ${session.hours || "N/A"} hrs</p>
       <p class="text-sm text-gray-700"><strong>Skills:</strong> ${skillLabels.join(", ") || "None"}</p>
-      <p class="text-sm text-gray-700"><strong>Drills:</strong> ${drillNames.join(", ")}</p>
+      ${drillSectionHtml}
       ${
         session.notes
           ? `<p class="text-sm text-gray-700 mt-2"><strong>Notes:</strong> ${session.notes}</p>`
