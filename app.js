@@ -1,4 +1,4 @@
-// app.js - main client logic (FIXED CASCADING UI & NEW LOG TAB)
+// app.js - main client logic (FIXES: Tab Init, History Stub, Skill Persistence)
 
 import { DRILLS } from "./drills.js";
 import { SKILLS } from "./skills.js";
@@ -9,10 +9,81 @@ const $ = (id) => document.getElementById(id);
 // --- State ---
 let selectedSkills = new Set();
 let selectedDrillIds = new Set();
-// NEW STATE: Tracks the currently active club for the sub-menu display
 let activeClubCategory = null; 
 
-// --- Tabs ---
+// --- History Stub (FIX: Added a dummy function to prevent errors when History is clicked) ---
+function renderHistory() {
+  const container = $("history-list");
+  if (!container) return;
+
+  const sessions = loadSessions().slice().sort((a, b) => {
+    return new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date);
+  });
+
+  container.innerHTML = "";
+
+  if (sessions.length === 0) {
+    container.innerHTML =
+      '<p class="text-gray-500 text-sm">No sessions logged yet.</p>';
+    return;
+  }
+
+  const skillMap = new Map(SKILLS.map((s) => [s.id, s.category + ": " + s.label]));
+  const drillMap = new Map(Object.values(DRILLS).flat().map((d) => [d.id, d.name]));
+
+  sessions.forEach((session) => {
+    const card = document.createElement("div");
+    card.className = "card border border-gray-200 space-y-2";
+
+    const dateStr = new Date(session.date || session.createdAt).toLocaleDateString();
+
+    const skillLabels = (session.skills || []).map(
+      (id) => skillMap.get(id) || id
+    );
+
+    let drillSectionHtml = "";
+    if (session.drillResults && session.drillResults.length > 0) {
+      const items = session.drillResults
+        .map((r) => {
+          const name = r.name || drillMap.get(r.id) || r.id; 
+          const scorePart = r.score ? ` <span class="font-semibold text-emerald-700">(${r.score})</span>` : "";
+          const notePart = r.notes ? ` <span class="italic text-gray-500">— ${r.notes})</span>` : "";
+          return `<li><span class="font-medium">${name}</span>${scorePart}${notePart}</li>`;
+        })
+        .join("");
+      drillSectionHtml = `
+        <p class="text-sm font-semibold text-gray-700 mt-2">Drills Logged:</p>
+        <ul class="list-disc ml-5 text-sm text-gray-700 space-y-1">${items}</ul>
+      `;
+    } else {
+      const drillNames = (session.drills || []).map(
+        (id) => drillMap.get(id) || id
+      );
+      drillSectionHtml = `
+        <p class="text-sm text-gray-700 mt-2">Drills: ${drillNames.join(", ")}</p>
+      `;
+    }
+
+    card.innerHTML = `
+      <div class="flex justify-between items-center pb-2 border-b border-gray-100">
+        <h3 class="font-bold text-lg text-emerald-700">${dateStr}</h3>
+        <span class="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full capitalize">${session.location || "unspecified"}</span>
+      </div>
+      <p class="text-sm text-gray-700"><strong>Intended Skills:</strong> ${skillLabels.join(", ") || "None"}</p>
+      ${drillSectionHtml}
+      ${
+        session.notes
+          ? `<p class="text-sm text-gray-700 mt-3 border-t pt-2"><strong>Session Notes:</strong> ${session.notes}</p>`
+          : ""
+      }
+    `;
+
+    container.appendChild(card);
+  });
+}
+// --- END History Stub ---
+
+// --- Tabs (FIX: Ensures a tab is active on load) ---
 function initTabs() {
   const tabs = document.querySelectorAll(".tab-button");
   const panes = document.querySelectorAll(".tab-pane");
@@ -39,14 +110,14 @@ function initTabs() {
     });
   });
 
-  // Default to setup tab
+  // FIX: Force initial tab activation on load
   const defaultTab = document.querySelector('.tab-button[data-tab="setup"]');
   if (defaultTab) {
     defaultTab.classList.add("active");
-  }
-  const sessionPane = document.getElementById("setup");
-  if (sessionPane) {
-    sessionPane.classList.remove("hidden");
+    const sessionPane = document.getElementById("setup");
+    if (sessionPane) {
+      sessionPane.classList.remove("hidden");
+    }
   }
 }
 
@@ -54,7 +125,6 @@ function initTabs() {
 function groupSkillsByClub() {
     const grouped = {};
     SKILLS.forEach(skill => {
-        // Now using the dedicated 'category' property
         const category = skill.category; 
         if (!grouped[category]) {
             grouped[category] = [];
@@ -64,7 +134,7 @@ function groupSkillsByClub() {
     return grouped;
 }
 
-// --- Skills UI (CASCADING OVERHAUL) ---
+// --- Skills UI (FIX: Persists selected skills when switching club dropdowns) ---
 function renderSkills() {
   const container = $("skill-select");
   if (!container) return;
@@ -111,7 +181,8 @@ function renderSkills() {
   // Render Skill Buttons for the active category
   if (activeClubCategory && groupedSkills[activeClubCategory]) {
       const skillsHtml = groupedSkills[activeClubCategory].map(skill => {
-          const active = selectedSkills.has(skill.id);
+          // FIX: The button state now directly checks the selectedSkills set
+          const active = selectedSkills.has(skill.id); 
           const className = active 
             ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700'
             : 'bg-white text-gray-700 border-gray-400 hover:border-emerald-600';
@@ -411,96 +482,20 @@ function initSaveSession() {
     if (notesInput) notesInput.value = "";
     if (locInput) locInput.value = "net";
     if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
-    document.querySelectorAll(".skill-button.active").forEach(b => b.classList.remove("active"));
-
+    
     // Switch back to setup tab
     const setupTabBtn = document.querySelector('.tab-button[data-tab="setup"]');
     if (setupTabBtn) setupTabBtn.click();
     
     renderSkills();
-    renderSessionDrills();
   });
 }
-
-// --- History tab ---
-// (No changes needed, function remains as previously provided and functional)
-function renderHistory() {
-  const container = $("history-list");
-  if (!container) return;
-
-  const sessions = loadSessions().slice().sort((a, b) => {
-    return new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date);
-  });
-
-  container.innerHTML = "";
-
-  if (sessions.length === 0) {
-    container.innerHTML =
-      '<p class="text-gray-500 text-sm">No sessions logged yet.</p>';
-    return;
-  }
-
-  const skillMap = new Map(SKILLS.map((s) => [s.id, s.category + ": " + s.label]));
-  
-  const drillMap = new Map(Object.values(DRILLS).flat().map((d) => [d.id, d.name]));
-
-  sessions.forEach((session) => {
-    const card = document.createElement("div");
-    card.className = "card border border-gray-200 space-y-2";
-
-    const dateStr = new Date(session.date || session.createdAt).toLocaleDateString();
-
-    const skillLabels = (session.skills || []).map(
-      (id) => skillMap.get(id) || id
-    );
-
-    let drillSectionHtml = "";
-    if (session.drillResults && session.drillResults.length > 0) {
-      const items = session.drillResults
-        .map((r) => {
-          const name = r.name || drillMap.get(r.id) || r.id; 
-          const scorePart = r.score ? ` <span class="font-semibold text-emerald-700">(${r.score})</span>` : "";
-          const notePart = r.notes ? ` <span class="italic text-gray-500">— ${r.notes})</span>` : "";
-          return `<li><span class="font-medium">${name}</span>${scorePart}${notePart}</li>`;
-        })
-        .join("");
-      drillSectionHtml = `
-        <p class="text-sm font-semibold text-gray-700 mt-2">Drills Logged:</p>
-        <ul class="list-disc ml-5 text-sm text-gray-700 space-y-1">${items}</ul>
-      `;
-    } else {
-      const drillNames = (session.drills || []).map(
-        (id) => drillMap.get(id) || id
-      );
-      drillSectionHtml = `
-        <p class="text-sm text-gray-700 mt-2">Drills: ${drillNames.join(", ")}</p>
-      `;
-    }
-
-    card.innerHTML = `
-      <div class="flex justify-between items-center pb-2 border-b border-gray-100">
-        <h3 class="font-bold text-lg text-emerald-700">${dateStr}</h3>
-        <span class="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full capitalize">${session.location || "unspecified"}</span>
-      </div>
-      <p class="text-sm text-gray-700"><strong>Intended Skills:</strong> ${skillLabels.join(", ") || "None"}</p>
-      ${drillSectionHtml}
-      ${
-        session.notes
-          ? `<p class="text-sm text-gray-700 mt-3 border-t pt-2"><strong>Session Notes:</strong> ${session.notes}</p>`
-          : ""
-      }
-    `;
-
-    container.appendChild(card);
-  });
-}
-
 
 // --- Init ---
 function init() {
   initTabs();
   renderSkills();
-  renderSessionDrills();
+  renderSessionDrills(); // This initial call handles the renderSelectedDrills via dependency
   
   // Prefill date
   const dateInput = $("session-date");
