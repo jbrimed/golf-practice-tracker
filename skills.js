@@ -1,34 +1,33 @@
-// skills.js
-// Simple skill list used to filter drills
+// skills.js — canonical skill list used for filtering drills
 
 export const SKILLS = [
-  // Driver
-  { id: "driver_face", label: "Driver - Face & Start Line" },
-  { id: "driver_startline", label: "Driver - Start Direction" },
-  { id: "driver_pattern", label: "Driver - Pattern (Fade Right)" },
-  { id: "driver_dontleft", label: "Driver - Don’t Go Left" },
-  { id: "driver_speed", label: "Driver - Speed / Intent" },
+  // DRIVER
+  { id: "driver_start", label: "Driver Start Line" },
+  { id: "driver_face", label: "Driver Face Control" },
+  { id: "driver_speed", label: "Driver Speed / Power" },
+  { id: "driver_dispersion", label: "Driver Dispersion" },
 
-  // Approach / Irons
-  { id: "appr_startline", label: "Approach - Start Line" },
-  { id: "appr_distance", label: "Approach - Distance Control" },
-  { id: "appr_dispersion", label: "Approach - Dispersion" },
-  { id: "appr_trajectory", label: "Approach - Trajectory Windows" },
+  // IRONS
+  { id: "irons_start", label: "Iron Start Line" },
+  { id: "irons_distance", label: "Iron Distance Control" },
+  { id: "irons_dispersion", label: "Iron Dispersion" },
+  { id: "irons_trajectory", label: "Iron Trajectory" },
 
-  // Wedges
-  { id: "wed_distance", label: "Wedges - Distance System" },
-  { id: "wed_trajectory", label: "Wedges - Trajectory Windows" },
-  { id: "wed_pressure", label: "Wedges - Pressure / Scoring" },
+  // WEDGES
+  { id: "wedges_distance", label: "Wedge Distance Control" },
+  { id: "wedges_precision", label: "Wedge Precision" },
+  { id: "wedges_spin", label: "Wedge Spin / Control" },
+  { id: "wedges_trajectory", label: "Wedge Trajectory" },
 
-  // Short Game
-  { id: "sg_landing", label: "Short Game - Landing Spots" },
-  { id: "sg_random", label: "Short Game - Random Lies" },
-  { id: "sg_updown", label: "Short Game - Up & Down %" },
+  // SHORT GAME
+  { id: "shortgame_contact", label: "Chipping Contact" },
+  { id: "shortgame_precision", label: "Chipping Precision" },
+  { id: "shortgame_pressure", label: "Short Game Pressure" },
+  { id: "shortgame_random", label: "Random Lies / Realism" },
 
-  // Putting
-  { id: "put_start", label: "Putting - Start Line" },
-  { id: "put_short", label: "Putting - Short Putts" },
-  { id: "put_pace", label: "Putting - Pace Control" },
-  { id: "put_lag", label: "Putting - Lag Putting" },
-  { id: "put_indoor", label: "Putting - Indoor Mat Games" }
+  // PUTTING
+  { id: "putting_start", label: "Putt Start Line" },
+  { id: "putting_speed", label: "Putt Speed Control" },
+  { id: "putting_pressure", label: "Putting Pressure" },
+  { id: "putting_path", label: "Putting Path / Roll" }
 ];
