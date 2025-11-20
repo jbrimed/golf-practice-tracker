@@ -1,40 +1,42 @@
+// skills.js (MODIFIED for easier code grouping)
+
 export const SKILLS = [
 
   // -------------------------
   // DRIVER
   // -------------------------
-  { id: "driver_face", label: "Driver — Face/Start Line" },
-  { id: "driver_speed", label: "Driver — Speed / Max Intent" },
-  { id: "driver_dispersion", label: "Driver — Dispersion" },
+  { id: "driver_face", category: "Driver", label: "Face/Start Line" },
+  { id: "driver_speed", category: "Driver", label: "Speed / Max Intent" },
+  { id: "driver_dispersion", category: "Driver", label: "Dispersion" },
 
   // -------------------------
   // IRONS
   // -------------------------
-  { id: "irons_startline", label: "Irons — Start Line" },
-  { id: "irons_trajectory", label: "Irons — Trajectory / Flight" },
-  { id: "irons_distance", label: "Irons — Yardage / Gapping" },
+  { id: "irons_startline", category: "Irons", label: "Start Line" },
+  { id: "irons_trajectory", category: "Irons", label: "Trajectory / Flight" },
+  { id: "irons_distance", category: "Irons", label: "Yardage / Gapping" },
 
   // -------------------------
   // WEDGES
   // -------------------------
-  { id: "wedges_distance", label: "Wedges — Distance Control" },
-  { id: "wedges_strike", label: "Wedges — Strike / Contact" },
-  { id: "wedges_trajectory", label: "Wedges — Trajectory Variability" },
+  { id: "wedges_distance", category: "Wedges", label: "Distance Control" },
+  { id: "wedges_strike", category: "Wedges", label: "Strike / Contact" },
+  { id: "wedges_trajectory", category: "Wedges", label: "Trajectory Variability" },
 
   // -------------------------
   // SHORT GAME
   // -------------------------
-  { id: "shortgame_distance", label: "Short Game — Landing Zones" },
-  { id: "shortgame_glide", label: "Short Game — Glide / Bounce Use" },
-  { id: "shortgame_scoring", label: "Short Game — Up & Down Scoring" },
-  { id: "shortgame_strike", label: "Short Game — Strike Quality" },
+  { id: "shortgame_distance", category: "Short Game", label: "Landing Zones" },
+  { id: "shortgame_glide", category: "Short Game", label: "Glide / Bounce Use" },
+  { id: "shortgame_scoring", category: "Short Game", label: "Up & Down Scoring" },
+  { id: "shortgame_strike", category: "Short Game", label: "Strike Quality" },
 
   // -------------------------
   // PUTTING
   // -------------------------
-  { id: "putting_startline", label: "Putting — Start Line / Path" },
-  { id: "putting_speed", label: "Putting — Speed / Capture Distance" },
-  { id: "putting_break", label: "Putting — Break / Read" },
-  { id: "putting_scoring", label: "Putting — Scoring / Pressure" },
+  { id: "putting_startline", category: "Putting", label: "Start Line / Path" },
+  { id: "putting_speed", category: "Putting", label: "Speed / Capture Distance" },
+  { id: "putting_break", category: "Putting", label: "Break / Read" },
+  { id: "putting_scoring", category: "Putting", label: "Scoring / Pressure" },
 
 ];
