@@ -1,5 +1,5 @@
 // ================================
-// app.js — Minimal Upgrade Version
+// app.js — Full Rebuild (Simple)
 // ================================
 
 import { DRILLS } from "./drills.js";
@@ -13,7 +13,6 @@ const $ = (id) => document.getElementById(id);
 // ----------------------
 let selectedSkills = new Set();
 let selectedDrillIds = new Set();
-let activeClubCategory = null;
 
 // ----------------------
 // METRIC TYPES
@@ -26,177 +25,230 @@ const METRIC_TYPES = {
   CUSTOM: "CUSTOM"
 };
 
-// ----------------------
-// Determine metric type
-// ----------------------
-function getDrillMetric(drill, skillMap) {
-  const firstSkillId = drill.skills && drill.skills[0];
-  const skill = skillMap.get(firstSkillId);
+// ================================
+// HELPER — MAP STRUCTURES
+// ================================
+const allDrillsMap = new Map(Object.values(DRILLS).flat().map(d => [d.id, d]));
+const skillMap = new Map(SKILLS.map(s => [s.id, s]));
+
+// ================================
+// DETERMINE METRIC TYPE
+// ================================
+function getDrillMetric(drill) {
+  const skillId = drill.skills?.[0];
+  const skill = skillMap.get(skillId);
   return skill ? skill.metricType : METRIC_TYPES.CUSTOM;
 }
 
-// ----------------------
-// Metric Input HTML
-// ----------------------
+// ================================
+// INPUT UI BASED ON METRIC TYPE
+// ================================
 function getMetricInputHTML(id, metricType) {
   switch (metricType) {
     case METRIC_TYPES.PERCENTAGE:
-      return `
-          <label class="block text-gray-700 mb-1 font-semibold">Success %</label>
-          <input type="number" min="0" max="100" class="w-full input-style drill-score-input" data-id="${id}" placeholder="e.g. 70" />
-      `;
-    case METRIC_TYPES.NUMERIC:
-      return `
-          <label class="block text-gray-700 mb-1 font-semibold">Primary Metric</label>
-          <input type="text" class="w-full input-style drill-score-input" data-id="${id}" placeholder="e.g. 145 MPH, 3 pts" />
-      `;
+      return `<input data-id="${id}" type="number" min="0" max="100" class="input-style drill-score-input" placeholder="%" />`;
+
     case METRIC_TYPES.DISTANCE_STDDEV:
-      return `
-          <label class="block text-gray-700 mb-1 font-semibold">Carry Avg / Deviation (Yds)</label>
-          <input type="text" class="w-full input-style drill-score-input" data-id="${id}" placeholder="175 / 5" />
-      `;
+      return `<input data-id="${id}" type="text" class="input-style drill-score-input" placeholder="175 / 5" />`;
+
     case METRIC_TYPES.PROXIMITY:
-      return `
-          <label class="block text-gray-700 mb-1 font-semibold">Average Leave Distance (ft)</label>
-          <input type="number" min="0" step="0.1" class="w-full input-style drill-score-input" data-id="${id}" placeholder="2.5" />
-      `;
+      return `<input data-id="${id}" type="number" class="input-style drill-score-input" placeholder="Feet" />`;
+
     default:
-      return `
-          <label class="block text-gray-700 mb-1 font-semibold">Score</label>
-          <input type="text" class="w-full input-style drill-score-input" data-id="${id}" placeholder="8/10, good strikes" />
-      `;
+      return `<input data-id="${id}" type="text" class="input-style drill-score-input" placeholder="Score" />`;
   }
 }
 
-// ----------------------
-// Render drills in log tab
-// ----------------------
-function renderSelectedDrills() {
-  const container = $("selected-drills-log");
-  if (!container) return;
-
+// ================================
+// RENDER — SKILL SELECTION (SETUP TAB)
+// ================================
+function renderSkills() {
+  const container = $("skill-select");
   container.innerHTML = "";
 
-  if (selectedDrillIds.size === 0) {
-    container.innerHTML =
-      `<p class="text-lg text-gray-500 italic mt-8 text-center">
-        No drills selected.
-      </p>`;
-    return;
-  }
+  SKILLS.forEach(skill => {
+    const div = document.createElement("div");
+    div.className = "flex items-center space-x-3 mb-2";
 
-  const allDrillsMap = new Map(Object.values(DRILLS).flat().map(d => [d.id, d]));
-  const skillMap = new Map(SKILLS.map(s => [s.id, s]));
-
-  Array.from(selectedDrillIds).forEach((id) => {
-    const drill = allDrillsMap.get(id);
-    if (!drill) return;
-
-    const metricType = getDrillMetric(drill, skillMap);
-
-    const card = document.createElement("div");
-    card.className = "border border-gray-200 rounded-xl p-5 bg-white shadow-lg";
-
-    card.innerHTML = `
-      <div class="flex justify-between items-start mb-3 border-b pb-3">
-        <h3 class="text-xl font-bold text-gray-900">${drill.name}</h3>
-        <button data-id="${drill.id}" class="remove-drill text-red-500 text-sm font-medium hover:underline">Remove</button>
-      </div>
-
-      <p class="text-sm text-gray-600 mb-4">${drill.description}</p>
-      <p class="text-xs text-gray-500 mb-4">Metric: ${metricType}</p>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-        <div>${getMetricInputHTML(id, metricType)}</div>
-        <div class="md:col-span-2">
-          <label class="block text-gray-700 mb-1 font-semibold">Notes</label>
-          <input type="text" class="w-full input-style drill-notes-input" data-id="${id}" placeholder="Observations..." />
-        </div>
-      </div>
+    div.innerHTML = `
+      <input type="checkbox" data-skill="${skill.id}" class="skill-check h-4 w-4" />
+      <label class="text-gray-800">${skill.label}</label>
     `;
 
-    container.appendChild(card);
-
-    card.querySelector(".remove-drill")?.addEventListener("click", (e) => {
-      selectedDrillIds.delete(id);
-      renderSelectedDrills();
+    div.querySelector("input").addEventListener("change", (e) => {
+      if (e.target.checked) selectedSkills.add(skill.id);
+      else selectedSkills.delete(skill.id);
+      renderDrillSelect();
     });
+
+    container.appendChild(div);
   });
 }
 
-// ----------------------
-// Save session w/ structured metrics
-// ----------------------
+// ================================
+// RENDER — DRILL SELECTION LIST
+// ================================
+function renderDrillSelect() {
+  const container = $("drill-select");
+  container.innerHTML = "";
+
+  const filtered = Object.values(DRILLS)
+    .flat()
+    .filter(d => d.skills.some(s => selectedSkills.has(s)));
+
+  if (!filtered.length) {
+    container.innerHTML = `<p class="text-gray-600">Select skills to see drills.</p>`;
+    return;
+  }
+
+  filtered.forEach(drill => {
+    const card = document.createElement("div");
+    card.className = "card";
+
+    card.innerHTML = `
+      <h3 class="text-lg font-bold">${drill.name}</h3>
+      <p class="text-sm text-gray-600 mb-3">${drill.description}</p>
+      <button data-id="${drill.id}" class="add-drill bg-black text-white px-3 py-2 rounded-lg text-sm">
+        Add Drill
+      </button>
+    `;
+
+    card.querySelector(".add-drill").addEventListener("click", () => {
+      selectedDrillIds.add(drill.id);
+      renderSelectedDrills();
+      updateGoToLogButton();
+    });
+
+    container.appendChild(card);
+  });
+}
+
+// ================================
+// RENDER — SELECTED DRILLS IN LOG
+// ================================
+function renderSelectedDrills() {
+  const container = $("selected-drills-log");
+  container.innerHTML = "";
+
+  if (selectedDrillIds.size === 0) {
+    container.innerHTML = `<p>No drills selected.</p>`;
+    return;
+  }
+
+  Array.from(selectedDrillIds).forEach(id => {
+    const drill = allDrillsMap.get(id);
+    const metricType = getDrillMetric(drill);
+
+    const card = document.createElement("div");
+    card.className = "card";
+
+    card.innerHTML = `
+      <h3 class="text-lg font-bold mb-2">${drill.name}</h3>
+      <label class="text-sm font-semibold">Score</label>
+      ${getMetricInputHTML(id, metricType)}
+
+      <label class="text-sm font-semibold mt-3 block">Notes</label>
+      <textarea data-id="${id}" class="drill-notes-input input-style w-full"></textarea>
+
+      <button data-id="${id}" class="remove-drill mt-3 text-red-600 text-sm underline">Remove</button>
+    `;
+
+    card.querySelector(".remove-drill").addEventListener("click", () => {
+      selectedDrillIds.delete(id);
+      renderSelectedDrills();
+      updateGoToLogButton();
+    });
+
+    container.appendChild(card);
+  });
+}
+
+// ================================
+// BUTTON — UPDATE COUNT
+// ================================
+function updateGoToLogButton() {
+  $("go-to-log").innerText = `Go to Practice Log (${selectedDrillIds.size} drills)`;
+}
+
+// ================================
+// SAVE SESSION
+// ================================
 function initSaveSession() {
-  const btn = $("save-session");
-  const allDrillsMap = new Map(Object.values(DRILLS).flat().map(d => [d.id, d]));
-  const skillMap = new Map(SKILLS.map(s => [s.id, s]));
+  $("save-session").addEventListener("click", () => {
+    const sessions = loadSessions();
 
-  btn.addEventListener("click", () => {
-    const dateInput = $("session-date");
-    const locInput = $("session-location");
-    const notesInput = $("session-notes");
-
-    const date = dateInput?.value || new Date().toISOString().slice(0, 10);
-    const location = locInput?.value || "unspecified";
-    const notes = notesInput?.value.trim() || "";
-
-    const drillResults = Array.from(selectedDrillIds).map((id) => {
+    const drillResults = Array.from(selectedDrillIds).map(id => {
       const scoreInput = document.querySelector(`.drill-score-input[data-id="${id}"]`);
-      const notesInputForDrill = document.querySelector(`.drill-notes-input[data-id="${id}"]`);
+      const notesInput = document.querySelector(`.drill-notes-input[data-id="${id}"]`);
 
       const raw = scoreInput?.value.trim() || "";
       let numeric = null;
       const match = raw.match(/[-+]?\d*\.?\d+/);
       if (match) numeric = parseFloat(match[0]);
 
-      const metricType = getDrillMetric(allDrillsMap.get(id), skillMap);
-
       return {
         id,
-        name: allDrillsMap.get(id)?.name || id,
-        score: { raw, numeric, type: metricType },
-        notes: notesInputForDrill?.value.trim() || ""
+        name: allDrillsMap.get(id)?.name,
+        score: { raw, numeric },
+        notes: notesInput.value.trim()
       };
     });
 
     const session = {
-      date,
-      location,
+      date: $("session-date").value || new Date().toISOString().slice(0,10),
+      location: $("session-location").value,
       skills: Array.from(selectedSkills),
       drills: Array.from(selectedDrillIds),
       drillResults,
-      notes,
+      notes: $("session-notes").value.trim(),
       createdAt: new Date().toISOString()
     };
 
     saveSession(session);
-    alert("Saved.");
-
-    selectedSkills = new Set();
-    selectedDrillIds = new Set();
-    renderSelectedDrills();
+    alert("Session saved.");
   });
 }
 
-// ----------------------
-// Analytics
-// ----------------------
+// ================================
+// HISTORY VIEW
+// ================================
+function renderHistory() {
+  const container = $("history-list");
+  const sessions = loadSessions();
+
+  container.innerHTML = "";
+
+  if (!sessions.length) {
+    container.innerHTML = "<p>No past sessions.</p>";
+    return;
+  }
+
+  sessions.forEach(s => {
+    const div = document.createElement("div");
+    div.className = "card";
+
+    div.innerHTML = `
+      <h3 class="font-bold">${s.date} — ${s.location}</h3>
+      <p class="text-sm text-gray-600">${s.drills.length} drills</p>
+    `;
+
+    container.appendChild(div);
+  });
+}
+
+// ================================
+// ANALYTICS
+// ================================
 function renderAnalytics() {
   const container = $("analytics-container");
   const sessions = loadSessions();
 
-  if (!sessions.length) {
-    container.innerHTML = "<p>No sessions logged.</p>";
-    return;
-  }
-
-  const numericScores = sessions
-    .flatMap(s => s.drillResults || [])
-    .filter(d => d.score && d.score.numeric !== null);
+  const numericScores = sessions.flatMap(s =>
+    (s.drillResults || []).filter(d => d.score.numeric !== null)
+  );
 
   if (!numericScores.length) {
-    container.innerHTML = "<p>No numeric scores to analyze yet.</p>";
+    container.innerHTML = "<p>No numeric data yet.</p>";
     return;
   }
 
@@ -204,15 +256,15 @@ function renderAnalytics() {
 
   container.innerHTML = `
     <div class="card">
-      <h3 class="text-xl font-bold">Overall Avg Metric</h3>
-      <p class="text-lg">${avg.toFixed(2)}</p>
+      <h3 class="text-xl font-bold">Overall Average</h3>
+      <p>${avg.toFixed(2)}</p>
     </div>
   `;
 }
 
-// ----------------------
-// Tab Logic (Add analytics trigger)
-// ----------------------
+// ================================
+// TABS
+// ================================
 function initTabs() {
   document.querySelectorAll(".tab-button").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -224,18 +276,21 @@ function initTabs() {
       btn.classList.add("active");
       document.getElementById(tab).classList.remove("hidden");
 
+      if (tab === "history") renderHistory();
       if (tab === "analytics") renderAnalytics();
+      if (tab === "log") renderSelectedDrills();
     });
   });
 }
 
-// ----------------------
-// Initialize
-// ----------------------
+// ================================
+// INIT
+// ================================
 function init() {
-  initTabs();
+  renderSkills();
+  renderDrillSelect();
   initSaveSession();
-  renderSelectedDrills();
+  initTabs();
 }
 
 init();
