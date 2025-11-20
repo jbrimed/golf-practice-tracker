@@ -9,253 +9,223 @@ export const DRILLS = {
   // ======================================================
   driver: [
 
-    {
-      id: "driver_fade_window",
-      name: "Fade Window Challenge",
-      skills: ["driver_start", "driver_face", "driver_dispersion"],
-      duration: 20,
-      description: "Hit intentional fades. Ball must finish right of center but not overcurve. Track % fairway-width hits."
-    },
+  {
+    id: "driver_fade_window",
+    name: "Fade Window Challenge",
+    skills: ["driver_face", "driver_dispersion"],
+    duration: 20,
+    description: "Hit intentional fades. Ball must finish right of center but not overcurve. Track % fairway-width hits."
+  },
 
-    {
-      id: "driver_no_left_10",
-      name: "Don't Go Left — 10 Ball Test",
-      skills: ["driver_face", "driver_start", "driver_dispersion"],
-      duration: 15,
-      description: "Hit 10 balls. Any finishing left of target = fail. Score = balls finishing right or within neutral corridor."
-    },
+  {
+    id: "driver_no_left_10",
+    name: "Don't Go Left — 10 Ball Test",
+    skills: ["driver_face", "driver_dispersion"],
+    duration: 15,
+    description: "Hit 10 balls. Any finishing left of target = fail. Score = balls finishing right or within corridor."
+  },
 
-    {
-      id: "driver_big_carry_fairway",
-      name: "Max Carry + Fairway",
-      skills: ["driver_speed", "driver_dispersion"],
-      duration: 15,
-      description: "Max intent swings. Score = (carry score) + (direction score). Wide first, narrow later."
-    },
+  {
+    id: "driver_big_carry_fairway",
+    name: "Max Carry + Fairway",
+    skills: ["driver_speed", "driver_dispersion"],
+    duration: 15,
+    description: "Max intent swings. Score carry + direction separately."
+  },
 
-    {
-      id: "driver_40y_corridor",
-      name: "40–20 Yard Narrowing Corridor",
-      skills: ["driver_dispersion", "driver_start"],
-      duration: 15,
-      description: "Start with 40-yard width, shrink by 5 yards each successful 3-shot streak. End session when you fail twice."
-    },
+  {
+    id: "driver_40y_corridor",
+    name: "40–20 Yard Narrowing Corridor",
+    skills: ["driver_dispersion"],
+    duration: 15,
+    description: "Start 40y width, shrink by 5 yards every 3 successful shots. End session on two fails."
+  },
 
-    {
-      id: "driver_tee_height_variability",
-      name: "Variable Tee Height Control",
-      skills: ["driver_start", "driver_face"],
-      duration: 15,
-      description: "Alternate three tee heights: low, stock, high. Track start line stability and curve bias."
-    },
+  {
+    id: "driver_tee_height_variability",
+    name: "Variable Tee Height Control",
+    skills: ["driver_face"],
+    duration: 15,
+    description: "Alternate three tee heights: low, stock, high. Track start line and curve bias."
+  },
 
-    {
-      id: "driver_hold_fade_low",
-      name: "Low Launch Hold Fade",
-      skills: ["driver_start", "driver_face", "driver_trajectory"],
-      duration: 15,
-      description: "Hit low launch fades (<12°). Start slightly left, finish right. Score based on curvature control."
-    },
+  {
+    id: "driver_hold_fade_low",
+    name: "Low Launch Hold Fade",
+    skills: ["driver_face", "driver_trajectory", "driver_dispersion"],
+    duration: 15,
+    description: "Hit low launch fades (<12°). Must finish right with controlled curvature."
+  },
 
-    {
-      id: "driver_3_target_rotation",
-      name: "3 Targets — Randomized",
-      skills: ["driver_start", "driver_dispersion", "driver_decision"],
-      duration: 20,
-      description: "Pick three targets (left edge, center, right edge). Randomly call targets. Score % accuracy per target."
-    },
+  {
+    id: "driver_3_target_rotation",
+    name: "3 Targets — Randomized",
+    skills: ["driver_dispersion"],
+    duration: 20,
+    description: "Pick 3 targets. Randomly call targets. Score % accuracy per target."
+  },
 
-    {
-      id: "driver_speed_ladder",
-      name: "Speed Intent Ladder",
-      skills: ["driver_speed"],
-      duration: 12,
-      description: "Cycle normal → fast → max → fast → normal. Track ball speed and dispersion at high intent."
-    },
+  {
+    id: "driver_speed_ladder",
+    name: "Speed Intent Ladder",
+    skills: ["driver_speed"],
+    duration: 12,
+    description: "Cycle normal → fast → max → fast → normal. Track ball speed and dispersion."
+  },
 
-    {
-      id: "driver_last_ball_pressure",
-      name: "Last Ball Pressure Challenge",
-      skills: ["driver_pressure", "driver_dispersion"],
-      duration: 10,
-      description: "Hit 5 balls. Only the LAST ball counts. Must finish within right-half corridor. Reset if miss."
-    },
+  {
+    id: "driver_last_ball_pressure",
+    name: "Last Ball Pressure Challenge",
+    skills: ["driver_dispersion"],
+    duration: 10,
+    description: "Hit 5 balls. Only final ball counts. Must finish right/neutral."
+  },
 
-    {
-      id: "driver_face_map_tracking",
-      name: "Face Impact Cluster",
-      skills: ["driver_face"],
-      duration: 12,
-      description: "Use impact spray. Score based on cluster tightness + relative heel/toe bias trends."
-    },
+  {
+    id: "driver_face_map_tracking",
+    name: "Face Impact Cluster",
+    skills: ["driver_face"],
+    duration: 12,
+    description: "Use impact spray. Score based on clustering and heel/toe bias trends."
+  },
 
-    {
-      id: "driver_miss_pattern_awareness",
-      name: "Miss Pattern Mapping",
-      skills: ["driver_dispersion"],
-      duration: 18,
-      description: "10 drives. Log miss direction, curvature, and strike. Goal is consistency of miss—not perfection."
-    },
+  {
+    id: "driver_miss_pattern_awareness",
+    name: "Miss Pattern Mapping",
+    skills: ["driver_dispersion"],
+    duration: 18,
+    description: "10 drives. Log miss direction, curvature, and strike bias. Goal = predictable pattern."
+  },
 
-    {
-      id: "driver_course_sim",
-      name: "Simulated Driving Round (Net or Sim)",
-      skills: ["driver_dispersion", "driver_start", "driver_pressure"],
-      duration: 25,
-      description: "Pretend you're playing a course. Call a target for each hole. Track fairways hit and big left misses."
-    }
+  {
+    id: "driver_course_sim",
+    name: "Simulated Driving Round",
+    skills: ["driver_dispersion"],
+    duration: 25,
+    description: "Pretend you're playing holes. Track fairways and big misses."
+  }
 
-  ],
-
-  // ======================================================
-  // ================ PLACEHOLDERS (TO FILL) ==============
-  // ======================================================
+],
 
     // ======================================================
   // ======================== IRONS =======================
   // ======================================================
   irons: [
 
-    // ─────────── Distance Control ───────────
-
     {
-      id: "irons_distance_3_targets",
-      name: "3 Distance Targets (Random)",
-      skills: ["irons_distance", "irons_dispersion"],
-      duration: 20,
-      description: "Pick 3 targets (e.g., 145, 160, 175). Randomly select before each shot. Score accuracy within ±5y."
+      id: "irons_start_10targets",
+      name: "10 Target Start-Line Challenge",
+      category: "irons",
+      skills: ["irons_startline"],
+      description: "Pick 10 targets across the range. Each shot must start within 2° of intended line. Track makes/misses.",
+      duration: 15
     },
 
     {
-      id: "irons_ladder_up_down",
-      name: "Distance Ladder Up + Down",
-      skills: ["irons_distance"],
-      duration: 20,
-      description: "Increase 10y per shot up to a max distance, then decrease. Must stay within ±5y to continue ladder."
+      id: "irons_gate_lowtees",
+      name: "Gate Start-Line Drill (Tees)",
+      category: "irons",
+      skills: ["irons_startline"],
+      description: "Place two tees just wider than clubface just ahead of ball. Ball must pass cleanly between tees.",
+      duration: 10
     },
 
     {
-      id: "irons_stock_number_reps",
-      name: "Stock Distance Repetition",
-      skills: ["irons_distance", "irons_consistency"],
-      duration: 15,
-      description: "Pick your stock yardage for one iron (e.g., 165). Hit 10 balls, log carry variance."
+      id: "irons_startline_leftbias",
+      name: "Start Line w/ Left Bias",
+      category: "irons",
+      skills: ["irons_startline"],
+      description: "Intentionally start every iron shot slightly left of target to train avoiding push / block patterns.",
+      duration: 12
     },
 
     {
-      id: "irons_spread_vs_focus",
-      name: "Spread vs Focus",
-      skills: ["irons_distance"],
-      duration: 18,
-      description: "Hit 5 balls at a wide range (120→170), then 5 at a single target. Compare consistency."
+      id: "irons_tight_window",
+      name: "Tight Shot Window (5yd L/R)",
+      category: "irons",
+      skills: ["irons_startline"],
+      description: "Pick one target. Score 1 point each time the ball finishes within ±5 yards horizontally. Track out of 20.",
+      duration: 20
     },
 
-
-    // ─────────── Dispersion / Targeting ───────────
-
-    {
-      id: "irons_30y_window",
-      name: "30-Yard Window Challenge",
-      skills: ["irons_dispersion", "irons_start"],
-      duration: 15,
-      description: "Ball must finish inside 30y fairway width. Tighten to 25→20→15 as you pass thresholds."
-    },
+    // -----------------------------
+    // TRAJECTORY
+    // -----------------------------
 
     {
-      id: "irons_left_right_bias",
-      name: "Directional Bias Mapping",
-      skills: ["irons_dispersion", "irons_start"],
-      duration: 15,
-      description: "Hit 10 balls and map where shots finish left/right. Goal is predictable bias, not perfection."
-    },
-
-    {
-      id: "irons_green_hit_pct",
-      name: "Sim Green Hit % (By Distance)",
-      skills: ["irons_dispersion"],
-      duration: 20,
-      description: "Create a target circle ±8y depth, ±10y width. Track GIR % at chosen yardage."
-    },
-
-    {
-      id: "irons_random_target_side",
-      name: "Randomized Start-Line Challenge",
-      skills: ["irons_start"],
-      duration: 15,
-      description: "Alternate between left-edge, center, right-edge target lines. Track execution consistency."
-    },
-
-
-    // ─────────── Curvature Control ───────────
-
-    {
-      id: "irons_stock_vs_curve",
-      name: "Stock vs Intentional Curve",
-      skills: ["irons_shape", "irons_start"],
-      duration: 20,
-      description: "Hit 5 stock → 5 draws → 5 fades. Score based on curve staying <15y offline."
-    },
-
-    {
-      id: "irons_low_hold_fade",
-      name: "Low Launch Hold Fade",
-      skills: ["irons_shape", "irons_start", "irons_trajectory"],
-      duration: 15,
-      description: "Lower flight + hold fade. Start slightly left, finish right, spin stable."
-    },
-
-    {
-      id: "irons_tight_draw",
-      name: "Tight Draw Execution",
-      skills: ["irons_shape"],
-      duration: 15,
-      description: "Small draw (<8y). Harder than big push-draw. Track curve magnitude."
-    },
-
-
-    // ─────────── Trajectory Variability ───────────
-
-    {
-      id: "irons_low_mid_high",
-      name: "Low / Mid / High Rotation",
+      id: "irons_lowmidhigh",
+      name: "Low / Mid / High Ladders",
+      category: "irons",
       skills: ["irons_trajectory"],
-      duration: 15,
-      description: "Alternate 3 trajectories. Score based on peak height relative to target windows."
+      description: "Hit 3 levels of trajectory at same target: low, mid, high. Must hit each twice before moving on.",
+      duration: 15
     },
 
     {
-      id: "irons_low_spin_penetrating",
-      name: "Low Spin Penetrating Flight",
+      id: "irons_holdoff_lowflight",
+      name: "Hold-Off Low Flight",
+      category: "irons",
       skills: ["irons_trajectory"],
-      duration: 12,
-      description: "Lower peak height without losing directional control. Useful in wind."
-    },
-
-
-    // ─────────── Pressure / Simulation ───────────
-
-    {
-      id: "irons_last_ball_matters",
-      name: "Last Ball Matters",
-      skills: ["irons_pressure", "irons_dispersion"],
-      duration: 12,
-      description: "Hit 5–8 balls but only FINAL ball counts. Forces mental commitment."
+      description: "Hit flighted shots with reduced dynamic loft and controlled face. Score based on carry consistency ±3 yds.",
+      duration: 12
     },
 
     {
-      id: "irons_course_sim",
-      name: "Sim Approach Round",
-      skills: ["irons_dispersion", "irons_decision"],
-      duration: 25,
-      description: "Use 6–7 approach shots from random real hole positions. Score greens hit or target zones."
+      id: "irons_highspin_challenge",
+      name: "High Launch / High Spin Challenge",
+      category: "irons",
+      skills: ["irons_trajectory"],
+      description: "Open face slightly, add speed, shallow attack. Score shots that finish within a tighter landing zone.",
+      duration: 15
     },
 
     {
-      id: "irons_hazard_avoid",
-      name: "Left Hazard Avoidance",
-      skills: ["irons_start", "irons_decision"],
-      duration: 15,
-      description: "Define left OB zone. Any ball finishing in zone resets score. Goal: directional bias to safe side."
+      id: "irons_wind_stability",
+      name: "Wind Stability (Crosswinds or Sim)",
+      category: "irons",
+      skills: ["irons_trajectory"],
+      description: "Match intent to wind direction: hold line into wind, fall with wind. Track accuracy against target.",
+      duration: 20
+    },
+
+    // -----------------------------
+    // DISTANCE CONTROL / GAPPING
+    // -----------------------------
+
+    {
+      id: "irons_5yd_ladder",
+      name: "5-Yard Increment Ladder",
+      category: "irons",
+      skills: ["irons_distance"],
+      description: "Pick base distance (e.g., 150). Hit shots +5 / +10 / +15 / -5 / -10 yards. Must land within ±3 yards.",
+      duration: 20
+    },
+
+    {
+      id: "irons_threeclub_distances",
+      name: "3-Club Gapping Test",
+      category: "irons",
+      skills: ["irons_distance"],
+      description: "Choose 3 consecutive irons and record avg carry. Must maintain consistent spacing between clubs.",
+      duration: 25
+    },
+
+    {
+      id: "irons_randomizer",
+      name: "Distance Randomizer",
+      category: "irons",
+      skills: ["irons_distance"],
+      description: "Use random number generator to pick range distances. Score based on landing zone accuracy ±5 yds.",
+      duration: 20
+    },
+
+    {
+      id: "irons_pressure_10shots",
+      name: "10 Shot Distance Pressure Test",
+      category: "irons",
+      skills: ["irons_distance"],
+      description: "Pick exact carry (e.g., 165). Score 1 point per shot inside ±3 yds. 7+ points = pass.",
+      duration: 15
     }
 
   ],
