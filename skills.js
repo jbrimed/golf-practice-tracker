@@ -1,44 +1,57 @@
-export const SKILLS = [
-  // === BALL START & DIRECTIONAL CONTROL ===
-  { id: "start_line", label: "Start Line", category: "direction" },
-  { id: "face_control", label: "Face Control", category: "direction" },
-  { id: "path_control", label: "Swing Path", category: "direction" },
-  { id: "pattern", label: "Shot Pattern", category: "direction" },
-  { id: "anti_left", label: "Anti-Left Bias", category: "direction" },
+// skills.js — hierarchical skill taxonomy
 
-  // === BALL-STRIKING ===
-  { id: "strike", label: "Strike Location", category: "impact" },
-  { id: "low_point", label: "Low Point", category: "impact" },
-  { id: "spin_axis", label: "Spin Axis Control", category: "impact" },
-  { id: "impact_height", label: "Vertical Impact", category: "impact" },
+export const SKILL_TREE = {
+  driver: {
+    label: "Driver",
+    skills: [
+      { id: "driver_face", label: "Face Control" },
+      { id: "driver_startline", label: "Start Direction" },
+      { id: "driver_dontgo_left", label: "Don’t Go Left" },
+      { id: "driver_speed", label: "Speed / Intent" },
+      { id: "driver_dispersion", label: "Dispersion Windows" }
+    ]
+  },
 
-  // === DISTANCE & TRAJECTORY ===
-  { id: "distance", label: "Distance Control", category: "distance" },
-  { id: "trajectory", label: "Trajectory Control", category: "trajectory" },
-  { id: "launch", label: "Launch Control", category: "trajectory" },
-  { id: "spin", label: "Spin Control", category: "trajectory" },
+  approach: {
+    label: "Approach",
+    skills: [
+      { id: "appr_startline", label: "Start Line Control" },
+      { id: "appr_distance", label: "Distance Control" },
+      { id: "appr_dispersion", label: "Dispersion" },
+      { id: "appr_trajectory", label: "Trajectory Windows" },
+      { id: "appr_club_selection", label: "Club Strategy" }
+    ]
+  },
 
-  // === SKILL ADAPTATION ===
-  { id: "adaptation", label: "Adaptive Shotmaking", category: "adaptation" },
-  { id: "sequencing", label: "Sequencing / Kinematics", category: "adaptation" },
-  { id: "variation", label: "Shot Variation", category: "adaptation" },
+  wedges: {
+    label: "Wedges",
+    skills: [
+      { id: "wed_dist_system", label: "Distance System" },
+      { id: "wed_trajectory", label: "Trajectory Windows" },
+      { id: "wed_spin_launch", label: "Launch/Spin Windows" },
+      { id: "wed_pressure", label: "Pressure / Randomization" }
+    ]
+  },
 
-  // === PRESSURE / GAMEPLAY ===
-  { id: "pressure", label: "Pressure / Nervous System", category: "performance" },
-  { id: "confidence", label: "Confidence", category: "performance" },
-  { id: "decision_making", label: "Decision-Making", category: "performance" },
-  { id: "scoring", label: "Scoring Resilience", category: "performance" },
+  shortgame: {
+    label: "Short Game",
+    skills: [
+      { id: "sg_landing", label: "Landing Spot Control" },
+      { id: "sg_random", label: "Random Lies / Reactivity" },
+      { id: "sg_contact", label: "Contact Quality" },
+      { id: "sg_updown", label: "Up & Down % Games" }
+    ]
+  },
 
-  // === SHORT GAME SPECIFIC ===
-  { id: "landing_spot", label: "Landing Spot Control", category: "short_game" },
-  { id: "lie_adjustment", label: "Lie Adjustment", category: "short_game" },
-  { id: "bounce_usage", label: "Bounce Usage", category: "short_game" },
-  { id: "touch", label: "Touch / Speed Feel", category: "short_game" },
-
-  // === PUTTING SPECIFIC ===
-  { id: "pace", label: "Pace Control", category: "putting" },
-  { id: "capture_speed", label: "Capture Speed", category: "putting" },
-  { id: "aim", label: "Aim & Read", category: "putting" },
-  { id: "path", label: "Path Control", category: "putting" },
-  { id: "break_reading", label: "Break Reading", category: "putting" }
-];
+  putting: {
+    label: "Putting",
+    skills: [
+      { id: "put_start", label: "Start Line" },
+      { id: "put_pace", label: "Pace Control" },
+      { id: "put_short", label: "Short Putts (inside 10ft)" },
+      { id: "put_lag", label: "Lag Putting" },
+      { id: "put_pressure", label: "Pressure Games" },
+      { id: "put_indoor", label: "Indoor Mat Games" }
+    ]
+  }
+};

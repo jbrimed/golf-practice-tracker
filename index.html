@@ -1,25 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Golf Practice Tracker</title>
-
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   body { background:#f5f7fa; font-family: Inter, sans-serif; }
-  .tab-button.active { border-bottom:3px solid #10b981; color:#059669; font-weight:600; }
   .card { background:white; border-radius:1rem; padding:1.25rem; box-shadow:0 4px 12px rgba(0,0,0,0.07); }
+  .tab-button.active { border-bottom:3px solid #10b981; color:#059669; font-weight:600; }
 </style>
 </head>
-
 <body>
 <div class="max-w-4xl mx-auto">
 
 <header class="bg-white shadow-md sticky top-0 p-4 z-10">
   <h1 class="text-2xl font-bold text-gray-800">Golf Practice</h1>
   <nav class="flex space-x-4 mt-2">
-    <button class="tab-button active" data-tab="session-config">New Session</button>
+    <button class="tab-button" data-tab="session">New Session</button>
     <button class="tab-button" data-tab="drills">Drill Library</button>
     <button class="tab-button" data-tab="history">History</button>
   </nav>
@@ -27,47 +25,48 @@
 
 <main class="p-4 space-y-8">
 
-<section id="session-config" class="tab-pane space-y-6">
+<!-- SESSION TAB -->
+<section id="session" class="tab-pane hidden space-y-6">
 
   <div class="card">
     <h2 class="text-xl font-semibold mb-3">Session Setup</h2>
 
     <label class="block mb-2 text-sm font-medium">Practice Time (hours)</label>
-    <input type="number" id="input-hours" class="w-full border p-2 rounded" placeholder="1.5">
+    <input type="number" id="session-duration" class="w-full border p-2 rounded" placeholder="1.5">
 
     <label class="block mt-4 mb-2 text-sm font-medium">Practice Location</label>
-    <select id="input-location" class="w-full border p-2 rounded">
+    <select id="session-location" class="w-full border p-2 rounded">
       <option value="net">Net (Home)</option>
       <option value="range">Range</option>
       <option value="sim">Simulator</option>
       <option value="course">On-Course</option>
       <option value="putting">Indoor Putting Mat</option>
     </select>
-
-    <button id="start-session-btn" class="w-full mt-4 bg-black text-white p-3 rounded font-bold">
-      Start Session
-    </button>
   </div>
 
   <div class="card">
-    <h2 class="text-xl font-semibold mb-3">Select Skills</h2>
-    <div id="skill-select" class="flex flex-wrap gap-2"></div>
+    <h2 class="text-xl font-semibold mb-3">Skills</h2>
+    <div id="skill-select" class="grid grid-cols-2 gap-3"></div>
   </div>
 
   <div class="card">
-    <h2 class="text-xl font-semibold mb-3">Matching Drills</h2>
-    <div id="drill-list" class="space-y-4"></div>
+    <h2 class="text-xl font-semibold mb-3">Drills</h2>
+    <div id="drill-select" class="space-y-4"></div>
   </div>
+
+  <button id="start-session" class="w-full bg-emerald-600 text-white p-3 rounded font-bold">
+    Start Session
+  </button>
 
 </section>
 
-<section id="session-log" class="tab-pane hidden space-y-6">
-  </section>
-
+<!-- DRILLS TAB -->
 <section id="drills" class="tab-pane hidden">
   <h2 class="text-xl font-semibold mb-4">All Drills</h2>
-  <div id="all-drill-list" class="space-y-4"></div> </section>
+  <div id="drill-list" class="space-y-4"></div>
+</section>
 
+<!-- HISTORY TAB -->
 <section id="history" class="tab-pane hidden">
   <h2 class="text-xl font-semibold mb-4">Past Sessions</h2>
   <div id="history-list" class="space-y-4"></div>
@@ -76,22 +75,6 @@
 </main>
 </div>
 
-<script type="module" src="./app.js"></script>
-<script>
-  // Basic tab switching
-  document.querySelectorAll(".tab-button").forEach(btn => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".tab-button").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-
-      const tab = btn.dataset.tab;
-      document.querySelectorAll(".tab-pane").forEach(pane => {
-        pane.classList.add("hidden");
-      });
-      document.getElementById(tab).classList.remove("hidden");
-    });
-  });
-</script>
-
+<script type="module" src="./js/app.js"></script>
 </body>
 </html>
