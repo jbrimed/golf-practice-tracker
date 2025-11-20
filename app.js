@@ -118,6 +118,8 @@ function renderSessionDrills() {
       <p class="text-xs text-gray-500">~${drill.duration} min</p>
     `;
 
+    card.style.marginBottom = "0.5rem";
+
     container.appendChild(card);
   });
 
@@ -212,7 +214,6 @@ function initSaveSession() {
 
   btn.addEventListener("click", () => {
     const dateInput = $("session-date");
-    const hoursInput = $("session-hours");
     const locInput = $("session-location");
     const notesInput = $("session-notes");
 
@@ -220,11 +221,6 @@ function initSaveSession() {
       dateInput && dateInput.value
         ? dateInput.value
         : new Date().toISOString().slice(0, 10);
-
-    const hours =
-      hoursInput && hoursInput.value
-        ? parseFloat(hoursInput.value)
-        : null;
 
     const location = locInput ? locInput.value : "unspecified";
     const notes = notesInput ? notesInput.value.trim() : "";
@@ -250,10 +246,9 @@ function initSaveSession() {
 
     const session = {
       date,
-      hours,
       location,
       skills: Array.from(selectedSkills),
-      drills: drillResults.map((r) => r.id), // for backward compatibility
+      drills: drillResults.map((r) => r.id), // keep ids as a flat list too
       drillResults,
       notes,
       createdAt: new Date().toISOString()
@@ -266,7 +261,6 @@ function initSaveSession() {
     selectedSkills = new Set();
     selectedDrillIds = new Set();
     if (notesInput) notesInput.value = "";
-    if (hoursInput) hoursInput.value = "";
     if (locInput) locInput.value = "net";
 
     // Uncheck all skill checkboxes
@@ -309,9 +303,6 @@ function renderHistory() {
     const skillLabels = (session.skills || []).map(
       (id) => skillMap.get(id) || id
     );
-    const drillNames = (session.drills || []).map(
-      (id) => drillMap.get(id) || id
-    );
 
     let drillSectionHtml = "";
     if (session.drillResults && session.drillResults.length > 0) {
@@ -328,6 +319,9 @@ function renderHistory() {
         <ul class="list-disc ml-5 text-sm text-gray-700">${items}</ul>
       `;
     } else {
+      const drillNames = (session.drills || []).map(
+        (id) => drillMap.get(id) || id
+      );
       drillSectionHtml = `
         <p class="text-sm text-gray-700"><strong>Drills:</strong> ${drillNames.join(", ")}</p>
       `;
@@ -338,15 +332,16 @@ function renderHistory() {
         <h3 class="font-semibold text-emerald-700">${dateStr}</h3>
         <span class="text-xs bg-gray-100 px-2 py-1 rounded">${session.location || "unspecified"}</span>
       </div>
-      <p class="text-xs text-gray-500">Time: ${session.hours || "N/A"} hrs</p>
       <p class="text-sm text-gray-700"><strong>Skills:</strong> ${skillLabels.join(", ") || "None"}</p>
       ${drillSectionHtml}
       ${
         session.notes
-          ? `<p class="text-sm text-gray-700 mt-2"><strong>Notes:</strong> ${session.notes}</p>`
+          ? `<p class="text-sm text-gray-700 mt-2"><strong>Session Notes:</strong> ${session.notes}</p>`
           : ""
       }
     `;
+
+    card.style.marginBottom = "0.5rem";
 
     container.appendChild(card);
   });
