@@ -1,4 +1,4 @@
-// app.js - main client logic
+// app.js - main client logic (FIXED)
 
 import { DRILLS } from "./drills.js";
 import { SKILLS } from "./skills.js";
@@ -52,12 +52,14 @@ function renderSkills() {
 
   SKILLS.forEach((skill) => {
     const wrapper = document.createElement("label");
-    wrapper.className = "flex items-center space-x-2 text-sm";
+    // Updated class names for better alignment and interaction
+    wrapper.className = "flex items-center space-x-2 text-sm text-gray-700 hover:text-emerald-600 transition"; 
 
     const cb = document.createElement("input");
     cb.type = "checkbox";
     cb.value = skill.id;
-    cb.className = "skill-checkbox";
+    // Updated class name to be more distinct
+    cb.className = "skill-checkbox h-4 w-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"; 
 
     cb.addEventListener("change", () => {
       if (cb.checked) selectedSkills.add(skill.id);
@@ -77,10 +79,14 @@ function renderSkills() {
 // --- Drill filtering ---
 function getFilteredDrills() {
   if (selectedSkills.size === 0) return [];
-  return DRILLS.filter((d) => d.skills.some((s) => selectedSkills.has(s)));
+  
+  // FIX: Flatten the DRILLS object (which contains arrays) into a single array
+  const allDrills = Object.values(DRILLS).flat();
+  
+  return allDrills.filter((d) => d.skills.some((s) => selectedSkills.has(s)));
 }
 
-// --- Drills for session tab ---
+// --- Drills for session tab (Selection/Add List) ---
 function renderSessionDrills() {
   const container = $("drill-select");
   if (!container) return;
@@ -97,19 +103,24 @@ function renderSessionDrills() {
 
   drills.forEach((drill) => {
     const card = document.createElement("div");
-    card.className = "card border border-gray-200 space-y-2";
+    card.className = "card border border-gray-100 p-3 space-y-2"; // Used card styling
 
     const added = selectedDrillIds.has(drill.id);
+    
+    // Dynamic button styling for clearer feedback
+    const buttonClass = added 
+        ? "bg-gray-300 text-gray-800 hover:bg-gray-400" 
+        : "bg-emerald-600 text-white hover:bg-emerald-700";
 
     card.innerHTML = `
       <div class="flex justify-between items-start">
         <div>
-          <h3 class="font-semibold text-emerald-700">${drill.name}</h3>
-          <p class="text-xs uppercase tracking-wide text-gray-400">${drill.category}</p>
+          <h3 class="font-semibold text-gray-800">${drill.name}</h3>
+          <p class="text-xs uppercase tracking-wide text-gray-400">${drill.category || drill.subcategory || "N/A"}</p>
         </div>
         <button
           data-id="${drill.id}"
-          class="toggle-drill px-3 py-1 text-xs rounded ${added ? "bg-gray-300" : "bg-emerald-600 text-white"}"
+          class="toggle-drill px-3 py-1 text-xs rounded transition ${buttonClass}"
         >
           ${added ? "Added" : "Add"}
         </button>
@@ -117,8 +128,6 @@ function renderSessionDrills() {
       <p class="text-sm text-gray-700">${drill.description}</p>
       <p class="text-xs text-gray-500">~${drill.duration} min</p>
     `;
-
-    card.style.marginBottom = "0.5rem";
 
     container.appendChild(card);
   });
@@ -133,37 +142,49 @@ function renderSessionDrills() {
         selectedDrillIds.add(id);
       }
       renderSessionDrills();
-      renderSelectedDrills();
     });
   });
 
   renderSelectedDrills();
 }
 
+// --- Drills for session tab (Logging/Scoring List) ---
 function renderSelectedDrills() {
-  const container = $("selected-drills");
+  const container = $("selected-drills-log"); // Corrected ID from index.html
   if (!container) return;
 
   container.innerHTML = "";
 
   if (selectedDrillIds.size === 0) {
     container.innerHTML =
-      '<p class="text-xs text-gray-500 italic">No drills selected yet.</p>';
+      '<p class="text-xs text-gray-500 italic">No drills selected yet. They will appear here when added.</p>';
     return;
   }
 
-  DRILLS.filter((d) => selectedDrillIds.has(d.id)).forEach((drill) => {
+  // Flatten all drills for quick lookup by ID
+  const allDrillsMap = new Map(Object.values(DRILLS).flat().map(d => [d.id, d]));
+
+  Array.from(selectedDrillIds).forEach((id) => {
+    const drill = allDrillsMap.get(id);
+    if (!drill) return; // Skip if drill somehow not found
+
     const card = document.createElement("div");
-    card.className = "border rounded-lg p-3 mb-2 bg-gray-50";
+    card.className = "border rounded-lg p-3 bg-white shadow-sm"; 
 
     card.innerHTML = `
-      <p class="text-sm font-semibold text-gray-800 mb-1">${drill.name}</p>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+      <div class="flex justify-between items-start mb-2">
+        <p class="text-sm font-bold text-gray-800">${drill.name}</p>
+        <button data-id="${drill.id}" class="remove-drill text-red-500 text-xs font-medium hover:underline">
+          Remove
+        </button>
+      </div>
+      
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
         <div>
           <label class="block text-gray-600 mb-1">Score / Result</label>
           <input
             type="text"
-            class="drill-score-input w-full border border-gray-300 rounded p-1"
+            class="drill-score-input w-full border border-gray-300 rounded p-2" 
             data-id="${drill.id}"
             placeholder="e.g., 7/10, +5, 14 pts"
           />
@@ -172,7 +193,7 @@ function renderSelectedDrills() {
           <label class="block text-gray-600 mb-1">Drill Notes</label>
           <input
             type="text"
-            class="drill-notes-input w-full border border-gray-300 rounded p-1"
+            class="drill-notes-input w-full border border-gray-300 rounded p-2" 
             data-id="${drill.id}"
             placeholder="Patterns, misses, feels..."
           />
@@ -181,36 +202,65 @@ function renderSelectedDrills() {
     `;
 
     container.appendChild(card);
+    
+    // Add remove listener
+    card.querySelector(".remove-drill")?.addEventListener("click", (e) => {
+      const drillId = e.currentTarget.getAttribute("data-id");
+      selectedDrillIds.delete(drillId);
+      renderSessionDrills(); // Re-render selection list and logging list
+    });
   });
 }
 
-// --- Drill Library tab ---
+// --- Drill Library tab (Grouped by Category) ---
 function renderDrillLibrary() {
   const container = $("drill-list");
   if (!container) return;
 
   container.innerHTML = "";
 
-  DRILLS.forEach((drill) => {
-    const card = document.createElement("div");
-    card.className = "card border border-gray-200 space-y-2";
+  // DRILLS is grouped by category (driver, irons, etc.)
+  for (const category in DRILLS) {
+    if (DRILLS.hasOwnProperty(category) && DRILLS[category].length > 0) {
+        
+      // Create a section header for the category
+      const categoryHeader = document.createElement("div");
+      categoryHeader.className = "mt-6 mb-3 border-b pb-2 border-gray-300";
+      categoryHeader.innerHTML = `
+        <h3 class="text-xl font-bold text-gray-700 capitalize">${category.replace(/_/g, ' ')} Drills</h3>
+      `;
+      container.appendChild(categoryHeader);
 
-    card.innerHTML = `
-      <h3 class="font-semibold text-emerald-700">${drill.name}</h3>
-      <p class="text-xs uppercase tracking-wide text-gray-400">${drill.category}</p>
-      <p class="text-sm text-gray-700">${drill.description}</p>
-      <p class="text-xs text-gray-500 mt-1">Skills: ${drill.skills.join(", ")}</p>
-      <p class="text-xs text-gray-500">~${drill.duration} min</p>
-    `;
+      DRILLS[category].forEach((drill) => {
+        const card = document.createElement("div");
+        card.className = "card border border-gray-100 p-3 space-y-1 hover:border-emerald-500 transition";
 
-    container.appendChild(card);
-  });
+        card.innerHTML = `
+          <div class="flex justify-between items-center">
+            <p class="font-semibold text-gray-800">${drill.name}</p>
+            <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded uppercase">
+              ${drill.subcategory || category}
+            </span>
+          </div>
+          <p class="text-sm text-gray-600">${drill.description}</p>
+          <p class="text-xs text-gray-400">
+            Skills: ${drill.skills.join(", ")} | Duration: ~${drill.duration} min
+          </p>
+        `;
+
+        container.appendChild(card);
+      });
+    }
+  }
 }
 
 // --- Save Session ---
 function initSaveSession() {
   const btn = $("save-session");
   if (!btn) return;
+
+  // Flatten all drills for quick lookup by ID
+  const allDrillsMap = new Map(Object.values(DRILLS).flat().map(d => [d.id, d]));
 
   btn.addEventListener("click", () => {
     const dateInput = $("session-date");
@@ -230,15 +280,19 @@ function initSaveSession() {
       return;
     }
 
+    // Capture results from the current form state
     const drillResults = Array.from(selectedDrillIds).map((id) => {
+      // Use querySelector on the document to find the inputs regardless of position
       const scoreInput = document.querySelector(
         `.drill-score-input[data-id="${id}"]`
       );
       const notesInputForDrill = document.querySelector(
         `.drill-notes-input[data-id="${id}"]`
       );
+      
       return {
         id,
+        name: allDrillsMap.get(id)?.name || id, // Store name for easier history lookup
         score: scoreInput ? scoreInput.value.trim() : "",
         notes: notesInputForDrill ? notesInputForDrill.value.trim() : ""
       };
@@ -248,8 +302,8 @@ function initSaveSession() {
       date,
       location,
       skills: Array.from(selectedSkills),
-      drills: drillResults.map((r) => r.id), // keep ids as a flat list too
-      drillResults,
+      drills: Array.from(selectedDrillIds), // Keep ids as a flat list
+      drillResults, // Store detailed results
       notes,
       createdAt: new Date().toISOString()
     };
@@ -257,19 +311,20 @@ function initSaveSession() {
     saveSession(session);
     alert("Session saved.");
 
-    // Reset
+    // Reset UI state
     selectedSkills = new Set();
     selectedDrillIds = new Set();
     if (notesInput) notesInput.value = "";
     if (locInput) locInput.value = "net";
+    if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
 
-    // Uncheck all skill checkboxes
+    // Uncheck all skill checkboxes and re-render the session view
     document.querySelectorAll(".skill-checkbox").forEach((cb) => {
       cb.checked = false;
     });
 
+    renderSkills();
     renderSessionDrills();
-    renderSelectedDrills();
   });
 }
 
@@ -292,7 +347,9 @@ function renderHistory() {
 
   // Map ids to labels for display
   const skillMap = new Map(SKILLS.map((s) => [s.id, s.label]));
-  const drillMap = new Map(DRILLS.map((d) => [d.id, d.name]));
+  
+  // Flatten all drills for quick lookup by ID/name
+  const drillMap = new Map(Object.values(DRILLS).flat().map((d) => [d.id, d.name]));
 
   sessions.forEach((session) => {
     const card = document.createElement("div");
@@ -305,43 +362,44 @@ function renderHistory() {
     );
 
     let drillSectionHtml = "";
+    // Prioritize drillResults (which contains score/notes)
     if (session.drillResults && session.drillResults.length > 0) {
       const items = session.drillResults
         .map((r) => {
-          const name = drillMap.get(r.id) || r.id;
-          const scorePart = r.score ? ` — <span class="font-semibold">${r.score}</span>` : "";
-          const notePart = r.notes ? ` <span class="text-gray-500">(${r.notes})</span>` : "";
-          return `<li>${name}${scorePart}${notePart}</li>`;
+          // Use name from drillResults if available (saved during initSaveSession), otherwise look up via ID
+          const name = r.name || drillMap.get(r.id) || r.id; 
+          const scorePart = r.score ? ` <span class="font-semibold text-emerald-700">(${r.score})</span>` : "";
+          const notePart = r.notes ? ` <span class="italic text-gray-500">— ${r.notes})</span>` : "";
+          return `<li><span class="font-medium">${name}</span>${scorePart}${notePart}</li>`;
         })
         .join("");
       drillSectionHtml = `
-        <p class="text-sm text-gray-700"><strong>Drills:</strong></p>
-        <ul class="list-disc ml-5 text-sm text-gray-700">${items}</ul>
+        <p class="text-sm font-semibold text-gray-700 mt-2">Drills Logged:</p>
+        <ul class="list-disc ml-5 text-sm text-gray-700 space-y-1">${items}</ul>
       `;
     } else {
+      // Fallback for old sessions or if drillResults structure is missing
       const drillNames = (session.drills || []).map(
         (id) => drillMap.get(id) || id
       );
       drillSectionHtml = `
-        <p class="text-sm text-gray-700"><strong>Drills:</strong> ${drillNames.join(", ")}</p>
+        <p class="text-sm text-gray-700 mt-2">Drills: ${drillNames.join(", ")}</p>
       `;
     }
 
     card.innerHTML = `
-      <div class="flex justify-between items-center">
-        <h3 class="font-semibold text-emerald-700">${dateStr}</h3>
-        <span class="text-xs bg-gray-100 px-2 py-1 rounded">${session.location || "unspecified"}</span>
+      <div class="flex justify-between items-center pb-2 border-b border-gray-100">
+        <h3 class="font-bold text-lg text-emerald-700">${dateStr}</h3>
+        <span class="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full capitalize">${session.location || "unspecified"}</span>
       </div>
-      <p class="text-sm text-gray-700"><strong>Skills:</strong> ${skillLabels.join(", ") || "None"}</p>
+      <p class="text-sm text-gray-700"><strong>Intended Skills:</strong> ${skillLabels.join(", ") || "None"}</p>
       ${drillSectionHtml}
       ${
         session.notes
-          ? `<p class="text-sm text-gray-700 mt-2"><strong>Session Notes:</strong> ${session.notes}</p>`
+          ? `<p class="text-sm text-gray-700 mt-3 border-t pt-2"><strong>Session Notes:</strong> ${session.notes}</p>`
           : ""
       }
     `;
-
-    card.style.marginBottom = "0.5rem";
 
     container.appendChild(card);
   });
@@ -352,8 +410,7 @@ function init() {
   initTabs();
   renderSkills();
   renderSessionDrills();
-  renderDrillLibrary();
-
+  
   // Prefill date
   const dateInput = $("session-date");
   if (dateInput) {
