@@ -1,57 +1,34 @@
-// skills.js — hierarchical skill taxonomy
+// skills.js
+// Simple skill list used to filter drills
 
-export const SKILL_TREE = {
-  driver: {
-    label: "Driver",
-    skills: [
-      { id: "driver_face", label: "Face Control" },
-      { id: "driver_startline", label: "Start Direction" },
-      { id: "driver_dontgo_left", label: "Don’t Go Left" },
-      { id: "driver_speed", label: "Speed / Intent" },
-      { id: "driver_dispersion", label: "Dispersion Windows" }
-    ]
-  },
+export const SKILLS = [
+  // Driver
+  { id: "driver_face", label: "Driver - Face & Start Line" },
+  { id: "driver_startline", label: "Driver - Start Direction" },
+  { id: "driver_pattern", label: "Driver - Pattern (Fade Right)" },
+  { id: "driver_dontleft", label: "Driver - Don’t Go Left" },
+  { id: "driver_speed", label: "Driver - Speed / Intent" },
 
-  approach: {
-    label: "Approach",
-    skills: [
-      { id: "appr_startline", label: "Start Line Control" },
-      { id: "appr_distance", label: "Distance Control" },
-      { id: "appr_dispersion", label: "Dispersion" },
-      { id: "appr_trajectory", label: "Trajectory Windows" },
-      { id: "appr_club_selection", label: "Club Strategy" }
-    ]
-  },
+  // Approach / Irons
+  { id: "appr_startline", label: "Approach - Start Line" },
+  { id: "appr_distance", label: "Approach - Distance Control" },
+  { id: "appr_dispersion", label: "Approach - Dispersion" },
+  { id: "appr_trajectory", label: "Approach - Trajectory Windows" },
 
-  wedges: {
-    label: "Wedges",
-    skills: [
-      { id: "wed_dist_system", label: "Distance System" },
-      { id: "wed_trajectory", label: "Trajectory Windows" },
-      { id: "wed_spin_launch", label: "Launch/Spin Windows" },
-      { id: "wed_pressure", label: "Pressure / Randomization" }
-    ]
-  },
+  // Wedges
+  { id: "wed_distance", label: "Wedges - Distance System" },
+  { id: "wed_trajectory", label: "Wedges - Trajectory Windows" },
+  { id: "wed_pressure", label: "Wedges - Pressure / Scoring" },
 
-  shortgame: {
-    label: "Short Game",
-    skills: [
-      { id: "sg_landing", label: "Landing Spot Control" },
-      { id: "sg_random", label: "Random Lies / Reactivity" },
-      { id: "sg_contact", label: "Contact Quality" },
-      { id: "sg_updown", label: "Up & Down % Games" }
-    ]
-  },
+  // Short Game
+  { id: "sg_landing", label: "Short Game - Landing Spots" },
+  { id: "sg_random", label: "Short Game - Random Lies" },
+  { id: "sg_updown", label: "Short Game - Up & Down %" },
 
-  putting: {
-    label: "Putting",
-    skills: [
-      { id: "put_start", label: "Start Line" },
-      { id: "put_pace", label: "Pace Control" },
-      { id: "put_short", label: "Short Putts (inside 10ft)" },
-      { id: "put_lag", label: "Lag Putting" },
-      { id: "put_pressure", label: "Pressure Games" },
-      { id: "put_indoor", label: "Indoor Mat Games" }
-    ]
-  }
-};
+  // Putting
+  { id: "put_start", label: "Putting - Start Line" },
+  { id: "put_short", label: "Putting - Short Putts" },
+  { id: "put_pace", label: "Putting - Pace Control" },
+  { id: "put_lag", label: "Putting - Lag Putting" },
+  { id: "put_indoor", label: "Putting - Indoor Mat Games" }
+];
