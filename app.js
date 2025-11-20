@@ -1,4 +1,4 @@
-// app.js - main client logic (FIXED)
+// app.js - main client logic (Cascading Skill Selection Implemented)
 
 import { DRILLS } from "./drills.js";
 import { SKILLS } from "./skills.js";
@@ -9,6 +9,8 @@ const $ = (id) => document.getElementById(id);
 // --- State ---
 let selectedSkills = new Set();
 let selectedDrillIds = new Set();
+// NEW STATE: Tracks the currently active club for the sub-menu display
+let activeClubCategory = null; 
 
 // --- Tabs ---
 function initTabs() {
@@ -43,38 +45,126 @@ function initTabs() {
   }
 }
 
-// --- Skills UI ---
+
+// --- Skill Grouping (NEW LOGIC) ---
+function groupSkillsByClub() {
+    const grouped = {};
+    SKILLS.forEach(skill => {
+        // Use the part before the first '—' as the category (e.g., 'Driver', 'Irons')
+        const parts = skill.label.split('—');
+        const category = parts[0].trim();
+        if (!grouped[category]) {
+            grouped[category] = [];
+        }
+        grouped[category].push(skill);
+    });
+    return grouped;
+}
+
+// --- Skills UI (OVERHAUL) ---
 function renderSkills() {
   const container = $("skill-select");
   if (!container) return;
 
-  container.innerHTML = "";
+  const groupedSkills = groupSkillsByClub();
+  const clubCategories = Object.keys(groupedSkills);
 
-  SKILLS.forEach((skill) => {
-    const wrapper = document.createElement("label");
-    // Updated class names for better alignment and interaction
-    wrapper.className = "flex items-center space-x-2 text-sm text-gray-700 hover:text-emerald-600 transition"; 
-
-    const cb = document.createElement("input");
-    cb.type = "checkbox";
-    cb.value = skill.id;
-    // Updated class name to be more distinct
-    cb.className = "skill-checkbox h-4 w-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"; 
-
-    cb.addEventListener("change", () => {
-      if (cb.checked) selectedSkills.add(skill.id);
-      else selectedSkills.delete(skill.id);
-      renderSessionDrills();
-    });
-
-    const span = document.createElement("span");
-    span.textContent = skill.label;
-
-    wrapper.appendChild(cb);
-    wrapper.appendChild(span);
-    container.appendChild(wrapper);
-  });
+  // Clear previous content
+  container.innerHTML = `
+    <div class="space-y-3">
+        <label for="club-select-dropdown" class="block text-sm font-medium text-gray-700">1. Choose a Club/Area</label>
+        <select id="club-select-dropdown" class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-emerald-500 focus:border-emerald-500">
+            <option value="">-- Select Club --</option>
+            ${clubCategories.map(cat => `<option value="${cat}" ${cat === activeClubCategory ? 'selected' : ''}>${cat}</option>`).join('')}
+        </select>
+    </div>
+    <div id="skill-buttons-container" class="mt-4 space-y-3">
+        ${activeClubCategory ? `<p class="text-sm font-medium text-gray-700">2. Select Skills for ${activeClubCategory}</p>` : ''}
+    </div>
+    <div id="selected-skills-summary" class="mt-4 pt-3 border-t border-gray-200">
+        <p class="text-sm font-medium text-gray-700 mb-2">3. Active Skills</p>
+        <div id="skill-summary-tags" class="flex flex-wrap gap-2"></div>
+    </div>
+  `;
+  
+  const clubDropdown = $("club-select-dropdown");
+  const skillButtonContainer = $("skill-buttons-container");
+  
+  if (clubDropdown) {
+      clubDropdown.addEventListener('change', (e) => {
+          activeClubCategory = e.target.value;
+          renderSkills(); // Re-render to show new buttons
+      });
+  }
+  
+  // Render Skill Buttons for the active category
+  if (activeClubCategory && groupedSkills[activeClubCategory]) {
+      const skillsHtml = groupedSkills[activeClubCategory].map(skill => {
+          const active = selectedSkills.has(skill.id);
+          const className = active 
+            ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700'
+            : 'bg-white text-gray-700 border-gray-400 hover:border-emerald-600';
+          return `<button data-skill-id="${skill.id}" class="skill-button px-3 py-1 rounded border text-sm transition ${className}">${skill.label.split('—')[1].trim()}</button>`;
+      }).join('');
+      
+      skillButtonContainer.innerHTML += `<div class="flex flex-wrap gap-2">${skillsHtml}</div>`;
+      
+      // Attach listeners to the new skill buttons
+      skillButtonContainer.querySelectorAll('.skill-button').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+              const skillId = e.target.getAttribute('data-skill-id');
+              if (selectedSkills.has(skillId)) {
+                  selectedSkills.delete(skillId);
+              } else {
+                  selectedSkills.add(skillId);
+              }
+              renderSkills(); // Re-render to update button appearance and summary
+              renderSessionDrills(); // Update the drill list
+          });
+      });
+  }
+  
+  // Render Summary Tags
+  renderSkillSummary(groupedSkills);
+  renderSessionDrills();
 }
+
+function renderSkillSummary(groupedSkills) {
+    const summaryContainer = $("skill-summary-tags");
+    if (!summaryContainer) return;
+
+    const allSkills = Object.values(groupedSkills).flat();
+    const activeSkills = allSkills.filter(skill => selectedSkills.has(skill.id));
+    
+    if (activeSkills.length === 0) {
+        summaryContainer.innerHTML = '<p class="text-xs text-gray-500">No skills selected.</p>';
+        return;
+    }
+    
+    summaryContainer.innerHTML = activeSkills.map(skill => {
+        // Show just the label part (e.g., 'Face/Start Line')
+        const label = skill.label.split('—')[1].trim(); 
+        const club = skill.label.split('—')[0].trim();
+        
+        return `
+            <span class="inline-flex items-center text-xs font-medium bg-emerald-100 text-emerald-800 rounded-full px-2 py-0.5">
+                ${club}: ${label}
+                <button data-skill-id="${skill.id}" class="remove-skill-tag ml-1 text-emerald-600 hover:text-emerald-800">
+                    &times;
+                </button>
+            </span>
+        `;
+    }).join('');
+
+    summaryContainer.querySelectorAll('.remove-skill-tag').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const skillId = e.currentTarget.getAttribute('data-skill-id');
+            selectedSkills.delete(skillId);
+            renderSkills();
+        });
+    });
+}
+
 
 // --- Drill filtering ---
 function getFilteredDrills() {
@@ -101,9 +191,12 @@ function renderSessionDrills() {
     return;
   }
 
+  // Flatten all drills for quick lookup by ID
+  const allDrillsMap = new Map(Object.values(DRILLS).flat().map(d => [d.id, d]));
+
   drills.forEach((drill) => {
     const card = document.createElement("div");
-    card.className = "card border border-gray-100 p-3 space-y-2"; // Used card styling
+    card.className = "card border border-gray-100 p-3 space-y-2"; 
 
     const added = selectedDrillIds.has(drill.id);
     
@@ -150,7 +243,7 @@ function renderSessionDrills() {
 
 // --- Drills for session tab (Logging/Scoring List) ---
 function renderSelectedDrills() {
-  const container = $("selected-drills-log"); // Corrected ID from index.html
+  const container = $("selected-drills-log");
   if (!container) return;
 
   container.innerHTML = "";
@@ -166,7 +259,7 @@ function renderSelectedDrills() {
 
   Array.from(selectedDrillIds).forEach((id) => {
     const drill = allDrillsMap.get(id);
-    if (!drill) return; // Skip if drill somehow not found
+    if (!drill) return; 
 
     const card = document.createElement("div");
     card.className = "border rounded-lg p-3 bg-white shadow-sm"; 
@@ -207,7 +300,7 @@ function renderSelectedDrills() {
     card.querySelector(".remove-drill")?.addEventListener("click", (e) => {
       const drillId = e.currentTarget.getAttribute("data-id");
       selectedDrillIds.delete(drillId);
-      renderSessionDrills(); // Re-render selection list and logging list
+      renderSessionDrills(); 
     });
   });
 }
@@ -314,6 +407,7 @@ function initSaveSession() {
     // Reset UI state
     selectedSkills = new Set();
     selectedDrillIds = new Set();
+    activeClubCategory = null; // Reset active club category
     if (notesInput) notesInput.value = "";
     if (locInput) locInput.value = "net";
     if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
