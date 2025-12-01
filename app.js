@@ -139,12 +139,16 @@ function renderDrillSelect() {
   const container = $("drill-select");
   container.innerHTML = "";
 
+  // FIX: Show all drills if no skills selected, otherwise filter
   const filtered = Object.values(DRILLS)
     .flat()
-    .filter(drill => drill.skills.some(s => selectedSkills.has(s)));
+    .filter(drill => {
+      if (selectedSkills.size === 0) return true;
+      return drill.skills.some(s => selectedSkills.has(s));
+    });
 
   if (!filtered.length) {
-    container.innerHTML = `<p class="text-gray-600">Select skills to see drills.</p>`;
+    container.innerHTML = `<p class="text-gray-600">No drills match these skills.</p>`;
     return;
   }
 
@@ -171,19 +175,31 @@ function renderDrillSelect() {
     grouped[cat].forEach(drill => {
       const card = document.createElement("div");
       card.className = "card";
+      
+      // Check if already added to disable button
+      const isAdded = selectedDrillIds.has(drill.id);
+      const btnClass = isAdded ? "bg-emerald-600 cursor-not-allowed" : "bg-black";
+      const btnText = isAdded ? "Added" : "Add Drill";
 
       card.innerHTML = `
         <h4 class="text-lg font-bold">${drill.name}</h4>
         <p class="text-sm text-gray-600 mb-2">${drill.description}</p>
-        <button data-id="${drill.id}" class="add-drill bg-black text-white px-3 py-2 rounded-lg text-sm">
-          Add Drill
+        <button data-id="${drill.id}" class="add-drill text-white px-3 py-2 rounded-lg text-sm ${btnClass}" ${isAdded ? "disabled" : ""}>
+          ${btnText}
         </button>
       `;
 
-      card.querySelector(".add-drill").addEventListener("click", () => {
+      card.querySelector(".add-drill").addEventListener("click", (e) => {
         selectedDrillIds.add(drill.id);
         renderSelectedDrills();
         updateGoToLogButton();
+
+        // FIX: Visual feedback
+        const btn = e.target;
+        btn.innerText = "Added";
+        btn.classList.remove("bg-black");
+        btn.classList.add("bg-emerald-600");
+        btn.disabled = true;
       });
 
       groupDiv.appendChild(card);
@@ -227,6 +243,8 @@ function renderSelectedDrills() {
       selectedDrillIds.delete(id);
       renderSelectedDrills();
       updateGoToLogButton();
+      // Re-render select list to re-enable the "Add" button
+      renderDrillSelect(); 
     });
 
     container.appendChild(card);
@@ -274,6 +292,13 @@ function initSaveSession() {
 
     saveSession(session);
     alert("Session saved.");
+    
+    // Optional: Reset for next session
+    selectedDrillIds.clear();
+    renderSelectedDrills();
+    updateGoToLogButton();
+    renderDrillSelect();
+    $("session-notes").value = "";
   });
 }
 
@@ -291,13 +316,19 @@ function renderHistory() {
     return;
   }
 
-  sessions.forEach(s => {
+  // Reverse to show newest first
+  sessions.slice().reverse().forEach(s => {
     const div = document.createElement("div");
     div.className = "card";
+    
+    // Calculate simple summary
+    const drillsCount = s.drills ? s.drills.length : 0;
+    const notesSnippet = s.notes ? `<p class="text-sm text-gray-500 mt-1">"${s.notes}"</p>` : "";
 
     div.innerHTML = `
       <h3 class="font-bold">${s.date} — ${s.location}</h3>
-      <p class="text-sm text-gray-600">${s.drills.length} drills</p>
+      <p class="text-sm text-gray-800">${drillsCount} drills completed</p>
+      ${notesSnippet}
     `;
 
     container.appendChild(div);
@@ -305,29 +336,68 @@ function renderHistory() {
 }
 
 // ================================
-// ANALYTICS
+// ANALYTICS (FIXED)
 // ================================
 function renderAnalytics() {
   const container = $("analytics-container");
   const sessions = loadSessions();
 
-  const numericScores = sessions.flatMap(s =>
-    (s.drillResults || []).filter(d => d.score.numeric !== null)
-  );
-
-  if (!numericScores.length) {
-    container.innerHTML = "<p>No numeric data yet.</p>";
+  if (!sessions.length) {
+    container.innerHTML = "<p>No data recorded yet.</p>";
     return;
   }
 
-  const avg = numericScores.reduce((a, b) => a + b.score.numeric, 0) / numericScores.length;
+  // 1. Group scores by Drill ID
+  const drillStats = {};
 
-  container.innerHTML = `
-    <div class="card">
-      <h3 class="text-xl font-bold">Overall Average</h3>
-      <p>${avg.toFixed(2)}</p>
-    </div>
-  `;
+  sessions.forEach(session => {
+    if (!session.drillResults) return;
+    
+    session.drillResults.forEach(result => {
+      if (result.score && result.score.numeric !== null) {
+        if (!drillStats[result.id]) {
+          drillStats[result.id] = { name: result.name, scores: [] };
+        }
+        drillStats[result.id].scores.push(result.score.numeric);
+      }
+    });
+  });
+
+  // 2. Render HTML
+  container.innerHTML = "";
+  
+  if (Object.keys(drillStats).length === 0) {
+      container.innerHTML = "<p>No numeric scores found in history.</p>";
+      return;
+  }
+
+  Object.keys(drillStats).forEach(id => {
+    const data = drillStats[id];
+    const sum = data.scores.reduce((a, b) => a + b, 0);
+    const avg = sum / data.scores.length;
+    const max = Math.max(...data.scores);
+
+    const card = document.createElement("div");
+    card.className = "card mb-4";
+    card.innerHTML = `
+      <h3 class="font-bold text-lg border-b pb-2 mb-2">${data.name}</h3>
+      <div class="grid grid-cols-3 gap-4 text-center">
+        <div>
+           <span class="block text-xs font-bold text-gray-500 uppercase">Average</span>
+           <span class="text-xl font-mono">${avg.toFixed(1)}</span>
+        </div>
+        <div>
+           <span class="block text-xs font-bold text-gray-500 uppercase">Best</span>
+           <span class="text-xl font-mono">${max}</span>
+        </div>
+        <div>
+           <span class="block text-xs font-bold text-gray-500 uppercase">Attempts</span>
+           <span class="text-xl font-mono">${data.scores.length}</span>
+        </div>
+      </div>
+    `;
+    container.appendChild(card);
+  });
 }
 
 // ================================
@@ -359,6 +429,12 @@ function init() {
   renderDrillSelect();
   initSaveSession();
   initTabs();
+
+  // FIX: Make the big button actually switch tabs
+  $("go-to-log").addEventListener("click", () => {
+     document.querySelector('[data-tab="log"]').click();
+     window.scrollTo(0,0);
+  });
 }
 
 init();
