@@ -1,5 +1,5 @@
 // ================================
-// app.js — Full Rebuild (Simple)
+// app.js — FULL VERSION (Rebuilt)
 // ================================
 
 import { DRILLS } from "./drills.js";
@@ -25,26 +25,73 @@ const METRIC_TYPES = {
   CUSTOM: "CUSTOM"
 };
 
-// ================================
-// HELPER — MAP STRUCTURES
-// ================================
-const allDrillsMap = new Map(Object.values(DRILLS).flat().map(d => [d.id, d]));
+// ----------------------
+// CATEGORY DISPLAY NAMES
+// ----------------------
+const CATEGORIES = {
+  driving: "Driving",
+  approach: "Approach / Irons",
+  wedges: "Wedges",
+  shortgame: "Short Game",
+  putting: "Putting",
+  other: "Other"
+};
+
+// ----------------------
+// HELPERS
+// ----------------------
+const allDrillsMap = new Map(
+  Object.values(DRILLS).flat().map(d => [d.id, d])
+);
+
 const skillMap = new Map(SKILLS.map(s => [s.id, s]));
 
 // ================================
-// DETERMINE METRIC TYPE
+// CATEGORY DETECTION (HYBRID)
+// ================================
+function detectCategory(drill) {
+  // 1: manual override
+  if (drill.category) return drill.category;
+
+  // 2: infer from group name in DRILLS
+  for (const groupName in DRILLS) {
+    if (DRILLS[groupName].some(d => d.id === drill.id)) {
+      switch (groupName) {
+        case "driver": return "driving";
+        case "irons": return "approach";
+        case "wedges": return "wedges";
+        case "short_game": return "shortgame";
+        case "putting": return "putting";
+        default: return "other";
+      }
+    }
+  }
+
+  // 3: keyword fallback
+  const id = drill.id.toLowerCase();
+  if (id.includes("driver") || id.includes("tee")) return "driving";
+  if (id.includes("iron") || id.includes("approach")) return "approach";
+  if (id.includes("wedge") || id.includes("pitch")) return "wedges";
+  if (id.includes("chip") || id.includes("short")) return "shortgame";
+  if (id.includes("putt") || id.includes("green")) return "putting";
+
+  return "other";
+}
+
+// ================================
+// METRIC TYPE RESOLVER
 // ================================
 function getDrillMetric(drill) {
-  const skillId = drill.skills?.[0];
-  const skill = skillMap.get(skillId);
+  const firstSkill = drill.skills[0];
+  const skill = skillMap.get(firstSkill);
   return skill ? skill.metricType : METRIC_TYPES.CUSTOM;
 }
 
 // ================================
-// INPUT UI BASED ON METRIC TYPE
+// METRIC INPUT HTML
 // ================================
-function getMetricInputHTML(id, metricType) {
-  switch (metricType) {
+function getMetricInputHTML(id, type) {
+  switch (type) {
     case METRIC_TYPES.PERCENTAGE:
       return `<input data-id="${id}" type="number" min="0" max="100" class="input-style drill-score-input" placeholder="%" />`;
 
@@ -52,7 +99,7 @@ function getMetricInputHTML(id, metricType) {
       return `<input data-id="${id}" type="text" class="input-style drill-score-input" placeholder="175 / 5" />`;
 
     case METRIC_TYPES.PROXIMITY:
-      return `<input data-id="${id}" type="number" class="input-style drill-score-input" placeholder="Feet" />`;
+      return `<input data-id="${id}" type="number" step="0.1" class="input-style drill-score-input" placeholder="Feet" />`;
 
     default:
       return `<input data-id="${id}" type="text" class="input-style drill-score-input" placeholder="Score" />`;
@@ -60,33 +107,33 @@ function getMetricInputHTML(id, metricType) {
 }
 
 // ================================
-// RENDER — SKILL SELECTION (SETUP TAB)
+// RENDER — SKILL MULTISELECT
 // ================================
 function renderSkills() {
   const container = $("skill-select");
   container.innerHTML = "";
 
   SKILLS.forEach(skill => {
-    const div = document.createElement("div");
-    div.className = "flex items-center space-x-3 mb-2";
+    const row = document.createElement("div");
+    row.className = "flex items-center space-x-3 mb-2";
 
-    div.innerHTML = `
-      <input type="checkbox" data-skill="${skill.id}" class="skill-check h-4 w-4" />
-      <label class="text-gray-800">${skill.label}</label>
+    row.innerHTML = `
+      <input type="checkbox" class="skill-check h-4 w-4" data-skill="${skill.id}">
+      <label class="text-gray-800 text-sm">${skill.label}</label>
     `;
 
-    div.querySelector("input").addEventListener("change", (e) => {
+    row.querySelector("input").addEventListener("change", (e) => {
       if (e.target.checked) selectedSkills.add(skill.id);
       else selectedSkills.delete(skill.id);
       renderDrillSelect();
     });
 
-    container.appendChild(div);
+    container.appendChild(row);
   });
 }
 
 // ================================
-// RENDER — DRILL SELECTION LIST
+// RENDER — DRILL SELECTION (GROUPED)
 // ================================
 function renderDrillSelect() {
   const container = $("drill-select");
@@ -94,32 +141,53 @@ function renderDrillSelect() {
 
   const filtered = Object.values(DRILLS)
     .flat()
-    .filter(d => d.skills.some(s => selectedSkills.has(s)));
+    .filter(drill => drill.skills.some(s => selectedSkills.has(s)));
 
   if (!filtered.length) {
     container.innerHTML = `<p class="text-gray-600">Select skills to see drills.</p>`;
     return;
   }
 
+  const grouped = {};
   filtered.forEach(drill => {
-    const card = document.createElement("div");
-    card.className = "card";
+    const cat = detectCategory(drill);
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push(drill);
+  });
 
-    card.innerHTML = `
-      <h3 class="text-lg font-bold">${drill.name}</h3>
-      <p class="text-sm text-gray-600 mb-3">${drill.description}</p>
-      <button data-id="${drill.id}" class="add-drill bg-black text-white px-3 py-2 rounded-lg text-sm">
-        Add Drill
-      </button>
+  Object.keys(grouped).forEach(cat => {
+    const section = document.createElement("div");
+    section.className = "mb-6";
+
+    section.innerHTML = `
+      <h3 class="text-xl font-semibold mb-3 border-b pb-1">${CATEGORIES[cat]}</h3>
+      <div class="space-y-4" id="group-${cat}"></div>
     `;
 
-    card.querySelector(".add-drill").addEventListener("click", () => {
-      selectedDrillIds.add(drill.id);
-      renderSelectedDrills();
-      updateGoToLogButton();
-    });
+    container.appendChild(section);
 
-    container.appendChild(card);
+    const groupDiv = section.querySelector(`#group-${cat}`);
+
+    grouped[cat].forEach(drill => {
+      const card = document.createElement("div");
+      card.className = "card";
+
+      card.innerHTML = `
+        <h4 class="text-lg font-bold">${drill.name}</h4>
+        <p class="text-sm text-gray-600 mb-2">${drill.description}</p>
+        <button data-id="${drill.id}" class="add-drill bg-black text-white px-3 py-2 rounded-lg text-sm">
+          Add Drill
+        </button>
+      `;
+
+      card.querySelector(".add-drill").addEventListener("click", () => {
+        selectedDrillIds.add(drill.id);
+        renderSelectedDrills();
+        updateGoToLogButton();
+      });
+
+      groupDiv.appendChild(card);
+    });
   });
 }
 
@@ -137,7 +205,7 @@ function renderSelectedDrills() {
 
   Array.from(selectedDrillIds).forEach(id => {
     const drill = allDrillsMap.get(id);
-    const metricType = getDrillMetric(drill);
+    const metric = getDrillMetric(drill);
 
     const card = document.createElement("div");
     card.className = "card";
@@ -145,12 +213,14 @@ function renderSelectedDrills() {
     card.innerHTML = `
       <h3 class="text-lg font-bold mb-2">${drill.name}</h3>
       <label class="text-sm font-semibold">Score</label>
-      ${getMetricInputHTML(id, metricType)}
+      ${getMetricInputHTML(id, metric)}
 
       <label class="text-sm font-semibold mt-3 block">Notes</label>
       <textarea data-id="${id}" class="drill-notes-input input-style w-full"></textarea>
 
-      <button data-id="${id}" class="remove-drill mt-3 text-red-600 text-sm underline">Remove</button>
+      <button class="remove-drill mt-3 text-red-600 text-sm underline" data-id="${id}">
+        Remove
+      </button>
     `;
 
     card.querySelector(".remove-drill").addEventListener("click", () => {
@@ -175,8 +245,6 @@ function updateGoToLogButton() {
 // ================================
 function initSaveSession() {
   $("save-session").addEventListener("click", () => {
-    const sessions = loadSessions();
-
     const drillResults = Array.from(selectedDrillIds).map(id => {
       const scoreInput = document.querySelector(`.drill-score-input[data-id="${id}"]`);
       const notesInput = document.querySelector(`.drill-notes-input[data-id="${id}"]`);
@@ -195,7 +263,7 @@ function initSaveSession() {
     });
 
     const session = {
-      date: $("session-date").value || new Date().toISOString().slice(0,10),
+      date: $("session-date").value || new Date().toISOString().slice(0, 10),
       location: $("session-location").value,
       skills: Array.from(selectedSkills),
       drills: Array.from(selectedDrillIds),
@@ -210,7 +278,7 @@ function initSaveSession() {
 }
 
 // ================================
-// HISTORY VIEW
+// HISTORY
 // ================================
 function renderHistory() {
   const container = $("history-list");
