@@ -50,10 +50,8 @@ const skillMap = new Map(SKILLS.map(s => [s.id, s]));
 // CATEGORY DETECTION (HYBRID)
 // ================================
 function detectCategory(drill) {
-  // 1: manual override
   if (drill.category) return drill.category;
 
-  // 2: infer from group name in DRILLS
   for (const groupName in DRILLS) {
     if (DRILLS[groupName].some(d => d.id === drill.id)) {
       switch (groupName) {
@@ -67,7 +65,6 @@ function detectCategory(drill) {
     }
   }
 
-  // 3: keyword fallback
   const id = drill.id.toLowerCase();
   if (id.includes("driver") || id.includes("tee")) return "driving";
   if (id.includes("iron") || id.includes("approach")) return "approach";
@@ -133,13 +130,12 @@ function renderSkills() {
 }
 
 // ================================
-// RENDER — DRILL SELECTION (GROUPED)
+// RENDER — DRILL SELECTION (With Toggle)
 // ================================
 function renderDrillSelect() {
   const container = $("drill-select");
   container.innerHTML = "";
 
-  // FIX: Show all drills if no skills selected, otherwise filter
   const filtered = Object.values(DRILLS)
     .flat()
     .filter(drill => {
@@ -176,35 +172,93 @@ function renderDrillSelect() {
       const card = document.createElement("div");
       card.className = "card";
       
-      // Check if already added to disable button
       const isAdded = selectedDrillIds.has(drill.id);
-      const btnClass = isAdded ? "bg-emerald-600 cursor-not-allowed" : "bg-black";
-      const btnText = isAdded ? "Added" : "Add Drill";
+      
+      // UX: Toggle Button Styles
+      const btnClass = isAdded ? "bg-red-600 hover:bg-red-700" : "bg-black hover:bg-gray-800";
+      const btnText = isAdded ? "Remove" : "Add Drill";
 
       card.innerHTML = `
-        <h4 class="text-lg font-bold">${drill.name}</h4>
-        <p class="text-sm text-gray-600 mb-2">${drill.description}</p>
-        <button data-id="${drill.id}" class="add-drill text-white px-3 py-2 rounded-lg text-sm ${btnClass}" ${isAdded ? "disabled" : ""}>
+        <div class="flex justify-between items-start">
+            <div>
+                <h4 class="text-lg font-bold">${drill.name}</h4>
+                <p class="text-sm text-gray-600 mb-2">${drill.description}</p>
+            </div>
+        </div>
+        <button data-id="${drill.id}" class="add-drill text-white px-4 py-2 rounded-lg text-sm mt-2 transition ${btnClass}">
           ${btnText}
         </button>
       `;
 
-      card.querySelector(".add-drill").addEventListener("click", (e) => {
-        selectedDrillIds.add(drill.id);
-        renderSelectedDrills();
+      card.querySelector(".add-drill").addEventListener("click", () => {
+        if (selectedDrillIds.has(drill.id)) {
+            selectedDrillIds.delete(drill.id);
+        } else {
+            selectedDrillIds.add(drill.id);
+        }
+        
+        // Re-render everything to update UI states
+        renderDrillSelect();
+        renderPreviewList(); 
         updateGoToLogButton();
-
-        // FIX: Visual feedback
-        const btn = e.target;
-        btn.innerText = "Added";
-        btn.classList.remove("bg-black");
-        btn.classList.add("bg-emerald-600");
-        btn.disabled = true;
       });
 
       groupDiv.appendChild(card);
     });
   });
+}
+
+// ================================
+// RENDER — PREVIEW LIST (New Feature)
+// ================================
+function renderPreviewList() {
+    let previewContainer = $("preview-container");
+    
+    // Create container if it doesn't exist (Injected purely via JS)
+    if (!previewContainer) {
+        const setupSection = $("setup");
+        const goToLogBtn = $("go-to-log");
+        
+        previewContainer = document.createElement("div");
+        previewContainer.id = "preview-container";
+        previewContainer.className = "card bg-gray-50 border border-gray-200 mb-6 hidden"; // Hidden by default
+        
+        // Insert before the big button
+        setupSection.insertBefore(previewContainer, goToLogBtn);
+    }
+
+    if (selectedDrillIds.size === 0) {
+        previewContainer.classList.add("hidden");
+        previewContainer.innerHTML = "";
+        return;
+    }
+
+    previewContainer.classList.remove("hidden");
+    let html = `<h3 class="font-bold text-gray-800 mb-2">Selected Drills (${selectedDrillIds.size})</h3><ul class="space-y-2">`;
+    
+    selectedDrillIds.forEach(id => {
+        const drill = allDrillsMap.get(id);
+        html += `
+            <li class="flex justify-between items-center bg-white p-2 rounded border">
+                <span class="text-sm font-medium">${drill.name}</span>
+                <button class="text-red-500 text-xs font-bold uppercase hover:text-red-700 remove-preview-item" data-id="${id}">Remove</button>
+            </li>
+        `;
+    });
+    html += `</ul>`;
+    
+    previewContainer.innerHTML = html;
+
+    // Add listeners to small remove buttons
+    previewContainer.querySelectorAll(".remove-preview-item").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            const id = e.target.dataset.id;
+            selectedDrillIds.delete(id);
+            renderDrillSelect();
+            renderPreviewList();
+            updateGoToLogButton();
+        });
+    });
 }
 
 // ================================
@@ -243,8 +297,9 @@ function renderSelectedDrills() {
       selectedDrillIds.delete(id);
       renderSelectedDrills();
       updateGoToLogButton();
-      // Re-render select list to re-enable the "Add" button
-      renderDrillSelect(); 
+      // Update the other tab views too
+      renderDrillSelect();
+      renderPreviewList();
     });
 
     container.appendChild(card);
@@ -255,7 +310,14 @@ function renderSelectedDrills() {
 // BUTTON — UPDATE COUNT
 // ================================
 function updateGoToLogButton() {
-  $("go-to-log").innerText = `Go to Practice Log (${selectedDrillIds.size} drills)`;
+  const btn = $("go-to-log");
+  if (selectedDrillIds.size === 0) {
+      btn.innerText = "Go to Practice Log (0 Drills)";
+      btn.classList.add("opacity-50", "cursor-not-allowed");
+  } else {
+      btn.innerText = `Start Practice (${selectedDrillIds.size} Drills)`;
+      btn.classList.remove("opacity-50", "cursor-not-allowed");
+  }
 }
 
 // ================================
@@ -293,12 +355,16 @@ function initSaveSession() {
     saveSession(session);
     alert("Session saved.");
     
-    // Optional: Reset for next session
+    // Reset Logic
     selectedDrillIds.clear();
     renderSelectedDrills();
-    updateGoToLogButton();
     renderDrillSelect();
+    renderPreviewList();
+    updateGoToLogButton();
     $("session-notes").value = "";
+    
+    // Go back to setup or stay? Let's go to history
+    switchTab("history");
   });
 }
 
@@ -316,12 +382,10 @@ function renderHistory() {
     return;
   }
 
-  // Reverse to show newest first
   sessions.slice().reverse().forEach(s => {
     const div = document.createElement("div");
     div.className = "card";
     
-    // Calculate simple summary
     const drillsCount = s.drills ? s.drills.length : 0;
     const notesSnippet = s.notes ? `<p class="text-sm text-gray-500 mt-1">"${s.notes}"</p>` : "";
 
@@ -336,7 +400,7 @@ function renderHistory() {
 }
 
 // ================================
-// ANALYTICS (FIXED)
+// ANALYTICS
 // ================================
 function renderAnalytics() {
   const container = $("analytics-container");
@@ -347,12 +411,10 @@ function renderAnalytics() {
     return;
   }
 
-  // 1. Group scores by Drill ID
   const drillStats = {};
 
   sessions.forEach(session => {
     if (!session.drillResults) return;
-    
     session.drillResults.forEach(result => {
       if (result.score && result.score.numeric !== null) {
         if (!drillStats[result.id]) {
@@ -363,7 +425,6 @@ function renderAnalytics() {
     });
   });
 
-  // 2. Render HTML
   container.innerHTML = "";
   
   if (Object.keys(drillStats).length === 0) {
@@ -401,22 +462,34 @@ function renderAnalytics() {
 }
 
 // ================================
-// TABS
+// TABS HELPER
 // ================================
+function switchTab(tabId) {
+    // Hide all panes
+    document.querySelectorAll(".tab-pane").forEach(x => x.classList.add("hidden"));
+    // Deactivate all buttons
+    document.querySelectorAll(".tab-button").forEach(x => x.classList.remove("active"));
+
+    // Show target pane
+    const targetPane = document.getElementById(tabId);
+    if(targetPane) targetPane.classList.remove("hidden");
+
+    // Activate target button
+    const targetBtn = document.querySelector(`.tab-button[data-tab="${tabId}"]`);
+    if(targetBtn) targetBtn.classList.add("active");
+
+    // Run tab specific render logic
+    if (tabId === "history") renderHistory();
+    if (tabId === "analytics") renderAnalytics();
+    if (tabId === "log") renderSelectedDrills();
+    
+    window.scrollTo(0,0);
+}
+
 function initTabs() {
   document.querySelectorAll(".tab-button").forEach(btn => {
     btn.addEventListener("click", () => {
-      const tab = btn.dataset.tab;
-
-      document.querySelectorAll(".tab-pane").forEach(x => x.classList.add("hidden"));
-      document.querySelectorAll(".tab-button").forEach(x => x.classList.remove("active"));
-
-      btn.classList.add("active");
-      document.getElementById(tab).classList.remove("hidden");
-
-      if (tab === "history") renderHistory();
-      if (tab === "analytics") renderAnalytics();
-      if (tab === "log") renderSelectedDrills();
+      switchTab(btn.dataset.tab);
     });
   });
 }
@@ -427,14 +500,21 @@ function initTabs() {
 function init() {
   renderSkills();
   renderDrillSelect();
+  renderPreviewList(); // Initialize empty preview
   initSaveSession();
   initTabs();
 
-  // FIX: Make the big button actually switch tabs
-  $("go-to-log").addEventListener("click", () => {
-     document.querySelector('[data-tab="log"]').click();
-     window.scrollTo(0,0);
-  });
+  // FIX: Robust Button Listener
+  const goToLogBtn = $("go-to-log");
+  if (goToLogBtn) {
+      goToLogBtn.addEventListener("click", () => {
+         if(selectedDrillIds.size > 0) {
+             switchTab("log");
+         } else {
+             alert("Please select at least one drill first.");
+         }
+      });
+  }
 }
 
 init();
