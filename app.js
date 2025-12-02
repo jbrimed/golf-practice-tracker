@@ -162,10 +162,16 @@ function renderDrillSelect() {
   const container = $("drill-select");
   container.innerHTML = "";
 
+  // FIX: Don't show anything if no skills are selected
+  if (selectedSkills.size === 0) {
+    container.innerHTML = `<p class="text-gray-500 italic py-4">Select a skill area above (e.g., "Driver Face") to view drills.</p>`;
+    return;
+  }
+
   const filtered = Object.values(DRILLS)
     .flat()
     .filter(drill => {
-      if (selectedSkills.size === 0) return true;
+      // Only show drills that match selected skills
       return drill.skills.some(s => selectedSkills.has(s));
     });
 
