@@ -156,87 +156,82 @@ function renderSkills() {
 }
 
 // ================================
-// RENDER — DRILL SELECTION (With Toggle)
+// RENDER — DRILL SELECTION (BY SKILL)
 // ================================
 function renderDrillSelect() {
   const container = $("drill-select");
   container.innerHTML = "";
 
-  // FIX: Don't show anything if no skills are selected
+  // 1. Show instruction if empty
   if (selectedSkills.size === 0) {
     container.innerHTML = `<p class="text-gray-500 italic py-4">Select a skill area above (e.g., "Driver Face") to view drills.</p>`;
     return;
   }
 
-  const filtered = Object.values(DRILLS)
-    .flat()
-    .filter(drill => {
-      // Only show drills that match selected skills
-      return drill.skills.some(s => selectedSkills.has(s));
-    });
+  // 2. Sort selected skills to match the order in SKILLS array (so categories stay grouped)
+  const activeSkills = SKILLS.filter(s => selectedSkills.has(s.id));
+  const allDrills = Object.values(DRILLS).flat();
 
-  if (!filtered.length) {
-    container.innerHTML = `<p class="text-gray-600">No drills match these skills.</p>`;
-    return;
-  }
+  // 3. Render a section for EACH selected skill
+  activeSkills.forEach(skill => {
+      // Find drills that specifically match this skill
+      const matchingDrills = allDrills.filter(d => d.skills.includes(skill.id));
 
-  const grouped = {};
-  filtered.forEach(drill => {
-    const cat = detectCategory(drill);
-    if (!grouped[cat]) grouped[cat] = [];
-    grouped[cat].push(drill);
-  });
+      if (matchingDrills.length === 0) return;
 
-  Object.keys(grouped).forEach(cat => {
-    const section = document.createElement("div");
-    section.className = "mb-6";
+      // Create Section
+      const section = document.createElement("div");
+      section.className = "mb-8"; // More spacing between skill groups
 
-    section.innerHTML = `
-      <h3 class="text-xl font-semibold mb-3 border-b pb-1">${CATEGORIES[cat]}</h3>
-      <div class="space-y-4" id="group-${cat}"></div>
-    `;
-
-    container.appendChild(section);
-
-    const groupDiv = section.querySelector(`#group-${cat}`);
-
-    grouped[cat].forEach(drill => {
-      const card = document.createElement("div");
-      card.className = "card";
-      
-      const isAdded = selectedDrillIds.has(drill.id);
-      
-      // UX: Toggle Button Styles
-      const btnClass = isAdded ? "bg-red-600 hover:bg-red-700" : "bg-black hover:bg-gray-800";
-      const btnText = isAdded ? "Remove" : "Add Drill";
-
-      card.innerHTML = `
-        <div class="flex justify-between items-start">
-            <div>
-                <h4 class="text-lg font-bold">${drill.name}</h4>
-                <p class="text-sm text-gray-600 mb-2">${drill.description}</p>
-            </div>
-        </div>
-        <button data-id="${drill.id}" class="add-drill text-white px-4 py-2 rounded-lg text-sm mt-2 transition ${btnClass}">
-          ${btnText}
-        </button>
+      // Header: Skill Name
+      section.innerHTML = `
+        <h3 class="text-lg font-bold text-gray-900 border-l-4 border-emerald-500 pl-3 mb-3">
+            ${skill.category} — ${skill.label}
+        </h3>
+        <div class="space-y-4" id="skill-group-${skill.id}"></div>
       `;
 
-      card.querySelector(".add-drill").addEventListener("click", () => {
-        if (selectedDrillIds.has(drill.id)) {
-            selectedDrillIds.delete(drill.id);
-        } else {
-            selectedDrillIds.add(drill.id);
-        }
-        
-        // Re-render everything to update UI states
-        renderDrillSelect();
-        renderPreviewList(); 
-        updateGoToLogButton();
-      });
+      container.appendChild(section);
+      const groupDiv = section.querySelector(`#skill-group-${skill.id}`);
 
-      groupDiv.appendChild(card);
-    });
+      // Render Drills
+      matchingDrills.forEach(drill => {
+          const card = document.createElement("div");
+          card.className = "card border border-gray-100 shadow-sm"; // Lighter card for list
+          
+          const isAdded = selectedDrillIds.has(drill.id);
+          const btnClass = isAdded ? "bg-red-600 hover:bg-red-700" : "bg-black hover:bg-gray-800";
+          const btnText = isAdded ? "Remove" : "Add Drill";
+
+          card.innerHTML = `
+            <div class="flex flex-col sm:flex-row justify-between items-start gap-3">
+                <div class="flex-1">
+                    <h4 class="font-bold text-gray-800">${drill.name}</h4>
+                    <p class="text-sm text-gray-600 mt-1">${drill.description}</p>
+                    <span class="inline-block mt-2 text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                        Duration: ${drill.duration} min
+                    </span>
+                </div>
+                <button data-id="${drill.id}" class="add-drill shrink-0 text-white px-4 py-2 rounded-lg text-sm font-medium transition ${btnClass}">
+                  ${btnText}
+                </button>
+            </div>
+          `;
+
+          // Button Logic
+          card.querySelector(".add-drill").addEventListener("click", () => {
+            if (selectedDrillIds.has(drill.id)) {
+                selectedDrillIds.delete(drill.id);
+            } else {
+                selectedDrillIds.add(drill.id);
+            }
+            renderDrillSelect();
+            renderPreviewList(); 
+            updateGoToLogButton();
+          });
+
+          groupDiv.appendChild(card);
+      });
   });
 }
 
