@@ -104,28 +104,54 @@ function getMetricInputHTML(id, type) {
 }
 
 // ================================
-// RENDER — SKILL MULTISELECT
+// RENDER — SKILL MULTISELECT (GROUPED)
 // ================================
 function renderSkills() {
   const container = $("skill-select");
   container.innerHTML = "";
 
+  // 1. Group skills by category
+  const groupedSkills = {};
   SKILLS.forEach(skill => {
-    const row = document.createElement("div");
-    row.className = "flex items-center space-x-3 mb-2";
+    const cat = skill.category || "Other";
+    if (!groupedSkills[cat]) {
+      groupedSkills[cat] = [];
+    }
+    groupedSkills[cat].push(skill);
+  });
 
-    row.innerHTML = `
-      <input type="checkbox" class="skill-check h-4 w-4" data-skill="${skill.id}">
-      <label class="text-gray-800 text-sm">${skill.label}</label>
-    `;
+  // 2. Render each group
+  Object.keys(groupedSkills).forEach(category => {
+    // Header
+    const header = document.createElement("h3");
+    header.className = "text-sm font-bold text-emerald-800 uppercase tracking-wider mt-4 mb-2 border-b border-gray-200 pb-1";
+    header.innerText = category;
+    container.appendChild(header);
 
-    row.querySelector("input").addEventListener("change", (e) => {
-      if (e.target.checked) selectedSkills.add(skill.id);
-      else selectedSkills.delete(skill.id);
-      renderDrillSelect();
+    // Grid container
+    const grid = document.createElement("div");
+    grid.className = "grid grid-cols-1 sm:grid-cols-2 gap-2";
+
+    groupedSkills[category].forEach(skill => {
+        const row = document.createElement("label"); // Use label for better click area
+        row.className = "flex items-center space-x-3 p-2 rounded hover:bg-gray-50 cursor-pointer border border-transparent hover:border-gray-200 transition";
+
+        row.innerHTML = `
+          <input type="checkbox" class="skill-check h-4 w-4 text-emerald-600 rounded focus:ring-emerald-500" data-skill="${skill.id}">
+          <span class="text-gray-700 text-sm font-medium select-none">${skill.label}</span>
+        `;
+
+        // Event Listener
+        row.querySelector("input").addEventListener("change", (e) => {
+          if (e.target.checked) selectedSkills.add(skill.id);
+          else selectedSkills.delete(skill.id);
+          renderDrillSelect();
+        });
+
+        grid.appendChild(row);
     });
 
-    container.appendChild(row);
+    container.appendChild(grid);
   });
 }
 
