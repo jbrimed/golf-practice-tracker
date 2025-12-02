@@ -110,7 +110,7 @@ function initDataBackup() {
     `;
     
     const container = $("backup-section-container") || $("history-list");
-    container.appendChild(backupContainer);
+    if(container) container.appendChild(backupContainer);
 
     $("export-btn").addEventListener("click", () => {
         const data = localStorage.getItem("golf_sessions");
@@ -415,13 +415,19 @@ function renderSelectedDrills() {
 }
 
 function updateGoToLogButton() {
-    $("go-to-log").innerText = selectedDrillIds.size ? `Start Practice (${selectedDrillIds.size})` : "Start Practice (0)";
-    $("go-to-log").disabled = selectedDrillIds.size === 0;
-    if(selectedDrillIds.size === 0) $("go-to-log").classList.add("opacity-50"); else $("go-to-log").classList.remove("opacity-50");
+    const btn = $("go-to-log");
+    if(btn) {
+        btn.innerText = selectedDrillIds.size ? `Start Practice (${selectedDrillIds.size})` : "Start Practice (0)";
+        btn.disabled = selectedDrillIds.size === 0;
+        if(selectedDrillIds.size === 0) btn.classList.add("opacity-50"); else btn.classList.remove("opacity-50");
+    }
 }
 
 function initSaveSession() {
-    $("save-session").addEventListener("click", () => {
+    const saveBtn = $("save-session");
+    if(!saveBtn) return;
+
+    saveBtn.addEventListener("click", () => {
         const drillResults = Array.from(selectedDrillIds).map(id => {
             const raw = document.querySelector(`.drill-score-input[data-id="${id}"]`)?.value || "";
             const note = document.querySelector(`textarea[data-note-id="${id}"]`)?.value || "";
@@ -609,6 +615,11 @@ function switchTab(t) {
     window.scrollTo(0,0);
 }
 
+// Ensure init waits for DOM
+document.addEventListener("DOMContentLoaded", () => {
+    init();
+});
+
 function init() {
     createModal(); renderSkills(); renderDrillSelect(); initSaveSession();
     document.querySelectorAll(".tab-button").forEach(b => b.addEventListener("click", ()=>switchTab(b.dataset.tab)));
@@ -616,7 +627,6 @@ function init() {
         btn.addEventListener("click", () => generateSessionPreset(btn.dataset.type));
     });
     
-    if($("go-to-log")) $("go-to-log").addEventListener("click", ()=> { if(selectedDrillIds.size) switchTab("log"); });
+    const goLog = $("go-to-log");
+    if(goLog) goLog.addEventListener("click", ()=> { if(selectedDrillIds.size) switchTab("log"); });
 }
-
-init();
