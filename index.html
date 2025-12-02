@@ -45,14 +45,11 @@
     </div>
 
     <!-- ================= TABS ================= -->
-    <nav class="flex space-x-6 mt-4">
-      <button class="tab-button py-2 text-base text-gray-700" data-tab="setup">New Session</button>
-      <button class="tab-button py-2 text-base text-gray-700" data-tab="log">Practice Log</button>
-      <button class="tab-button py-2 text-base text-gray-700" data-tab="drills">Drill Library</button>
-      <button class="tab-button py-2 text-base text-gray-700" data-tab="history">History</button>
-
-      <!-- ====== NEW ANALYTICS TAB ====== -->
-      <button class="tab-button py-2 text-base text-gray-700" data-tab="analytics">Analytics</button>
+    <nav class="flex space-x-6 mt-4 overflow-x-auto pb-1">
+      <button class="tab-button py-2 text-base text-gray-700 whitespace-nowrap" data-tab="setup">New Session</button>
+      <button class="tab-button py-2 text-base text-gray-700 whitespace-nowrap" data-tab="log">Practice Log</button>
+      <button class="tab-button py-2 text-base text-gray-700 whitespace-nowrap" data-tab="history">History</button>
+      <button class="tab-button py-2 text-base text-gray-700 whitespace-nowrap" data-tab="analytics">Analytics</button>
     </nav>
   </header>
 
@@ -90,9 +87,6 @@
 
       <div class="card space-y-4">
         <h2 class="text-2xl font-bold text-gray-800 border-b pb-3">Choose Drills</h2>
-        <p class="text-sm text-gray-600">
-          Drills shown are filtered by the selected skills above. Click Add to include.
-        </p>
         <div id="drill-select" class="space-y-4"></div>
       </div>
 
@@ -114,7 +108,7 @@
 
       <div class="card space-y-4">
         <h2 class="text-2xl font-bold text-gray-800 border-b pb-3">Overall Session Summary</h2>
-        <textarea id="session-notes" rows="5" class="w-full input-style"></textarea>
+        <textarea id="session-notes" rows="5" class="w-full input-style" placeholder="How did it feel today? Key takeaways?"></textarea>
 
         <button
           id="save-session"
@@ -126,13 +120,6 @@
     </section>
 
 
-    <!-- ===================== DRILL LIBRARY TAB ===================== -->
-    <section id="drills" class="tab-pane hidden">
-      <h2 class="text-2xl font-bold text-gray-800 mb-4">Drill Library</h2>
-      <div id="drill-list" class="space-y-4"></div>
-    </section>
-
-
     <!-- ===================== HISTORY TAB ===================== -->
     <section id="history" class="tab-pane hidden">
       <h2 class="text-2xl font-bold text-gray-800 mb-4">Past Sessions</h2>
@@ -140,7 +127,7 @@
     </section>
 
 
-    <!-- ===================== ANALYTICS TAB (NEW) ===================== -->
+    <!-- ===================== ANALYTICS TAB ===================== -->
     <section id="analytics" class="tab-pane hidden">
       <h2 class="text-2xl font-bold text-gray-800 mb-4">Analytics</h2>
       <div id="analytics-container" class="space-y-6"></div>

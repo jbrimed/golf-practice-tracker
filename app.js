@@ -1,6 +1,6 @@
 // ================================
 // app.js — ULTIMATE VERSION
-// Features: Collapsible, Modals, Charts, Randomizer, Delete History
+// Features: Collapsible, Charts, Randomizer, Delete History, Detailed History Modal, Improved Log
 // ================================
 
 import { DRILLS } from "./drills.js";
@@ -64,14 +64,14 @@ function createModal() {
 
   const modalHtml = `
     <div id="app-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
-      <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 relative">
+      <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 relative max-h-[85vh] overflow-y-auto">
         <button id="modal-close" class="absolute top-4 right-4 text-gray-500 hover:text-black">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-        <h3 id="modal-title" class="text-xl font-bold mb-2 pr-6"></h3>
-        <div id="modal-content" class="text-gray-600 text-sm leading-relaxed"></div>
+        <h3 id="modal-title" class="text-xl font-bold mb-2 pr-6 border-b pb-2"></h3>
+        <div id="modal-content" class="text-gray-600 text-sm leading-relaxed mt-4"></div>
       </div>
     </div>
   `;
@@ -123,9 +123,9 @@ function getDrillMetric(drill) {
 function getMetricInputHTML(id, type) {
   switch (type) {
     case METRIC_TYPES.PERCENTAGE:
-      return `<input data-id="${id}" type="number" min="0" max="100" class="input-style drill-score-input" placeholder="%" />`;
+      return `<input data-id="${id}" type="number" min="0" max="100" class="input-style drill-score-input" placeholder="Enter %" />`;
     case METRIC_TYPES.DISTANCE_STDDEV:
-      return `<input data-id="${id}" type="text" class="input-style drill-score-input" placeholder="175 / 5" />`;
+      return `<input data-id="${id}" type="text" class="input-style drill-score-input" placeholder="e.g. 175 / 5" />`;
     case METRIC_TYPES.PROXIMITY:
       return `<input data-id="${id}" type="number" step="0.1" class="input-style drill-score-input" placeholder="Feet" />`;
     default:
@@ -299,11 +299,7 @@ function generateRandomSession() {
         const drills = DRILLS[catKey];
         if (drills && drills.length > 0) {
             const randomDrill = drills[Math.floor(Math.random() * drills.length)];
-            
-            // Add the drill
             selectedDrillIds.add(randomDrill.id);
-            
-            // Add its skills so the UI knows what to expand
             randomDrill.skills.forEach(s => selectedSkills.add(s));
         }
     });
@@ -382,7 +378,7 @@ function renderPreviewList() {
 }
 
 // ================================
-// LOGGING & SAVING
+// LOGGING & SAVING (IMPROVED: Shows Description)
 // ================================
 function renderSelectedDrills() {
   const container = $("selected-drills-log");
@@ -400,12 +396,14 @@ function renderSelectedDrills() {
     const card = document.createElement("div");
     card.className = "card border-l-4 border-black"; // Distinct look for log
 
+    // Added Description directly here
     card.innerHTML = `
-      <div class="flex justify-between">
-          <h3 class="text-lg font-bold mb-2">${drill.name}</h3>
-          <button class="info-btn text-gray-400 hover:text-emerald-600" title="Drill Description">
-             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          </button>
+      <div class="mb-3">
+          <h3 class="text-lg font-bold">${drill.name}</h3>
+          <div class="mt-2 bg-gray-50 p-3 rounded-lg border border-gray-100 text-sm text-gray-700">
+             <strong class="block text-gray-900 mb-1 text-xs uppercase tracking-wide">Instructions / Scoring</strong>
+             ${drill.description}
+          </div>
       </div>
       
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
@@ -419,10 +417,6 @@ function renderSelectedDrills() {
           </div>
       </div>
     `;
-
-    card.querySelector(".info-btn").addEventListener("click", () => {
-        showModal(drill.name, `<p>${drill.description}</p>`);
-    });
 
     container.appendChild(card);
   });
@@ -486,7 +480,7 @@ function initSaveSession() {
 }
 
 // ================================
-// HISTORY (WITH DELETE)
+// HISTORY (CLICKABLE DETAILED VIEW)
 // ================================
 function renderHistory() {
   const container = $("history-list");
@@ -500,36 +494,40 @@ function renderHistory() {
   }
 
   // Reverse to show newest first
-  sessions.slice().reverse().forEach((s, index) => {
-    // Note: s is the session, index is the reversed index. 
-    // To delete safely, we filter by ID (if it exists) or use the original index.
-    // For now, we will manipulate the underlying array directly for deletion.
-    
+  sessions.slice().reverse().forEach((s) => {
     const div = document.createElement("div");
-    div.className = "card relative";
+    // Added cursor-pointer and hover classes
+    div.className = "card relative hover:shadow-lg transition cursor-pointer border border-transparent hover:border-gray-200";
     
     const drillsCount = s.drills ? s.drills.length : 0;
-    const notesSnippet = s.notes ? `<p class="text-sm text-gray-500 mt-2 bg-gray-50 p-2 rounded">"${s.notes}"</p>` : "";
+    const notesSnippet = s.notes ? `<p class="text-sm text-gray-500 mt-2 bg-gray-50 p-2 rounded truncate">"${s.notes}"</p>` : "";
     
-    // Calculate best drill of session (just for info)
-    const bestResult = s.drillResults ? s.drillResults.find(r => r.score.numeric !== null) : null;
-    const bestText = bestResult ? `<span class="text-xs bg-emerald-100 text-emerald-800 px-2 py-1 rounded">Recorded Data</span>` : "";
-
     div.innerHTML = `
-      <div class="flex justify-between items-start">
+      <div class="flex justify-between items-start pointer-events-none"> <!-- content ignores click -->
           <div>
             <h3 class="font-bold text-lg">${s.date} <span class="text-gray-400 font-normal">@</span> ${s.location}</h3>
-            <p class="text-sm text-gray-800">${drillsCount} drills completed ${bestText}</p>
+            <p class="text-sm text-gray-800">${drillsCount} drills completed</p>
           </div>
-          <button class="delete-btn text-red-400 hover:text-red-600 p-1" title="Delete Session">
+          <!-- Delete button needs pointer-events-auto to override parent -->
+          <button class="delete-btn pointer-events-auto text-red-400 hover:text-red-600 p-1 rounded-full hover:bg-red-50" title="Delete Session">
              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
           </button>
       </div>
-      ${notesSnippet}
+      <div class="pointer-events-none">
+        ${notesSnippet}
+      </div>
     `;
     
-    // Delete Logic
-    div.querySelector(".delete-btn").addEventListener("click", () => {
+    // 1. Click to View Details
+    div.addEventListener("click", (e) => {
+        // Prevent opening if clicking the delete button specifically (safety check)
+        if (e.target.closest('.delete-btn')) return;
+        showSessionDetails(s);
+    });
+
+    // 2. Click to Delete
+    div.querySelector(".delete-btn").addEventListener("click", (e) => {
+        e.stopPropagation(); // Stop card click
         if(confirm("Are you sure you want to delete this session?")) {
             deleteSession(s);
         }
@@ -539,19 +537,51 @@ function renderHistory() {
   });
 }
 
+// NEW: Helper to show session detail modal
+function showSessionDetails(session) {
+    let content = `
+        <div class="mb-4">
+            <p class="text-sm text-gray-500">Location: <span class="font-medium text-gray-900">${session.location}</span></p>
+            <p class="text-sm text-gray-500">Date: <span class="font-medium text-gray-900">${session.date}</span></p>
+            ${session.notes ? `<div class="mt-2 bg-yellow-50 p-3 rounded text-gray-800 italic border-l-4 border-yellow-300">"${session.notes}"</div>` : ''}
+        </div>
+        <h4 class="font-bold text-gray-900 mb-2">Drill Breakdown</h4>
+        <div class="space-y-3">
+    `;
+
+    if (session.drillResults && session.drillResults.length > 0) {
+        session.drillResults.forEach(res => {
+            const scoreDisplay = res.score.raw ? `<span class="font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">${res.score.raw}</span>` : `<span class="text-gray-400 italic">No score</span>`;
+            const noteDisplay = res.notes ? `<p class="text-xs text-gray-500 mt-1 pl-2 border-l-2 border-gray-200">${res.notes}</p>` : '';
+            
+            content += `
+                <div class="border-b border-gray-100 pb-2 last:border-0">
+                    <div class="flex justify-between items-baseline">
+                        <span class="text-sm font-semibold text-gray-800">${res.name || "Unknown Drill"}</span>
+                        ${scoreDisplay}
+                    </div>
+                    ${noteDisplay}
+                </div>
+            `;
+        });
+    } else {
+        content += `<p class="text-sm italic text-gray-400">No drill data recorded.</p>`;
+    }
+
+    content += `</div>`;
+    showModal("Session Details", content);
+}
+
 function deleteSession(sessionToDelete) {
-    // We have to access localStorage directly here to bypass storage.js limitations without editing it
     const sessions = loadSessions();
-    // Filter out the session. 
-    // If it has an ID, use it. If not, match by date/createdAt (legacy support)
     const newSessions = sessions.filter(s => {
         if (sessionToDelete.id && s.id) return s.id !== sessionToDelete.id;
         return s.createdAt !== sessionToDelete.createdAt;
     });
     
     localStorage.setItem("golf_sessions", JSON.stringify(newSessions));
-    renderHistory(); // Refresh UI
-    renderAnalytics(); // Refresh Analytics
+    renderHistory(); 
+    renderAnalytics();
 }
 
 // ================================
