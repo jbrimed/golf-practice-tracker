@@ -1,6 +1,6 @@
 // ================================
 // app.js — ULTIMATE VERSION
-// Features: Smart Scoring (7/10), Fixed Analytics Grouping, Collapsible, Charts
+// Features: SD Calculator, Randomizer, Drill-Specific Metrics, Analytics, History
 // ================================
 
 import { DRILLS } from "./drills.js";
@@ -35,7 +35,8 @@ const METRIC_TYPES = {
   NUMERIC: "NUMERIC",
   DISTANCE_STDDEV: "DISTANCE_STDDEV",
   PROXIMITY: "PROXIMITY",
-  CUSTOM: "CUSTOM"
+  CUSTOM: "CUSTOM",
+  DISPERSION_CALC: "DISPERSION_CALC" // NEW
 };
 
 const CATEGORIES = {
@@ -94,23 +95,18 @@ function closeModal() {
 }
 
 // ================================
-// CORE LOGIC (FIXED CATEGORIES)
+// CORE LOGIC
 // ================================
 
 function detectCategory(drill) {
   if (!drill) return "other";
-  
-  // 1. Check explicit category and NORMALIZE IT
   if (drill.category) {
       const c = drill.category.toLowerCase();
-      // Fix mismatch between drill data and CATEGORIES keys
       if (c === 'irons') return 'approach';
       if (c === 'driver') return 'driving';
       if (c === 'short_game') return 'shortgame';
       return c; 
   }
-  
-  // 2. Infer from DRILLS structure
   for (const groupName in DRILLS) {
     if (DRILLS[groupName].some(d => d.id === drill.id)) {
       switch (groupName) {
@@ -127,31 +123,71 @@ function detectCategory(drill) {
 }
 
 function getDrillMetric(drill) {
+  // NEW: Check if drill has an explicit metric override first
+  if (drill.metricType) return drill.metricType;
+
   const firstSkill = drill.skills[0];
   const skill = skillMap.get(firstSkill);
   return skill ? skill.metricType : METRIC_TYPES.CUSTOM;
 }
 
-// IMPROVED: Better placeholders and labels
-function getMetricInputHTML(id, type) {
+// ================================
+// CALCULATOR HELPERS
+// ================================
+function calculateSD(values) {
+    if (values.length < 2) return 0;
+    const n = values.length;
+    const mean = values.reduce((a, b) => a + b) / n;
+    const variance = values.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / n;
+    return Math.sqrt(variance);
+}
+
+// ================================
+// HTML GENERATORS
+// ================================
+function getMetricInputHTML(id, type, drill) {
+  // NEW: Randomizer Button logic
+  let extraHTML = "";
+  if (drill.randomizer) {
+      extraHTML = `
+        <div class="mb-3 p-3 bg-indigo-50 rounded border border-indigo-100 flex justify-between items-center">
+             <span class="text-indigo-900 font-bold text-sm" id="rand-display-${id}">Target: ???</span>
+             <button class="roll-btn bg-indigo-600 text-white px-3 py-1 rounded text-xs font-bold" 
+                data-min="${drill.randomizer.min}" 
+                data-max="${drill.randomizer.max}"
+                data-target="rand-display-${id}">
+                🎲 Roll
+             </button>
+        </div>
+      `;
+  }
+
   switch (type) {
+    case METRIC_TYPES.DISPERSION_CALC:
+        return extraHTML + `
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Enter 5 Carry Distances</label>
+            <div class="grid grid-cols-5 gap-1 mb-2">
+                <input type="number" class="calc-input input-style px-1 text-center" data-group="${id}">
+                <input type="number" class="calc-input input-style px-1 text-center" data-group="${id}">
+                <input type="number" class="calc-input input-style px-1 text-center" data-group="${id}">
+                <input type="number" class="calc-input input-style px-1 text-center" data-group="${id}">
+                <input type="number" class="calc-input input-style px-1 text-center" data-group="${id}">
+            </div>
+            <div class="text-xs font-mono text-gray-700 bg-gray-100 p-2 rounded">
+                Avg: <span id="calc-avg-${id}">--</span> | SD: <span id="calc-sd-${id}" class="font-bold text-emerald-600">--</span>
+            </div>
+            <!-- Hidden input to store final result for saving -->
+            <input type="hidden" data-id="${id}" class="drill-score-input" />
+        `;
+
     case METRIC_TYPES.PERCENTAGE:
-      return `
+      return extraHTML + `
         <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Score (e.g. 7/10 or 70)</label>
         <input data-id="${id}" type="text" class="input-style drill-score-input" placeholder="Made / Attempts" />
       `;
-    case METRIC_TYPES.DISTANCE_STDDEV:
-      return `
-        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Avg Dist / Deviation</label>
-        <input data-id="${id}" type="text" class="input-style drill-score-input" placeholder="e.g. 175 / 5" />
-      `;
-    case METRIC_TYPES.PROXIMITY:
-      return `
-        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Proximity (Feet)</label>
-        <input data-id="${id}" type="number" step="0.1" class="input-style drill-score-input" placeholder="Feet" />
-      `;
+      
     default:
-      return `
+      return extraHTML + `
         <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Score / Result</label>
         <input data-id="${id}" type="text" class="input-style drill-score-input" placeholder="Result" />
       `;
@@ -159,13 +195,13 @@ function getMetricInputHTML(id, type) {
 }
 
 // ================================
-// RENDER — SKILL SELECT (COLLAPSIBLE)
+// RENDER — SKILLS & DRILLS
 // ================================
 function renderSkills() {
   const container = $("skill-select");
   container.innerHTML = "";
-
   const groupedSkills = {};
+  
   SKILLS.forEach(skill => {
     const cat = skill.category || "Other";
     if (!groupedSkills[cat]) groupedSkills[cat] = [];
@@ -179,10 +215,7 @@ function renderSkills() {
 
     const summary = document.createElement("summary");
     summary.className = "flex items-center justify-between p-3 bg-gray-50 cursor-pointer font-bold text-emerald-900 select-none hover:bg-gray-100 transition";
-    summary.innerHTML = `
-      <span>${category}</span>
-      <span class="text-emerald-500 group-open:rotate-180 transition-transform">▼</span>
-    `;
+    summary.innerHTML = `<span>${category}</span><span class="text-emerald-500 group-open:rotate-180 transition-transform">▼</span>`;
 
     const content = document.createElement("div");
     content.className = "p-3 grid grid-cols-1 sm:grid-cols-2 gap-2 bg-white border-t border-gray-100";
@@ -194,29 +227,20 @@ function renderSkills() {
           <input type="checkbox" class="skill-check h-4 w-4 text-emerald-600 rounded focus:ring-emerald-500" data-skill="${skill.id}">
           <span class="text-gray-700 text-sm font-medium">${skill.label}</span>
         `;
-        
-        if (selectedSkills.has(skill.id)) {
-            label.querySelector("input").checked = true;
-        }
-
+        if (selectedSkills.has(skill.id)) label.querySelector("input").checked = true;
         label.querySelector("input").addEventListener("change", (e) => {
           if (e.target.checked) selectedSkills.add(skill.id);
           else selectedSkills.delete(skill.id);
           renderDrillSelect();
         });
-
         content.appendChild(label);
     });
-
     details.appendChild(summary);
     details.appendChild(content);
     container.appendChild(details);
   });
 }
 
-// ================================
-// RENDER — DRILL SELECT (INFO MODALS)
-// ================================
 function renderDrillSelect() {
   const container = $("drill-select");
   container.innerHTML = "";
@@ -225,13 +249,8 @@ function renderDrillSelect() {
     container.innerHTML = `
         <div class="text-center py-8 bg-gray-50 rounded-lg border border-dashed border-gray-300">
             <p class="text-gray-500 mb-2">Select skills above to see relevant drills</p>
-            <span class="text-xs text-gray-400">OR</span>
-            <button id="random-session-btn" class="mt-2 block mx-auto bg-indigo-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow hover:bg-indigo-700 transition">
-                🎲 Random Session
-            </button>
-        </div>
-    `;
-    
+            <button id="random-session-btn" class="mt-2 bg-indigo-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow hover:bg-indigo-700 transition">🎲 Random Session</button>
+        </div>`;
     const randBtn = $("random-session-btn");
     if(randBtn) randBtn.addEventListener("click", generateRandomSession);
     return;
@@ -252,7 +271,6 @@ function renderDrillSelect() {
         </h3>
         <div class="space-y-3" id="skill-group-${skill.id}"></div>
       `;
-
       container.appendChild(section);
       const groupDiv = section.querySelector(`#skill-group-${skill.id}`);
 
@@ -268,20 +286,15 @@ function renderDrillSelect() {
             <div class="flex-1 w-full">
                 <div class="flex items-center gap-2">
                     <h4 class="font-bold text-gray-800">${drill.name}</h4>
-                    <button class="info-btn text-gray-400 hover:text-emerald-600 transition" title="View Info">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                           <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-                        </svg>
+                    <button class="info-btn text-gray-400 hover:text-emerald-600" title="View Info">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" /></svg>
                     </button>
                 </div>
                 <div class="flex gap-2 mt-1">
                      <span class="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded">⏱ ${drill.duration} min</span>
                 </div>
             </div>
-            
-            <button data-id="${drill.id}" class="add-drill shrink-0 px-4 py-2 rounded-lg text-sm font-bold transition w-full sm:w-auto ${btnClass}">
-              ${btnText}
-            </button>
+            <button data-id="${drill.id}" class="add-drill shrink-0 px-4 py-2 rounded-lg text-sm font-bold transition w-full sm:w-auto ${btnClass}">${btnText}</button>
           `;
 
           card.querySelector(".add-drill").addEventListener("click", () => {
@@ -307,7 +320,6 @@ function renderDrillSelect() {
 function generateRandomSession() {
     selectedSkills.clear();
     selectedDrillIds.clear();
-    
     const cats = ['driver', 'irons', 'wedges', 'putting'];
     
     cats.forEach(catKey => {
@@ -323,13 +335,9 @@ function generateRandomSession() {
     renderDrillSelect();
     renderPreviewList();
     updateGoToLogButton();
-    
-    alert("Random session generated! Click 'Start Practice' when ready.");
+    alert("Random session generated!");
 }
 
-// ================================
-// RENDER — PREVIEW LIST
-// ================================
 function renderPreviewList() {
     let previewContainer = $("preview-container");
     if (!previewContainer) {
@@ -343,7 +351,6 @@ function renderPreviewList() {
 
     if (selectedDrillIds.size === 0) {
         previewContainer.classList.add("hidden");
-        previewContainer.innerHTML = "";
         return;
     }
 
@@ -353,28 +360,22 @@ function renderPreviewList() {
             <h3 class="font-bold text-indigo-900">Session Plan (${selectedDrillIds.size})</h3>
             <button class="text-xs text-indigo-600 hover:text-indigo-900 font-bold" id="clear-all-btn">Clear All</button>
         </div>
-        <ul class="space-y-2">
-    `;
+        <ul class="space-y-2">`;
     
     selectedDrillIds.forEach(id => {
         const drill = allDrillsMap.get(id);
         html += `
             <li class="flex justify-between items-center bg-white p-2 rounded border border-indigo-100 shadow-sm">
                 <span class="text-sm font-medium text-gray-800">${drill.name}</span>
-                <button class="text-red-400 hover:text-red-600" data-id="${id}">
-                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-                </button>
-            </li>
-        `;
+                <button class="text-red-400 hover:text-red-600" data-id="${id}">✕</button>
+            </li>`;
     });
     html += `</ul>`;
-    
     previewContainer.innerHTML = html;
 
     previewContainer.querySelectorAll("button[data-id]").forEach(btn => {
         btn.addEventListener("click", (e) => {
-            const id = e.currentTarget.dataset.id;
-            selectedDrillIds.delete(id);
+            selectedDrillIds.delete(e.currentTarget.dataset.id);
             renderDrillSelect();
             renderPreviewList();
             updateGoToLogButton();
@@ -392,21 +393,20 @@ function renderPreviewList() {
 }
 
 // ================================
-// LOGGING & SAVING (IMPROVED: Smart Scoring)
+// LOGGING & SAVING
 // ================================
 function renderSelectedDrills() {
   const container = $("selected-drills-log");
   container.innerHTML = "";
 
   if (selectedDrillIds.size === 0) {
-    container.innerHTML = `<p class="text-center text-gray-500">No drills selected. Go to "New Session" to add some!</p>`;
+    container.innerHTML = `<p class="text-center text-gray-500">No drills selected.</p>`;
     return;
   }
 
   Array.from(selectedDrillIds).forEach(id => {
     const drill = allDrillsMap.get(id);
     const metric = getDrillMetric(drill);
-
     const card = document.createElement("div");
     card.className = "card border-l-4 border-black";
 
@@ -421,7 +421,7 @@ function renderSelectedDrills() {
       
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
           <div>
-            ${getMetricInputHTML(id, metric)}
+            ${getMetricInputHTML(id, metric, drill)}
           </div>
           <div>
             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Notes</label>
@@ -431,6 +431,42 @@ function renderSelectedDrills() {
     `;
 
     container.appendChild(card);
+    
+    // ATTACH LISTENERS FOR SPECIAL METRICS
+    
+    // 1. Randomizer Button
+    const rollBtn = card.querySelector(".roll-btn");
+    if (rollBtn) {
+        rollBtn.addEventListener("click", (e) => {
+            const min = parseInt(e.target.dataset.min);
+            const max = parseInt(e.target.dataset.max);
+            const range = max - min + 1;
+            const rand = Math.floor(Math.random() * range) + min;
+            document.getElementById(e.target.dataset.target).innerText = `Target: ${rand}y`;
+        });
+    }
+
+    // 2. Calculator Logic
+    if (metric === METRIC_TYPES.DISPERSION_CALC) {
+        const inputs = card.querySelectorAll(`.calc-input[data-group="${id}"]`);
+        inputs.forEach(input => {
+            input.addEventListener("input", () => {
+                const values = Array.from(inputs).map(i => parseFloat(i.value)).filter(v => !isNaN(v));
+                
+                if (values.length > 0) {
+                    const sum = values.reduce((a, b) => a + b, 0);
+                    const avg = sum / values.length;
+                    const sd = calculateSD(values);
+                    
+                    document.getElementById(`calc-avg-${id}`).innerText = avg.toFixed(1);
+                    document.getElementById(`calc-sd-${id}`).innerText = sd.toFixed(2);
+                    
+                    // Update hidden input for saving
+                    card.querySelector(`.drill-score-input[data-id="${id}"]`).value = sd.toFixed(2);
+                }
+            });
+        });
+    }
   });
 }
 
@@ -454,19 +490,12 @@ function initSaveSession() {
       const raw = scoreInput?.value.trim() || "";
       let numeric = null;
 
-      // === SMART SCORING PARSER ===
-      // Check for Fraction format (e.g. "7/10")
       if (raw.includes("/")) {
           const parts = raw.split("/");
-          if (parts.length === 2) {
-              const num = parseFloat(parts[0]);
-              const den = parseFloat(parts[1]);
-              if (!isNaN(num) && !isNaN(den) && den !== 0) {
-                  numeric = (num / den) * 100; // Convert to Percentage
-              }
+          if (parts.length === 2 && parseFloat(parts[1]) !== 0) {
+              numeric = (parseFloat(parts[0]) / parseFloat(parts[1])) * 100;
           }
       } else {
-          // Standard numeric parsing
           const match = raw.match(/[-+]?\d*\.?\d+/);
           if (match) numeric = parseFloat(match[0]);
       }
@@ -493,7 +522,6 @@ function initSaveSession() {
     saveSession(session);
     alert("Session saved!");
     
-    // Reset
     selectedDrillIds.clear();
     selectedSkills.clear();
     renderSkills();
@@ -512,9 +540,7 @@ function initSaveSession() {
 function renderHistory() {
   const container = $("history-list");
   const sessions = loadSessions();
-
   container.innerHTML = "";
-
   if (!sessions.length) {
     container.innerHTML = "<p>No past sessions.</p>";
     return;
@@ -523,122 +549,58 @@ function renderHistory() {
   sessions.slice().reverse().forEach((s) => {
     const div = document.createElement("div");
     div.className = "card relative hover:shadow-lg transition cursor-pointer border border-transparent hover:border-gray-200";
-    
-    const drillsCount = s.drills ? s.drills.length : 0;
-    const notesSnippet = s.notes ? `<p class="text-sm text-gray-500 mt-2 bg-gray-50 p-2 rounded truncate">"${s.notes}"</p>` : "";
-    
     div.innerHTML = `
       <div class="flex justify-between items-start pointer-events-none">
-          <div>
-            <h3 class="font-bold text-lg">${s.date} <span class="text-gray-400 font-normal">@</span> ${s.location}</h3>
-            <p class="text-sm text-gray-800">${drillsCount} drills completed</p>
-          </div>
-          <button class="delete-btn pointer-events-auto text-red-400 hover:text-red-600 p-1 rounded-full hover:bg-red-50" title="Delete Session">
-             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-          </button>
-      </div>
-      <div class="pointer-events-none">
-        ${notesSnippet}
+          <div><h3 class="font-bold text-lg">${s.date} @ ${s.location}</h3><p class="text-sm text-gray-800">${s.drills ? s.drills.length : 0} drills</p></div>
+          <button class="delete-btn pointer-events-auto text-red-400 hover:text-red-600 p-1" title="Delete">✕</button>
       </div>
     `;
-    
-    div.addEventListener("click", (e) => {
-        if (e.target.closest('.delete-btn')) return;
-        showSessionDetails(s);
-    });
-
+    div.addEventListener("click", (e) => { if (!e.target.closest('.delete-btn')) showSessionDetails(s); });
     div.querySelector(".delete-btn").addEventListener("click", (e) => {
-        e.stopPropagation(); 
-        if(confirm("Are you sure you want to delete this session?")) {
-            deleteSession(s);
-        }
+        e.stopPropagation();
+        if(confirm("Delete?")) deleteSession(s);
     });
-
     container.appendChild(div);
   });
 }
 
 function showSessionDetails(session) {
-    let content = `
-        <div class="mb-4">
-            <p class="text-sm text-gray-500">Location: <span class="font-medium text-gray-900">${session.location}</span></p>
-            <p class="text-sm text-gray-500">Date: <span class="font-medium text-gray-900">${session.date}</span></p>
-            ${session.notes ? `<div class="mt-2 bg-yellow-50 p-3 rounded text-gray-800 italic border-l-4 border-yellow-300">"${session.notes}"</div>` : ''}
-        </div>
-        <h4 class="font-bold text-gray-900 mb-2">Drill Breakdown</h4>
-        <div class="space-y-3">
-    `;
-
-    if (session.drillResults && session.drillResults.length > 0) {
+    let content = `<h4 class="font-bold mb-2">Drill Breakdown</h4><div class="space-y-3">`;
+    if (session.drillResults) {
         session.drillResults.forEach(res => {
-            const scoreDisplay = res.score.raw ? `<span class="font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">${res.score.raw}</span>` : `<span class="text-gray-400 italic">No score</span>`;
-            const noteDisplay = res.notes ? `<p class="text-xs text-gray-500 mt-1 pl-2 border-l-2 border-gray-200">${res.notes}</p>` : '';
-            
-            content += `
-                <div class="border-b border-gray-100 pb-2 last:border-0">
-                    <div class="flex justify-between items-baseline">
-                        <span class="text-sm font-semibold text-gray-800">${res.name || "Unknown Drill"}</span>
-                        ${scoreDisplay}
-                    </div>
-                    ${noteDisplay}
-                </div>
-            `;
+            content += `<div class="border-b pb-2"><div class="flex justify-between"><span class="font-semibold">${res.name}</span><span class="font-mono font-bold bg-emerald-50 px-2 rounded">${res.score.raw}</span></div></div>`;
         });
-    } else {
-        content += `<p class="text-sm italic text-gray-400">No drill data recorded.</p>`;
     }
-
     content += `</div>`;
     showModal("Session Details", content);
 }
 
 function deleteSession(sessionToDelete) {
     const sessions = loadSessions();
-    const newSessions = sessions.filter(s => {
-        if (sessionToDelete.id && s.id) return s.id !== sessionToDelete.id;
-        return s.createdAt !== sessionToDelete.createdAt;
-    });
-    
+    const newSessions = sessions.filter(s => s.id !== sessionToDelete.id && s.createdAt !== sessionToDelete.createdAt);
     localStorage.setItem("golf_sessions", JSON.stringify(newSessions));
-    renderHistory(); 
-    renderAnalytics();
+    renderHistory(); renderAnalytics();
 }
 
 // ================================
-// ANALYTICS (GROUPED & COLLAPSIBLE)
+// ANALYTICS (GROUPED)
 // ================================
 function renderAnalytics() {
   const container = $("analytics-container");
   const sessions = loadSessions();
+  if (!sessions.length) { container.innerHTML = "<p>No data recorded yet.</p>"; return; }
 
-  if (!sessions.length) {
-    container.innerHTML = "<p>No data recorded yet.</p>";
-    return;
-  }
-
-  // 1. Compile Stats
   const drillStats = {};
-  const chronSessions = sessions.slice().sort((a,b) => new Date(a.date) - new Date(b.date));
-
-  chronSessions.forEach(session => {
+  sessions.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(session => {
     if (!session.drillResults) return;
     session.drillResults.forEach(result => {
       if (result.score && result.score.numeric !== null) {
-        if (!drillStats[result.id]) {
-          drillStats[result.id] = { 
-              name: result.name, 
-              dataPoints: [] 
-          };
-        }
-        drillStats[result.id].dataPoints.push({
-            date: session.date,
-            score: result.score.numeric
-        });
+        if (!drillStats[result.id]) drillStats[result.id] = { name: result.name, dataPoints: [] };
+        drillStats[result.id].dataPoints.push({ date: session.date, score: result.score.numeric });
       }
     });
   });
 
-  // 2. Group by Category
   const groupedStats = {};
   Object.keys(drillStats).forEach(id => {
       const drill = allDrillsMap.get(id);
@@ -647,152 +609,67 @@ function renderAnalytics() {
       groupedStats[catKey].push({ id, ...drillStats[id] });
   });
 
-  // 3. Render
   container.innerHTML = "";
-  
-  if (Object.keys(drillStats).length === 0) {
-      container.innerHTML = "<p>No numeric scores found in history.</p>";
-      return;
-  }
-
-  // Render in specific order
   Object.keys(CATEGORIES).forEach((catKey, index) => {
       const categoryDrills = groupedStats[catKey];
-      if (!categoryDrills || categoryDrills.length === 0) return;
-
+      if (!categoryDrills) return;
       const details = document.createElement("details");
-      details.className = "group border border-gray-200 rounded-lg mb-4 overflow-hidden bg-white shadow-sm";
+      details.className = "group border border-gray-200 rounded-lg mb-4 bg-white shadow-sm";
       if (index === 0) details.open = true;
-
-      const summary = document.createElement("summary");
-      summary.className = "flex items-center justify-between p-4 bg-gray-50 cursor-pointer font-bold text-lg text-gray-800 select-none hover:bg-gray-100 transition";
-      summary.innerHTML = `
-        <span>${CATEGORIES[catKey]}</span>
-        <span class="text-emerald-500 group-open:rotate-180 transition-transform">▼</span>
-      `;
-
+      details.innerHTML = `<summary class="p-4 font-bold cursor-pointer select-none">${CATEGORIES[catKey]}</summary>`;
       const content = document.createElement("div");
-      content.className = "p-4 border-t border-gray-100 space-y-6";
-
+      content.className = "p-4 space-y-6 border-t";
+      
       categoryDrills.forEach(data => {
           const scores = data.dataPoints.map(dp => dp.score);
           const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
-          const max = Math.max(...scores); // PB
           const canvasId = `chart-${data.id}`;
-
-          const card = document.createElement("div");
-          card.className = "bg-gray-50 rounded-lg p-4 border border-gray-200";
-
-          card.innerHTML = `
-            <div class="flex justify-between items-baseline mb-3 border-b border-gray-200 pb-2">
-                <h4 class="font-bold text-md text-gray-900">${data.name}</h4>
-                <span class="text-xs font-bold text-amber-600 bg-amber-100 px-2 py-1 rounded">PB: ${max.toFixed(1)}</span>
-            </div>
-            
-            <div class="grid grid-cols-2 gap-4 text-center mb-3">
-                <div class="bg-white p-2 rounded shadow-sm">
-                <span class="block text-xs text-gray-400 uppercase">Average</span>
-                <span class="text-lg font-mono font-bold">${avg.toFixed(1)}</span>
-                </div>
-                <div class="bg-white p-2 rounded shadow-sm">
-                <span class="block text-xs text-gray-400 uppercase">Entries</span>
-                <span class="text-lg font-mono font-bold">${scores.length}</span>
-                </div>
-            </div>
-            
-            <div class="h-40 w-full bg-white rounded p-2">
-                <canvas id="${canvasId}"></canvas>
-            </div>
-          `;
-          
-          content.appendChild(card);
+          content.innerHTML += `
+            <div class="bg-gray-50 rounded p-4">
+                <h4 class="font-bold">${data.name} <span class="text-xs bg-amber-100 px-2 rounded ml-2">Best: ${Math.max(...scores).toFixed(1)}</span></h4>
+                <div class="h-40 w-full bg-white mt-2 rounded p-2"><canvas id="${canvasId}"></canvas></div>
+            </div>`;
       });
-
-      details.appendChild(summary);
       details.appendChild(content);
       container.appendChild(details);
   });
 
-  // 4. Initialize Charts (after DOM insertion)
   setTimeout(() => {
-      Object.keys(CATEGORIES).forEach(catKey => {
-          const categoryDrills = groupedStats[catKey];
-          if (!categoryDrills) return;
-
-          categoryDrills.forEach(data => {
-              const canvas = document.getElementById(`chart-${data.id}`);
-              if (canvas && window.Chart) {
-                  new Chart(canvas.getContext('2d'), {
-                      type: 'line',
-                      data: {
-                          labels: data.dataPoints.map(dp => dp.date.substring(5)),
-                          datasets: [{
-                              label: 'Score',
-                              data: data.dataPoints.map(dp => dp.score),
-                              borderColor: '#059669',
-                              backgroundColor: 'rgba(5, 150, 105, 0.1)',
-                              tension: 0.3,
-                              fill: true,
-                              pointRadius: 3
-                          }]
-                      },
-                      options: {
-                          responsive: true,
-                          maintainAspectRatio: false,
-                          plugins: { legend: { display: false } },
-                          scales: { y: { beginAtZero: true } }
-                      }
-                  });
-              }
-          });
+      Object.keys(drillStats).forEach(id => {
+          const canvas = document.getElementById(`chart-${id}`);
+          if (canvas && window.Chart) {
+              new Chart(canvas.getContext('2d'), {
+                  type: 'line',
+                  data: {
+                      labels: drillStats[id].dataPoints.map(dp => dp.date.substring(5)),
+                      datasets: [{ data: drillStats[id].dataPoints.map(dp => dp.score), borderColor: '#059669', tension: 0.3 }]
+                  },
+                  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+              });
+          }
       });
   }, 100);
 }
 
 // ================================
-// TABS
+// INIT
 // ================================
 function switchTab(tabId) {
     document.querySelectorAll(".tab-pane").forEach(x => x.classList.add("hidden"));
     document.querySelectorAll(".tab-button").forEach(x => x.classList.remove("active"));
-
-    const targetPane = document.getElementById(tabId);
-    if(targetPane) targetPane.classList.remove("hidden");
-
-    const targetBtn = document.querySelector(`.tab-button[data-tab="${tabId}"]`);
-    if(targetBtn) targetBtn.classList.add("active");
-
+    document.getElementById(tabId).classList.remove("hidden");
+    document.querySelector(`.tab-button[data-tab="${tabId}"]`).classList.add("active");
     if (tabId === "history") renderHistory();
     if (tabId === "analytics") renderAnalytics();
     if (tabId === "log") renderSelectedDrills();
-    
     window.scrollTo(0,0);
 }
 
-function initTabs() {
-  document.querySelectorAll(".tab-button").forEach(btn => {
-    btn.addEventListener("click", () => switchTab(btn.dataset.tab));
-  });
-}
-
-// ================================
-// INIT
-// ================================
 function init() {
-  createModal();
-  renderSkills();
-  renderDrillSelect();
-  renderPreviewList(); 
-  initSaveSession();
-  initTabs();
-
-  const goToLogBtn = $("go-to-log");
-  if (goToLogBtn) {
-      goToLogBtn.addEventListener("click", () => {
-         if(selectedDrillIds.size > 0) switchTab("log");
-         else alert("Please select or randomize drills first.");
-      });
-  }
+  createModal(); renderSkills(); renderDrillSelect(); renderPreviewList(); initSaveSession();
+  document.querySelectorAll(".tab-button").forEach(btn => btn.addEventListener("click", () => switchTab(btn.dataset.tab)));
+  const btn = $("go-to-log");
+  if (btn) btn.addEventListener("click", () => { if(selectedDrillIds.size > 0) switchTab("log"); else alert("Select drills first."); });
 }
 
 init();
