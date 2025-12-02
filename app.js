@@ -1,6 +1,6 @@
 // ================================
 // app.js — ULTIMATE VERSION
-// Features: RNG Multilog Fixed, Smart Scoring, Analytics
+// Features: RNG Multilog, Smart Scoring, Analytics, Data Backup, Progression
 // ================================
 
 import { DRILLS } from "./drills.js";
@@ -40,15 +40,6 @@ const METRIC_TYPES = {
   RNG_MULTILOG: "RNG_MULTILOG"
 };
 
-const CATEGORIES = {
-  driving: "Driving",
-  approach: "Approach / Irons",
-  wedges: "Wedges",
-  shortgame: "Short Game",
-  putting: "Putting",
-  other: "Other"
-};
-
 const allDrillsMap = new Map(Object.values(DRILLS).flat().map(d => [d.id, d]));
 const skillMap = new Map(SKILLS.map(s => [s.id, s]));
 
@@ -83,18 +74,6 @@ function closeModal() { $("app-modal").classList.add("hidden"); }
 // ================================
 // CORE LOGIC
 // ================================
-function detectCategory(drill) {
-  if (!drill) return "other";
-  for (const groupName in DRILLS) {
-    if (DRILLS[groupName].some(d => d.id === drill.id)) {
-      if (groupName === 'irons') return 'approach';
-      if (groupName === 'driver') return 'driving';
-      return groupName;
-    }
-  }
-  return "other";
-}
-
 function getDrillMetric(drill) {
   if (drill.metricType) return drill.metricType;
   const firstSkill = drill.skills[0];
@@ -110,12 +89,68 @@ function calculateSD(values) {
 }
 
 // ================================
+// DATA BACKUP (EXPORT/IMPORT)
+// ================================
+function initDataBackup() {
+    const backupContainer = document.createElement("div");
+    backupContainer.className = "card mt-8 bg-gray-50 border border-gray-200";
+    backupContainer.innerHTML = `
+        <h3 class="font-bold text-lg mb-2">Data Backup</h3>
+        <p class="text-sm text-gray-600 mb-4">Download your history to save it safely, or restore from a file.</p>
+        <div class="flex gap-4">
+            <button id="export-btn" class="bg-emerald-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-emerald-700">⬇ Export Data</button>
+            <label class="bg-blue-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-blue-700 cursor-pointer">
+                ⬆ Import Data
+                <input type="file" id="import-file" class="hidden" accept=".json">
+            </label>
+        </div>
+    `;
+    
+    // Only append if not already there
+    if(!$("backup-section")) {
+        backupContainer.id = "backup-section";
+        $("history").appendChild(backupContainer);
+    }
+
+    $("export-btn").addEventListener("click", () => {
+        const data = localStorage.getItem("golf_sessions");
+        const blob = new Blob([data], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `golf_data_${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+    });
+
+    $("import-file").addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const sessions = JSON.parse(event.target.result);
+                if(Array.isArray(sessions)) {
+                    localStorage.setItem("golf_sessions", JSON.stringify(sessions));
+                    alert("Data restored successfully!");
+                    renderHistory();
+                    renderAnalytics();
+                } else {
+                    alert("Invalid file format.");
+                }
+            } catch(err) {
+                alert("Error parsing file.");
+            }
+        };
+        reader.readAsText(file);
+    });
+}
+
+// ================================
 // INPUT HTML GENERATOR
 // ================================
 function getMetricInputHTML(id, type, drill) {
   let extraHTML = "";
   
-  // Basic Randomizer (Single)
   if (drill.randomizer && type !== METRIC_TYPES.RNG_MULTILOG) {
       extraHTML = `
         <div class="mb-3 p-3 bg-indigo-50 rounded border border-indigo-100 flex justify-between items-center">
@@ -130,8 +165,6 @@ function getMetricInputHTML(id, type, drill) {
 
   switch (type) {
     case METRIC_TYPES.RNG_MULTILOG:
-        // Complex Table for 5 Targets x 2 Shots
-        // Note: Using a unique ID for the container so we can inject rows easily
         return `
             <div class="mb-2">
                 <button class="rng-multi-btn w-full bg-indigo-600 text-white py-2 rounded text-sm font-bold mb-2 transition hover:bg-indigo-700"
@@ -142,7 +175,6 @@ function getMetricInputHTML(id, type, drill) {
                     data-shots="${drill.randomizer.shotsPerTarget || 2}">
                     🎲 Generate 5 Targets
                 </button>
-                
                 <div id="rng-table-${id}" class="hidden bg-gray-50 p-2 rounded text-sm border border-gray-200">
                     <div class="grid grid-cols-3 gap-2 font-bold text-xs text-gray-500 border-b pb-2 mb-2 text-center">
                         <span>TARGET</span>
@@ -151,11 +183,9 @@ function getMetricInputHTML(id, type, drill) {
                     </div>
                     <div id="rng-rows-${id}" class="space-y-2"></div>
                 </div>
-
                 <div class="mt-2 text-xs text-right text-gray-500 font-medium">
                     Avg Error: <span id="rng-score-${id}" class="font-bold text-emerald-600 text-sm">--</span> y
                 </div>
-                <!-- Hidden input stores the final calculated score for saving -->
                 <input type="hidden" data-id="${id}" class="drill-score-input" />
             </div>
         `;
@@ -217,9 +247,22 @@ function renderSkills() {
 function renderDrillSelect() {
   const container = $("drill-select");
   container.innerHTML = "";
+  
+  // PRESETS LOGIC (Suggestion 5)
   if (selectedSkills.size === 0) {
-      container.innerHTML = `<div class="text-center py-8 bg-gray-50 rounded border border-dashed border-gray-300"><p class="text-gray-500 mb-2">Select skills to see drills</p><button id="rand-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow hover:bg-indigo-700 transition">🎲 Random Session</button></div>`;
-      if($("rand-btn")) $("rand-btn").addEventListener("click", generateRandomSession);
+      container.innerHTML = `
+        <div class="text-center py-8 bg-gray-50 rounded border border-dashed border-gray-300">
+            <p class="text-gray-500 mb-4">Select skills above OR choose a preset:</p>
+            <div class="flex flex-wrap gap-2 justify-center">
+                <button class="preset-btn bg-indigo-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow hover:bg-indigo-700 transition" data-type="random">🎲 Random (4)</button>
+                <button class="preset-btn bg-emerald-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow hover:bg-emerald-700 transition" data-type="shortgame">⛳ Short Game Only</button>
+                <button class="preset-btn bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow hover:bg-blue-700 transition" data-type="driver_iron">🚀 Driver & Irons</button>
+            </div>
+        </div>`;
+      
+      container.querySelectorAll(".preset-btn").forEach(btn => {
+          btn.addEventListener("click", () => generateSessionPreset(btn.dataset.type));
+      });
       return;
   }
 
@@ -242,13 +285,23 @@ function renderDrillSelect() {
       skillGroups[label].forEach(drill => {
           if(grp.querySelector(`[data-card-id="${drill.id}"]`)) return;
 
+          // PROGRESSION LOGIC (Suggestion 1 - Visual Indicator)
+          let badge = "";
+          if (drill.targetValues?.successThreshold) {
+             badge = `<span class="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded ml-2">Goal: ${drill.targetValues.successThreshold}+</span>`;
+          }
+
           const card = document.createElement("div");
           card.setAttribute("data-card-id", drill.id);
           card.className = "card border border-gray-200 shadow-sm p-4 flex flex-col sm:flex-row gap-3 justify-between items-center";
           const isAdded = selectedDrillIds.has(drill.id);
           card.innerHTML = `
             <div class="flex-1">
-                <div class="flex items-center gap-2"><h4 class="font-bold text-gray-800">${drill.name}</h4><button class="info-btn text-gray-400 hover:text-emerald-600 transition">ⓘ</button></div>
+                <div class="flex items-center gap-2">
+                    <h4 class="font-bold text-gray-800">${drill.name}</h4>
+                    ${badge}
+                    <button class="info-btn text-gray-400 hover:text-emerald-600 transition">ⓘ</button>
+                </div>
                 <span class="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-500 font-medium">⏱ ${drill.duration}m</span>
             </div>
             <button class="add-drill px-4 py-2 rounded text-sm font-bold transition ${isAdded?'bg-red-50 text-red-600 border border-red-200':'bg-black text-white hover:bg-gray-800'}">${isAdded?'Remove':'Add'}</button>
@@ -297,8 +350,20 @@ function renderSelectedDrills() {
         const metric = getDrillMetric(drill);
         const card = document.createElement("div");
         card.className = "card border-l-4 border-black mb-6";
+        
+        // Show Goal if available
+        let goalText = "";
+        if (drill.targetValues) {
+            if (drill.targetValues.successThreshold) goalText = `<div class="bg-amber-50 text-amber-800 text-xs font-bold px-2 py-1 rounded mt-2 inline-block">🎯 Goal: ${drill.targetValues.successThreshold}/${drill.targetValues.shots}</div>`;
+            else if (drill.targetValues.sd_target_yards) goalText = `<div class="bg-amber-50 text-amber-800 text-xs font-bold px-2 py-1 rounded mt-2 inline-block">🎯 Goal: SD < ${drill.targetValues.sd_target_yards}y</div>`;
+        }
+
         card.innerHTML = `
-            <div class="mb-3"><h3 class="text-lg font-bold">${drill.name}</h3><div class="bg-gray-50 p-3 rounded text-sm mt-2 text-gray-700 border border-gray-100">${drill.description}</div></div>
+            <div class="mb-3">
+                <h3 class="text-lg font-bold">${drill.name}</h3>
+                ${goalText}
+                <div class="bg-gray-50 p-3 rounded text-sm mt-2 text-gray-700 border border-gray-100">${drill.description}</div>
+            </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>${getMetricInputHTML(id, metric, drill)}</div>
                 <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Notes</label><textarea data-note-id="${id}" class="input-style w-full h-24 resize-none" placeholder="Feel / Miss pattern..."></textarea></div>
@@ -307,7 +372,6 @@ function renderSelectedDrills() {
 
         // --- HANDLERS ---
         
-        // 1. Simple Randomizer (Single Target)
         const rollBtn = card.querySelector(".roll-btn");
         if(rollBtn) {
             rollBtn.addEventListener("click", (e) => {
@@ -321,7 +385,6 @@ function renderSelectedDrills() {
             });
         }
 
-        // 2. SD Calc (5 inputs)
         if(metric === METRIC_TYPES.DISPERSION_CALC) {
             const inputs = card.querySelectorAll(`.calc-input[data-group="${id}"]`);
             inputs.forEach(i => i.addEventListener("input", () => {
@@ -331,12 +394,11 @@ function renderSelectedDrills() {
                     const sd = calculateSD(vals);
                     document.getElementById(`calc-avg-${id}`).innerText = avg.toFixed(1);
                     document.getElementById(`calc-sd-${id}`).innerText = sd.toFixed(1);
-                    card.querySelector(`.drill-score-input`).value = sd.toFixed(2); // Save SD as score
+                    card.querySelector(`.drill-score-input`).value = sd.toFixed(2);
                 }
             }));
         }
 
-        // 3. RNG MULTILOG (5 Targets x 2 Shots)
         if(metric === METRIC_TYPES.RNG_MULTILOG) {
             const btn = card.querySelector(".rng-multi-btn");
             const tableContainer = document.getElementById(`rng-table-${id}`);
@@ -344,8 +406,7 @@ function renderSelectedDrills() {
             
             btn.addEventListener("click", () => {
                 const min = parseInt(btn.dataset.min), max = parseInt(btn.dataset.max), count = parseInt(btn.dataset.count);
-                rowsContainer.innerHTML = ""; // Clear old
-                
+                rowsContainer.innerHTML = ""; 
                 for(let i=0; i<count; i++) {
                     const target = Math.floor(Math.random()*(max-min+1)) + min;
                     rowsContainer.innerHTML += `
@@ -356,9 +417,7 @@ function renderSelectedDrills() {
                         </div>`;
                 }
                 tableContainer.classList.remove("hidden");
-                btn.classList.add("hidden"); // Hide button after gen
-
-                // Attach math listeners to NEW inputs
+                btn.classList.add("hidden"); 
                 rowsContainer.querySelectorAll(".multi-inp").forEach(inp => inp.addEventListener("input", calculateMultiError));
             });
 
@@ -376,7 +435,7 @@ function renderSelectedDrills() {
                 });
                 const avgErr = shotCount ? (totalError/shotCount).toFixed(1) : "--";
                 document.getElementById(`rng-score-${id}`).innerText = avgErr;
-                card.querySelector(`.drill-score-input`).value = avgErr; // Save Avg Error as score
+                card.querySelector(`.drill-score-input`).value = avgErr; 
             }
         }
     });
@@ -395,7 +454,6 @@ function initSaveSession() {
             const note = document.querySelector(`textarea[data-note-id="${id}"]`)?.value || "";
             let num = null;
             
-            // Smart Parse: 8/10 -> 80%
             if(raw.includes("/")) {
                 const [n, d] = raw.split("/");
                 if(d && parseFloat(d)!==0) num = (parseFloat(n)/parseFloat(d))*100;
@@ -421,15 +479,24 @@ function initSaveSession() {
         selectedDrillIds.clear(); selectedSkills.clear(); renderSkills(); renderDrillSelect(); renderPreviewList(); updateGoToLogButton();
         $("session-notes").value="";
         switchTab("history");
+        
+        // CHECK PROGRESSION (Suggestion 1)
+        checkProgression(drillResults);
     });
 }
 
 // ================================
 // INIT & NAVIGATION
 // ================================
-function generateRandomSession() {
+function generateSessionPreset(type) {
     selectedDrillIds.clear(); selectedSkills.clear();
-    ['driver','irons','wedges','putting'].forEach(cat => {
+    
+    let cats = [];
+    if(type === 'random') cats = ['driver','irons','wedges','putting'];
+    if(type === 'shortgame') cats = ['wedges','short_game','putting'];
+    if(type === 'driver_iron') cats = ['driver','irons'];
+
+    cats.forEach(cat => {
         if(DRILLS[cat]?.length) {
             const d = DRILLS[cat][Math.floor(Math.random()*DRILLS[cat].length)];
             selectedDrillIds.add(d.id);
@@ -437,13 +504,53 @@ function generateRandomSession() {
         }
     });
     renderSkills(); renderDrillSelect(); renderPreviewList(); updateGoToLogButton();
-    alert("Generated 4 random drills!");
+}
+
+function generateRandomSession() { generateSessionPreset('random'); }
+
+function checkProgression(results) {
+    // Simple logic: If you passed a level drill, congratulate
+    // In a real app, we'd check history for streaks.
+    const passed = results.filter(r => {
+        const drill = allDrillsMap.get(r.id);
+        if (!drill.targetValues || !r.score.numeric) return false;
+        
+        // For count (X/Y), numeric score is %. 
+        // 8/10 = 80%. Threshold 8/10 = 8. Need to normalize.
+        if (drill.scoreType === 'count') {
+             // If goal is 8/10, that's 80%. 
+             const goalPct = (drill.targetValues.successThreshold / drill.targetValues.shots) * 100;
+             return r.score.numeric >= goalPct;
+        }
+        // For SD, lower is better
+        if (drill.scoreType === 'sd') {
+            return r.score.numeric <= drill.targetValues.sd_target_yards;
+        }
+        return false;
+    });
+
+    if (passed.length > 0) {
+        const names = passed.map(p => p.name).join(", ");
+        alert(`🎉 Great job! You hit the target goal for: ${names}. Consider moving to the next level next time!`);
+    }
 }
 
 function renderHistory() {
+    initDataBackup(); // Ensure backup buttons exist
     const box = $("history-list");
+    // Preserve backup section if it exists, clear lists
+    const existingBackup = $("backup-section");
+    box.innerHTML = ""; 
+    if(existingBackup) box.appendChild(existingBackup);
+
     const sessions = loadSessions();
-    box.innerHTML = sessions.length ? "" : "<p>No history.</p>";
+    if (!sessions.length) { 
+        const p = document.createElement("p");
+        p.innerText = "No history.";
+        box.appendChild(p);
+        return; 
+    }
+
     sessions.slice().reverse().forEach(s => {
         const div = document.createElement("div");
         div.className = "card mb-4 relative hover:shadow-md cursor-pointer border border-transparent hover:border-gray-200";
@@ -472,8 +579,17 @@ function renderAnalytics() {
     loadSessions().sort((a,b)=>new Date(a.date)-new Date(b.date)).forEach(s => {
         s.drillResults.forEach(r => {
             if(r.score.numeric !== null) {
-                if(!data[r.id]) data[r.id] = { name: r.name, pts: [] };
+                if(!data[r.id]) data[r.id] = { name: r.name, pts: [], targets: [] };
                 data[r.id].pts.push(r.score.numeric);
+                
+                // Track Target Line (Suggestion 2)
+                const drill = allDrillsMap.get(r.id);
+                let target = null;
+                if(drill?.targetValues?.successThreshold) target = (drill.targetValues.successThreshold / drill.targetValues.shots) * 100;
+                else if(drill?.targetValues?.sd_target_yards) target = drill.targetValues.sd_target_yards;
+                else if(drill?.targetValues?.tolerance_yards) target = drill.targetValues.tolerance_yards;
+                
+                data[r.id].targets.push(target);
             }
         });
     });
@@ -487,9 +603,21 @@ function renderAnalytics() {
         const cid = `c-${id}`;
         box.innerHTML += `<div class="card mb-4"><div class="flex justify-between mb-2 font-bold"><span>${d.name}</span><span class="bg-gray-100 px-2 rounded text-sm">Avg: ${avg}</span></div><div class="h-32"><canvas id="${cid}"></canvas></div></div>`;
         setTimeout(() => {
+            // GOAL LINE DATASET
+            const datasets = [{ data: d.pts, borderColor: '#059669', tension:0.3, pointRadius:3 }];
+            if (d.targets.some(t => t !== null)) {
+                datasets.push({
+                    data: d.targets,
+                    borderColor: '#f87171',
+                    borderDash: [5, 5],
+                    pointRadius: 0,
+                    label: 'Goal'
+                });
+            }
+
             new Chart(document.getElementById(cid), {
                 type: 'line',
-                data: { labels: d.pts.map((_,i)=>i+1), datasets: [{ data: d.pts, borderColor: '#059669', tension:0.3, pointRadius:3 }] },
+                data: { labels: d.pts.map((_,i)=>i+1), datasets: datasets },
                 options: { plugins:{legend:{display:false}}, maintainAspectRatio:false, scales:{y:{beginAtZero:true}} }
             });
         }, 50);
