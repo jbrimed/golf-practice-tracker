@@ -1,6 +1,6 @@
 // ================================
-// app.js — ULTIMATE VERSION
-// Features: RNG Multilog, Smart Scoring, Analytics, Data Backup, Progression
+// app.js — ULTIMATE VERSION (FIXED)
+// Features: Fixed Buttons, Robust Saving, Smart Scoring
 // ================================
 
 import { DRILLS } from "./drills.js";
@@ -109,8 +109,9 @@ function initDataBackup() {
         </div>
     `;
     
+    // Safety check for container
     const container = $("backup-section-container") || $("history-list");
-    if(container) container.appendChild(backupContainer);
+    if (container) container.appendChild(backupContainer);
 
     $("export-btn").addEventListener("click", () => {
         const data = localStorage.getItem("golf_sessions");
@@ -138,7 +139,7 @@ function initDataBackup() {
                     alert("Invalid file format.");
                 }
             } catch(err) {
-                alert("Error parsing file.");
+                alert("Error parsing file. Check format.");
             }
         };
         reader.readAsText(file);
@@ -246,13 +247,14 @@ function renderSkills() {
 
 function renderDrillSelect() {
   const container = $("drill-select");
-  const presets = $("presets-container"); // New Reference
+  const presets = $("presets-container"); // Reference to top presets
   container.innerHTML = "";
   
   // TOGGLE PRESETS LOGIC
+  // If no skills/drills selected, show the top presets. Otherwise hide them.
   if (selectedSkills.size === 0 && selectedDrillIds.size === 0) {
       if(presets) presets.classList.remove("hidden");
-      container.innerHTML = `<div class="text-center py-8 text-slate-400 text-sm italic">Select focus areas above...</div>`;
+      container.innerHTML = `<div class="text-center py-8 text-slate-400 text-sm italic">Select focus areas above to add custom drills...</div>`;
       return;
   } else {
       if(presets) presets.classList.add("hidden");
@@ -428,45 +430,59 @@ function initSaveSession() {
     if(!saveBtn) return;
 
     saveBtn.addEventListener("click", () => {
-        const drillResults = Array.from(selectedDrillIds).map(id => {
-            const raw = document.querySelector(`.drill-score-input[data-id="${id}"]`)?.value || "";
-            const note = document.querySelector(`textarea[data-note-id="${id}"]`)?.value || "";
-            let num = null;
-            
-            if(raw.includes("/")) {
-                const [n, d] = raw.split("/");
-                if(d && parseFloat(d)!==0) num = (parseFloat(n)/parseFloat(d))*100;
-            } else {
-                const match = raw.match(/[\d\.]+/);
-                if(match) num = parseFloat(match[0]);
+        try {
+            // Safety check: Are there drills?
+            if (selectedDrillIds.size === 0) {
+                alert("No drills selected to save.");
+                return;
             }
 
-            return { id, name: allDrillsMap.get(id)?.name, score: { raw, numeric: num }, notes: note };
-        });
+            const drillResults = Array.from(selectedDrillIds).map(id => {
+                const raw = document.querySelector(`.drill-score-input[data-id="${id}"]`)?.value || "";
+                const note = document.querySelector(`textarea[data-note-id="${id}"]`)?.value || "";
+                let num = null;
+                
+                if(raw.includes("/")) {
+                    const [n, d] = raw.split("/");
+                    if(d && parseFloat(d)!==0) num = (parseFloat(n)/parseFloat(d))*100;
+                } else {
+                    const match = raw.match(/[\d\.]+/);
+                    if(match) num = parseFloat(match[0]);
+                }
 
-        // Removed location from object
-        saveSession({
-            id: Date.now().toString(),
-            date: $("session-date").value || new Date().toISOString().slice(0,10),
-            drills: Array.from(selectedDrillIds),
-            drillResults,
-            notes: $("session-notes").value,
-            createdAt: new Date().toISOString()
-        });
-        
-        alert("Saved!");
-        selectedDrillIds.clear(); selectedSkills.clear(); 
-        
-        // Reset Logic
-        renderSkills(); 
-        renderDrillSelect(); // Will unhide presets
-        renderPreviewList(); 
-        updateGoToLogButton();
-        
-        $("session-notes").value="";
-        switchTab("history");
-        
-        checkProgression(drillResults);
+                return { id, name: allDrillsMap.get(id)?.name, score: { raw, numeric: num }, notes: note };
+            });
+
+            // Get Date (Safety: fallback to today if input missing)
+            const dateInput = $("session-date");
+            const dateVal = dateInput ? dateInput.value : new Date().toISOString().slice(0,10);
+
+            saveSession({
+                id: Date.now().toString(),
+                date: dateVal,
+                drills: Array.from(selectedDrillIds),
+                drillResults,
+                notes: $("session-notes")?.value || "",
+                createdAt: new Date().toISOString()
+            });
+            
+            alert("Session Saved Successfully!");
+            
+            // Reset
+            selectedDrillIds.clear(); 
+            selectedSkills.clear(); 
+            renderSkills(); 
+            renderDrillSelect(); // Will unhide presets
+            renderPreviewList(); 
+            updateGoToLogButton();
+            if($("session-notes")) $("session-notes").value="";
+            switchTab("history");
+            checkProgression(drillResults);
+
+        } catch (err) {
+            console.error(err);
+            alert("Error saving session: " + err.message);
+        }
     });
 }
 
@@ -474,11 +490,13 @@ function initSaveSession() {
 // INIT & NAVIGATION
 // ================================
 function generateSessionPreset(type) {
-    selectedDrillIds.clear(); selectedSkills.clear();
+    selectedDrillIds.clear(); 
+    selectedSkills.clear();
     
+    // Exact keys as they appear in drills.js
     let cats = [];
     if(type === 'random') cats = ['driver','irons','wedges','putting'];
-    if(type === 'shortgame') cats = ['wedges','short_game','putting'];
+    if(type === 'shortgame') cats = ['wedges','short_game','putting']; // Fixed: short_game key
     if(type === 'driver_iron') cats = ['driver','irons'];
     if(type === 'putting') cats = ['putting'];
 
@@ -486,11 +504,14 @@ function generateSessionPreset(type) {
         if(DRILLS[cat]?.length) {
             const d = DRILLS[cat][Math.floor(Math.random()*DRILLS[cat].length)];
             selectedDrillIds.add(d.id);
+            // Auto-expand skill accordion
             d.skills.forEach(s => selectedSkills.add(s));
         }
     });
+    
+    // Important: Update UI order
     renderSkills(); 
-    renderDrillSelect(); // This hides presets
+    renderDrillSelect(); 
     renderPreviewList(); 
     updateGoToLogButton();
 }
@@ -500,7 +521,7 @@ function generateRandomSession() { generateSessionPreset('random'); }
 function checkProgression(results) {
     const passed = results.filter(r => {
         const drill = allDrillsMap.get(r.id);
-        if (!drill.targetValues || !r.score.numeric) return false;
+        if (!drill || !drill.targetValues || !r.score.numeric) return false;
         
         if (drill.scoreType === 'count') {
              const goalPct = (drill.targetValues.successThreshold / drill.targetValues.shots) * 100;
@@ -514,7 +535,7 @@ function checkProgression(results) {
 
     if (passed.length > 0) {
         const names = passed.map(p => p.name).join(", ");
-        alert(`🎉 Goal Met: ${names}.`);
+        alert(`🎉 Goal Met: ${names}. Good job!`);
     }
 }
 
@@ -528,7 +549,8 @@ function renderHistory() {
     const sessions = loadSessions();
     if (!sessions.length) { 
         const p = document.createElement("p");
-        p.innerText = "No history.";
+        p.innerText = "No history recorded yet.";
+        p.className = "text-gray-500 italic";
         box.appendChild(p);
         return; 
     }
@@ -539,7 +561,7 @@ function renderHistory() {
         div.innerHTML = `<div class="font-bold">${s.date}</div><div class="text-sm text-gray-600">${s.drills.length} drills</div><button class="del-btn absolute top-4 right-4 text-red-400 hover:text-red-600 p-2">✕</button>`;
         div.addEventListener("click", (e) => { if(!e.target.classList.contains("del-btn")) showSessionDetails(s); });
         div.querySelector(".del-btn").addEventListener("click", () => {
-            if(confirm("Delete?")) {
+            if(confirm("Delete this session?")) {
                 const newS = loadSessions().filter(x => x.id !== s.id);
                 localStorage.setItem("golf_sessions", JSON.stringify(newS));
                 renderHistory(); renderAnalytics();
@@ -615,18 +637,23 @@ function switchTab(t) {
     window.scrollTo(0,0);
 }
 
-// Ensure init waits for DOM
+// Ensure init waits for DOM to prevent null errors
 document.addEventListener("DOMContentLoaded", () => {
     init();
 });
 
 function init() {
     createModal(); renderSkills(); renderDrillSelect(); initSaveSession();
+    
+    // Tab Navigation
     document.querySelectorAll(".tab-button").forEach(b => b.addEventListener("click", ()=>switchTab(b.dataset.tab)));
+    
+    // Preset Buttons (Wait for DOM)
     document.querySelectorAll(".preset-btn").forEach(btn => {
         btn.addEventListener("click", () => generateSessionPreset(btn.dataset.type));
     });
     
+    // Start Button
     const goLog = $("go-to-log");
     if(goLog) goLog.addEventListener("click", ()=> { if(selectedDrillIds.size) switchTab("log"); });
 }
