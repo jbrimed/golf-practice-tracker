@@ -1,6 +1,6 @@
 // ================================
 // app.js — ULTIMATE VERSION
-// Features: RNG Multilog, Smart Scoring, Analytics
+// Features: RNG Multilog Fixed, Smart Scoring, Analytics
 // ================================
 
 import { DRILLS } from "./drills.js";
@@ -37,7 +37,7 @@ const METRIC_TYPES = {
   PROXIMITY: "PROXIMITY",
   CUSTOM: "CUSTOM",
   DISPERSION_CALC: "DISPERSION_CALC",
-  RNG_MULTILOG: "RNG_MULTILOG" // New complex type
+  RNG_MULTILOG: "RNG_MULTILOG"
 };
 
 const CATEGORIES = {
@@ -131,22 +131,31 @@ function getMetricInputHTML(id, type, drill) {
   switch (type) {
     case METRIC_TYPES.RNG_MULTILOG:
         // Complex Table for 5 Targets x 2 Shots
+        // Note: Using a unique ID for the container so we can inject rows easily
         return `
             <div class="mb-2">
-                <button class="rng-multi-btn w-full bg-indigo-600 text-white py-2 rounded text-sm font-bold mb-2"
+                <button class="rng-multi-btn w-full bg-indigo-600 text-white py-2 rounded text-sm font-bold mb-2 transition hover:bg-indigo-700"
                     data-id="${id}"
                     data-min="${drill.randomizer.min}"
                     data-max="${drill.randomizer.max}"
-                    data-count="${drill.randomizer.count}"
-                    data-shots="${drill.randomizer.shotsPerTarget}">
+                    data-count="${drill.randomizer.count || 5}" 
+                    data-shots="${drill.randomizer.shotsPerTarget || 2}">
                     🎲 Generate 5 Targets
                 </button>
-                <div id="rng-table-${id}" class="hidden space-y-2 bg-gray-50 p-2 rounded text-sm">
-                    <!-- Rows injected via JS -->
+                
+                <div id="rng-table-${id}" class="hidden bg-gray-50 p-2 rounded text-sm border border-gray-200">
+                    <div class="grid grid-cols-3 gap-2 font-bold text-xs text-gray-500 border-b pb-2 mb-2 text-center">
+                        <span>TARGET</span>
+                        <span>SHOT 1</span>
+                        <span>SHOT 2</span>
+                    </div>
+                    <div id="rng-rows-${id}" class="space-y-2"></div>
                 </div>
-                <div class="mt-2 text-xs text-right text-gray-500">
-                    Avg Error: <span id="rng-score-${id}" class="font-bold text-emerald-600">--</span> y
+
+                <div class="mt-2 text-xs text-right text-gray-500 font-medium">
+                    Avg Error: <span id="rng-score-${id}" class="font-bold text-emerald-600 text-sm">--</span> y
                 </div>
+                <!-- Hidden input stores the final calculated score for saving -->
                 <input type="hidden" data-id="${id}" class="drill-score-input" />
             </div>
         `;
@@ -155,10 +164,11 @@ function getMetricInputHTML(id, type, drill) {
         return extraHTML + `
             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Enter 5 Carry Distances</label>
             <div class="grid grid-cols-5 gap-1 mb-2">
-                ${Array(5).fill(0).map(() => `<input type="number" class="calc-input input-style px-1 text-center" data-group="${id}">`).join('')}
+                ${Array(5).fill(0).map(() => `<input type="number" class="calc-input input-style px-1 text-center font-mono" data-group="${id}">`).join('')}
             </div>
-            <div class="text-xs font-mono text-gray-700 bg-gray-100 p-2 rounded">
-                Avg: <span id="calc-avg-${id}">--</span> | SD: <span id="calc-sd-${id}" class="font-bold text-emerald-600">--</span>
+            <div class="text-xs font-mono text-gray-700 bg-gray-100 p-2 rounded flex justify-between">
+                <span>Avg: <strong id="calc-avg-${id}">--</strong></span>
+                <span>SD: <strong id="calc-sd-${id}" class="text-emerald-600">--</strong></span>
             </div>
             <input type="hidden" data-id="${id}" class="drill-score-input" />
         `;
@@ -184,14 +194,14 @@ function renderSkills() {
     const details = document.createElement("details");
     details.className = "group border border-gray-200 rounded-lg mb-2 overflow-hidden";
     if (i === 0) details.open = true;
-    details.innerHTML = `<summary class="flex justify-between p-3 bg-gray-50 cursor-pointer font-bold text-emerald-900">${cat}<span>▼</span></summary>`;
+    details.innerHTML = `<summary class="flex justify-between p-3 bg-gray-50 cursor-pointer font-bold text-emerald-900 select-none hover:bg-gray-100 transition"><span>${cat}</span><span class="text-emerald-500 group-open:rotate-180 transition-transform">▼</span></summary>`;
     const content = document.createElement("div");
     content.className = "p-3 grid grid-cols-1 sm:grid-cols-2 gap-2 bg-white border-t border-gray-100";
     
     grouped[cat].forEach(skill => {
         const row = document.createElement("label");
-        row.className = "flex items-center space-x-3 p-2 rounded hover:bg-emerald-50 cursor-pointer";
-        row.innerHTML = `<input type="checkbox" class="skill-check h-4 w-4 text-emerald-600 rounded" data-skill="${skill.id}"><span class="text-sm font-medium text-gray-700">${skill.label}</span>`;
+        row.className = "flex items-center space-x-3 p-2 rounded hover:bg-emerald-50 cursor-pointer transition";
+        row.innerHTML = `<input type="checkbox" class="skill-check h-4 w-4 text-emerald-600 rounded focus:ring-emerald-500" data-skill="${skill.id}"><span class="text-sm font-medium text-gray-700">${skill.label}</span>`;
         if (selectedSkills.has(skill.id)) row.querySelector("input").checked = true;
         row.querySelector("input").addEventListener("change", (e) => {
             if(e.target.checked) selectedSkills.add(skill.id); else selectedSkills.delete(skill.id);
@@ -208,14 +218,13 @@ function renderDrillSelect() {
   const container = $("drill-select");
   container.innerHTML = "";
   if (selectedSkills.size === 0) {
-      container.innerHTML = `<div class="text-center py-8 bg-gray-50 rounded border border-dashed border-gray-300"><p class="text-gray-500 mb-2">Select skills to see drills</p><button id="rand-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-full text-sm font-bold">🎲 Random Session</button></div>`;
+      container.innerHTML = `<div class="text-center py-8 bg-gray-50 rounded border border-dashed border-gray-300"><p class="text-gray-500 mb-2">Select skills to see drills</p><button id="rand-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow hover:bg-indigo-700 transition">🎲 Random Session</button></div>`;
       if($("rand-btn")) $("rand-btn").addEventListener("click", generateRandomSession);
       return;
   }
 
   const drillsToShow = Object.values(DRILLS).flat().filter(d => d.skills.some(s => selectedSkills.has(s)));
   
-  // Group by Skill for display
   const skillGroups = {};
   selectedSkills.forEach(sId => {
       const skill = skillMap.get(sId);
@@ -226,12 +235,11 @@ function renderDrillSelect() {
   Object.keys(skillGroups).forEach(label => {
       const sec = document.createElement("div");
       sec.className = "mb-6";
-      sec.innerHTML = `<h3 class="text-md font-bold text-emerald-900 border-l-4 border-emerald-500 pl-3 mb-3 bg-emerald-50 py-1">${label}</h3><div class="space-y-3" id="grp-${label.replace(/\s/g,'')}"></div>`;
+      sec.innerHTML = `<h3 class="text-md font-bold text-emerald-900 border-l-4 border-emerald-500 pl-3 mb-3 bg-emerald-50 py-1 rounded-r">${label}</h3><div class="space-y-3" id="grp-${label.replace(/\s/g,'')}"></div>`;
       container.appendChild(sec);
       const grp = sec.querySelector(`div`);
       
       skillGroups[label].forEach(drill => {
-          // Avoid duplicates if drill listed in multiple skills
           if(grp.querySelector(`[data-card-id="${drill.id}"]`)) return;
 
           const card = document.createElement("div");
@@ -240,10 +248,10 @@ function renderDrillSelect() {
           const isAdded = selectedDrillIds.has(drill.id);
           card.innerHTML = `
             <div class="flex-1">
-                <div class="flex items-center gap-2"><h4 class="font-bold text-gray-800">${drill.name}</h4><button class="info-btn text-gray-400">ⓘ</button></div>
-                <span class="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-500">⏱ ${drill.duration}m</span>
+                <div class="flex items-center gap-2"><h4 class="font-bold text-gray-800">${drill.name}</h4><button class="info-btn text-gray-400 hover:text-emerald-600 transition">ⓘ</button></div>
+                <span class="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-500 font-medium">⏱ ${drill.duration}m</span>
             </div>
-            <button class="add-drill px-4 py-2 rounded text-sm font-bold ${isAdded?'bg-red-50 text-red-600':'bg-black text-white'}">${isAdded?'Remove':'Add'}</button>
+            <button class="add-drill px-4 py-2 rounded text-sm font-bold transition ${isAdded?'bg-red-50 text-red-600 border border-red-200':'bg-black text-white hover:bg-gray-800'}">${isAdded?'Remove':'Add'}</button>
           `;
           card.querySelector(".add-drill").addEventListener("click", () => {
               if(selectedDrillIds.has(drill.id)) selectedDrillIds.delete(drill.id); else selectedDrillIds.add(drill.id);
@@ -264,9 +272,9 @@ function renderPreviewList() {
     if(selectedDrillIds.size===0) { box.classList.add("hidden"); return; }
     
     box.classList.remove("hidden");
-    let html = `<div class="flex justify-between mb-2"><h3 class="font-bold text-indigo-900">Session (${selectedDrillIds.size})</h3><button id="clear-all" class="text-xs text-indigo-600 font-bold">Clear</button></div><ul class="space-y-2">`;
+    let html = `<div class="flex justify-between mb-2"><h3 class="font-bold text-indigo-900">Session Plan (${selectedDrillIds.size})</h3><button id="clear-all" class="text-xs text-indigo-600 font-bold hover:text-indigo-800">Clear All</button></div><ul class="space-y-2">`;
     selectedDrillIds.forEach(id => {
-        html += `<li class="flex justify-between bg-white p-2 rounded shadow-sm border border-indigo-100"><span class="text-sm font-medium">${allDrillsMap.get(id).name}</span><button data-del="${id}" class="text-red-400">✕</button></li>`;
+        html += `<li class="flex justify-between bg-white p-2 rounded shadow-sm border border-indigo-100"><span class="text-sm font-medium text-gray-800">${allDrillsMap.get(id).name}</span><button data-del="${id}" class="text-red-400 hover:text-red-600 font-bold">✕</button></li>`;
     });
     box.innerHTML = html + "</ul>";
     
@@ -290,16 +298,16 @@ function renderSelectedDrills() {
         const card = document.createElement("div");
         card.className = "card border-l-4 border-black mb-6";
         card.innerHTML = `
-            <div class="mb-3"><h3 class="text-lg font-bold">${drill.name}</h3><div class="bg-gray-50 p-3 rounded text-sm mt-2 text-gray-700">${drill.description}</div></div>
+            <div class="mb-3"><h3 class="text-lg font-bold">${drill.name}</h3><div class="bg-gray-50 p-3 rounded text-sm mt-2 text-gray-700 border border-gray-100">${drill.description}</div></div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>${getMetricInputHTML(id, metric, drill)}</div>
-                <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Notes</label><textarea data-note-id="${id}" class="input-style w-full h-20 resize-none"></textarea></div>
+                <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Notes</label><textarea data-note-id="${id}" class="input-style w-full h-24 resize-none" placeholder="Feel / Miss pattern..."></textarea></div>
             </div>`;
         container.appendChild(card);
 
         // --- HANDLERS ---
         
-        // 1. Simple Randomizer
+        // 1. Simple Randomizer (Single Target)
         const rollBtn = card.querySelector(".roll-btn");
         if(rollBtn) {
             rollBtn.addEventListener("click", (e) => {
@@ -313,7 +321,7 @@ function renderSelectedDrills() {
             });
         }
 
-        // 2. SD Calc
+        // 2. SD Calc (5 inputs)
         if(metric === METRIC_TYPES.DISPERSION_CALC) {
             const inputs = card.querySelectorAll(`.calc-input[data-group="${id}"]`);
             inputs.forEach(i => i.addEventListener("input", () => {
@@ -328,34 +336,35 @@ function renderSelectedDrills() {
             }));
         }
 
-        // 3. RNG MULTILOG (New Logic)
+        // 3. RNG MULTILOG (5 Targets x 2 Shots)
         if(metric === METRIC_TYPES.RNG_MULTILOG) {
             const btn = card.querySelector(".rng-multi-btn");
-            const table = document.getElementById(`rng-table-${id}`);
+            const tableContainer = document.getElementById(`rng-table-${id}`);
+            const rowsContainer = document.getElementById(`rng-rows-${id}`);
             
             btn.addEventListener("click", () => {
                 const min = parseInt(btn.dataset.min), max = parseInt(btn.dataset.max), count = parseInt(btn.dataset.count);
-                table.innerHTML = `<div class="grid grid-cols-3 gap-2 font-bold text-xs text-gray-500 border-b pb-1 mb-1"><span>Target</span><span>Shot 1</span><span>Shot 2</span></div>`;
+                rowsContainer.innerHTML = ""; // Clear old
                 
                 for(let i=0; i<count; i++) {
                     const target = Math.floor(Math.random()*(max-min+1)) + min;
-                    table.innerHTML += `
-                        <div class="grid grid-cols-3 gap-2 items-center mb-1 multi-row" data-target="${target}">
-                            <span class="font-mono font-bold text-indigo-700 bg-indigo-100 px-2 rounded text-center">${target}y</span>
-                            <input type="number" class="input-style h-8 px-1 text-center multi-inp" placeholder="Carry">
-                            <input type="number" class="input-style h-8 px-1 text-center multi-inp" placeholder="Carry">
+                    rowsContainer.innerHTML += `
+                        <div class="grid grid-cols-3 gap-2 items-center multi-row" data-target="${target}">
+                            <span class="font-mono font-bold text-indigo-700 bg-indigo-100 px-2 py-1 rounded text-center">${target}y</span>
+                            <input type="number" class="input-style h-9 px-1 text-center multi-inp font-mono" placeholder="Carry 1">
+                            <input type="number" class="input-style h-9 px-1 text-center multi-inp font-mono" placeholder="Carry 2">
                         </div>`;
                 }
-                table.classList.remove("hidden");
+                tableContainer.classList.remove("hidden");
                 btn.classList.add("hidden"); // Hide button after gen
 
-                // Attach math listeners
-                table.querySelectorAll(".multi-inp").forEach(inp => inp.addEventListener("input", calculateMultiError));
+                // Attach math listeners to NEW inputs
+                rowsContainer.querySelectorAll(".multi-inp").forEach(inp => inp.addEventListener("input", calculateMultiError));
             });
 
             function calculateMultiError() {
                 let totalError = 0, shotCount = 0;
-                table.querySelectorAll(".multi-row").forEach(row => {
+                rowsContainer.querySelectorAll(".multi-row").forEach(row => {
                     const target = parseFloat(row.dataset.target);
                     row.querySelectorAll("input").forEach(inp => {
                         const val = parseFloat(inp.value);
@@ -437,8 +446,8 @@ function renderHistory() {
     box.innerHTML = sessions.length ? "" : "<p>No history.</p>";
     sessions.slice().reverse().forEach(s => {
         const div = document.createElement("div");
-        div.className = "card mb-4 relative hover:shadow-md cursor-pointer";
-        div.innerHTML = `<div class="font-bold">${s.date} @ ${s.location}</div><div class="text-sm text-gray-600">${s.drills.length} drills</div><button class="del-btn absolute top-4 right-4 text-red-400">✕</button>`;
+        div.className = "card mb-4 relative hover:shadow-md cursor-pointer border border-transparent hover:border-gray-200";
+        div.innerHTML = `<div class="font-bold">${s.date} @ ${s.location}</div><div class="text-sm text-gray-600">${s.drills.length} drills</div><button class="del-btn absolute top-4 right-4 text-red-400 hover:text-red-600 p-2">✕</button>`;
         div.addEventListener("click", (e) => { if(!e.target.classList.contains("del-btn")) showSessionDetails(s); });
         div.querySelector(".del-btn").addEventListener("click", () => {
             if(confirm("Delete?")) {
@@ -453,7 +462,7 @@ function renderHistory() {
 
 function showSessionDetails(s) {
     let h = `<div class="space-y-2">`;
-    s.drillResults.forEach(r => h += `<div class="flex justify-between border-b pb-1"><span>${r.name}</span><span class="font-mono bg-emerald-100 px-2 rounded">${r.score.raw||"-"}</span></div>`);
+    s.drillResults.forEach(r => h += `<div class="flex justify-between border-b pb-1"><span>${r.name}</span><span class="font-mono bg-emerald-100 px-2 rounded font-bold">${r.score.raw||"-"}</span></div>`);
     showModal("Session Details", h + "</div>");
 }
 
@@ -469,19 +478,19 @@ function renderAnalytics() {
         });
     });
     
-    if(!Object.keys(data).length) { box.innerHTML = "<p>No data.</p>"; return; }
+    if(!Object.keys(data).length) { box.innerHTML = "<p>No data recorded yet.</p>"; return; }
     box.innerHTML = "";
     
     Object.keys(data).forEach(id => {
         const d = data[id];
         const avg = (d.pts.reduce((a,b)=>a+b,0)/d.pts.length).toFixed(1);
         const cid = `c-${id}`;
-        box.innerHTML += `<div class="card mb-4"><div class="flex justify-between mb-2 font-bold"><span>${d.name}</span><span>Avg: ${avg}</span></div><div class="h-32"><canvas id="${cid}"></canvas></div></div>`;
+        box.innerHTML += `<div class="card mb-4"><div class="flex justify-between mb-2 font-bold"><span>${d.name}</span><span class="bg-gray-100 px-2 rounded text-sm">Avg: ${avg}</span></div><div class="h-32"><canvas id="${cid}"></canvas></div></div>`;
         setTimeout(() => {
             new Chart(document.getElementById(cid), {
                 type: 'line',
-                data: { labels: d.pts.map((_,i)=>i+1), datasets: [{ data: d.pts, borderColor: '#059669', tension:0.3 }] },
-                options: { plugins:{legend:{display:false}}, maintainAspectRatio:false }
+                data: { labels: d.pts.map((_,i)=>i+1), datasets: [{ data: d.pts, borderColor: '#059669', tension:0.3, pointRadius:3 }] },
+                options: { plugins:{legend:{display:false}}, maintainAspectRatio:false, scales:{y:{beginAtZero:true}} }
             });
         }, 50);
     });
@@ -495,6 +504,7 @@ function switchTab(t) {
     if(t==="history") renderHistory();
     if(t==="analytics") renderAnalytics();
     if(t==="log") renderSelectedDrills();
+    window.scrollTo(0,0);
 }
 
 function init() {
