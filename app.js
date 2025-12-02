@@ -98,7 +98,10 @@ function closeModal() {
 // ================================
 
 function detectCategory(drill) {
+  if (!drill) return "other";
   if (drill.category) return drill.category;
+  
+  // Infer from DRILLS structure
   for (const groupName in DRILLS) {
     if (DRILLS[groupName].some(d => d.id === drill.id)) {
       switch (groupName) {
@@ -378,7 +381,7 @@ function renderPreviewList() {
 }
 
 // ================================
-// LOGGING & SAVING (IMPROVED: Shows Description)
+// LOGGING & SAVING
 // ================================
 function renderSelectedDrills() {
   const container = $("selected-drills-log");
@@ -396,7 +399,6 @@ function renderSelectedDrills() {
     const card = document.createElement("div");
     card.className = "card border-l-4 border-black"; // Distinct look for log
 
-    // Added Description directly here
     card.innerHTML = `
       <div class="mb-3">
           <h3 class="text-lg font-bold">${drill.name}</h3>
@@ -480,7 +482,7 @@ function initSaveSession() {
 }
 
 // ================================
-// HISTORY (CLICKABLE DETAILED VIEW)
+// HISTORY
 // ================================
 function renderHistory() {
   const container = $("history-list");
@@ -493,10 +495,8 @@ function renderHistory() {
     return;
   }
 
-  // Reverse to show newest first
   sessions.slice().reverse().forEach((s) => {
     const div = document.createElement("div");
-    // Added cursor-pointer and hover classes
     div.className = "card relative hover:shadow-lg transition cursor-pointer border border-transparent hover:border-gray-200";
     
     const drillsCount = s.drills ? s.drills.length : 0;
@@ -508,7 +508,6 @@ function renderHistory() {
             <h3 class="font-bold text-lg">${s.date} <span class="text-gray-400 font-normal">@</span> ${s.location}</h3>
             <p class="text-sm text-gray-800">${drillsCount} drills completed</p>
           </div>
-          <!-- Delete button needs pointer-events-auto to override parent -->
           <button class="delete-btn pointer-events-auto text-red-400 hover:text-red-600 p-1 rounded-full hover:bg-red-50" title="Delete Session">
              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
           </button>
@@ -518,16 +517,13 @@ function renderHistory() {
       </div>
     `;
     
-    // 1. Click to View Details
     div.addEventListener("click", (e) => {
-        // Prevent opening if clicking the delete button specifically (safety check)
         if (e.target.closest('.delete-btn')) return;
         showSessionDetails(s);
     });
 
-    // 2. Click to Delete
     div.querySelector(".delete-btn").addEventListener("click", (e) => {
-        e.stopPropagation(); // Stop card click
+        e.stopPropagation(); 
         if(confirm("Are you sure you want to delete this session?")) {
             deleteSession(s);
         }
@@ -537,7 +533,6 @@ function renderHistory() {
   });
 }
 
-// NEW: Helper to show session detail modal
 function showSessionDetails(session) {
     let content = `
         <div class="mb-4">
@@ -585,7 +580,7 @@ function deleteSession(sessionToDelete) {
 }
 
 // ================================
-// ANALYTICS (TREND GRAPHS & PB)
+// ANALYTICS (GROUPED & COLLAPSIBLE)
 // ================================
 function renderAnalytics() {
   const container = $("analytics-container");
@@ -596,10 +591,8 @@ function renderAnalytics() {
     return;
   }
 
-  // 1. Group scores
+  // 1. Compile Stats
   const drillStats = {};
-
-  // Sort sessions chronological for charts
   const chronSessions = sessions.slice().sort((a,b) => new Date(a.date) - new Date(b.date));
 
   chronSessions.forEach(session => {
@@ -620,6 +613,16 @@ function renderAnalytics() {
     });
   });
 
+  // 2. Group by Category
+  const groupedStats = {};
+  Object.keys(drillStats).forEach(id => {
+      const drill = allDrillsMap.get(id);
+      const catKey = detectCategory(drill || {id});
+      if (!groupedStats[catKey]) groupedStats[catKey] = [];
+      groupedStats[catKey].push({ id, ...drillStats[id] });
+  });
+
+  // 3. Render
   container.innerHTML = "";
   
   if (Object.keys(drillStats).length === 0) {
@@ -627,69 +630,99 @@ function renderAnalytics() {
       return;
   }
 
-  Object.keys(drillStats).forEach(id => {
-    const data = drillStats[id];
-    const scores = data.dataPoints.map(dp => dp.score);
-    const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
-    const max = Math.max(...scores); // PB
-    
-    const card = document.createElement("div");
-    card.className = "card mb-6";
-    
-    // Canvas ID must be unique
-    const canvasId = `chart-${id}`;
+  // Render in specific order
+  Object.keys(CATEGORIES).forEach((catKey, index) => {
+      const categoryDrills = groupedStats[catKey];
+      if (!categoryDrills || categoryDrills.length === 0) return;
 
-    card.innerHTML = `
-      <div class="flex justify-between items-baseline mb-4 border-b pb-2">
-        <h3 class="font-bold text-lg">${data.name}</h3>
-        <span class="text-xs font-bold text-amber-500 bg-amber-50 px-2 py-1 rounded">PB: ${max}</span>
-      </div>
-      
-      <div class="grid grid-cols-2 gap-4 text-center mb-4">
-        <div class="bg-gray-50 p-2 rounded">
-           <span class="block text-xs text-gray-500 uppercase">Average</span>
-           <span class="text-xl font-mono font-bold">${avg.toFixed(1)}</span>
-        </div>
-        <div class="bg-gray-50 p-2 rounded">
-           <span class="block text-xs text-gray-500 uppercase">Attempts</span>
-           <span class="text-xl font-mono font-bold">${scores.length}</span>
-        </div>
-      </div>
-      
-      <div class="h-48 w-full">
-         <canvas id="${canvasId}"></canvas>
-      </div>
-    `;
-    container.appendChild(card);
+      const details = document.createElement("details");
+      details.className = "group border border-gray-200 rounded-lg mb-4 overflow-hidden bg-white shadow-sm";
+      // Open first category by default
+      if (index === 0) details.open = true;
 
-    // Render Chart (if library loaded)
-    if (window.Chart) {
-        const ctx = document.getElementById(canvasId).getContext('2d');
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: data.dataPoints.map(dp => dp.date.substring(5)), // Show MM-DD
-                datasets: [{
-                    label: 'Score',
-                    data: scores,
-                    borderColor: '#059669',
-                    backgroundColor: 'rgba(5, 150, 105, 0.1)',
-                    tension: 0.3,
-                    fill: true,
-                    pointRadius: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true } // Assuming scores are positive
-                }
-            }
-        });
-    }
+      const summary = document.createElement("summary");
+      summary.className = "flex items-center justify-between p-4 bg-gray-50 cursor-pointer font-bold text-lg text-gray-800 select-none hover:bg-gray-100 transition";
+      summary.innerHTML = `
+        <span>${CATEGORIES[catKey]}</span>
+        <span class="text-emerald-500 group-open:rotate-180 transition-transform">▼</span>
+      `;
+
+      const content = document.createElement("div");
+      content.className = "p-4 border-t border-gray-100 space-y-6";
+
+      categoryDrills.forEach(data => {
+          const scores = data.dataPoints.map(dp => dp.score);
+          const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+          const max = Math.max(...scores); // PB
+          const canvasId = `chart-${data.id}`;
+
+          const card = document.createElement("div");
+          card.className = "bg-gray-50 rounded-lg p-4 border border-gray-200";
+
+          card.innerHTML = `
+            <div class="flex justify-between items-baseline mb-3 border-b border-gray-200 pb-2">
+                <h4 class="font-bold text-md text-gray-900">${data.name}</h4>
+                <span class="text-xs font-bold text-amber-600 bg-amber-100 px-2 py-1 rounded">PB: ${max}</span>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4 text-center mb-3">
+                <div class="bg-white p-2 rounded shadow-sm">
+                <span class="block text-xs text-gray-400 uppercase">Average</span>
+                <span class="text-lg font-mono font-bold">${avg.toFixed(1)}</span>
+                </div>
+                <div class="bg-white p-2 rounded shadow-sm">
+                <span class="block text-xs text-gray-400 uppercase">Entries</span>
+                <span class="text-lg font-mono font-bold">${scores.length}</span>
+                </div>
+            </div>
+            
+            <div class="h-40 w-full bg-white rounded p-2">
+                <canvas id="${canvasId}"></canvas>
+            </div>
+          `;
+          
+          content.appendChild(card);
+      });
+
+      details.appendChild(summary);
+      details.appendChild(content);
+      container.appendChild(details);
   });
+
+  // 4. Initialize Charts (after DOM insertion)
+  setTimeout(() => {
+      Object.keys(CATEGORIES).forEach(catKey => {
+          const categoryDrills = groupedStats[catKey];
+          if (!categoryDrills) return;
+
+          categoryDrills.forEach(data => {
+              const canvas = document.getElementById(`chart-${data.id}`);
+              if (canvas && window.Chart) {
+                  new Chart(canvas.getContext('2d'), {
+                      type: 'line',
+                      data: {
+                          labels: data.dataPoints.map(dp => dp.date.substring(5)),
+                          datasets: [{
+                              label: 'Score',
+                              data: data.dataPoints.map(dp => dp.score),
+                              borderColor: '#059669',
+                              backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                              tension: 0.3,
+                              fill: true,
+                              pointRadius: 3
+                          }]
+                      },
+                      options: {
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          plugins: { legend: { display: false } },
+                          scales: { y: { beginAtZero: true } }
+                      }
+                  });
+              }
+          });
+      });
+  }, 100);
 }
 
 // ================================
@@ -722,14 +755,13 @@ function initTabs() {
 // INIT
 // ================================
 function init() {
-  createModal(); // Setup modal DOM
+  createModal();
   renderSkills();
-  renderDrillSelect(); // Will show "Select skills" empty state
+  renderDrillSelect();
   renderPreviewList(); 
   initSaveSession();
   initTabs();
 
-  // Robust Button Listener
   const goToLogBtn = $("go-to-log");
   if (goToLogBtn) {
       goToLogBtn.addEventListener("click", () => {
