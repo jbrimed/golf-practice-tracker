@@ -92,25 +92,25 @@ function calculateSD(values) {
 // DATA BACKUP (EXPORT/IMPORT)
 // ================================
 function initDataBackup() {
+    if($("backup-section")) return;
+
     const backupContainer = document.createElement("div");
+    backupContainer.id = "backup-section";
     backupContainer.className = "card mt-8 bg-gray-50 border border-gray-200";
     backupContainer.innerHTML = `
         <h3 class="font-bold text-lg mb-2">Data Backup</h3>
-        <p class="text-sm text-gray-600 mb-4">Download your history to save it safely, or restore from a file.</p>
+        <p class="text-sm text-gray-600 mb-4">Download history or restore from file.</p>
         <div class="flex gap-4">
-            <button id="export-btn" class="bg-emerald-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-emerald-700">⬇ Export Data</button>
-            <label class="bg-blue-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-blue-700 cursor-pointer">
-                ⬆ Import Data
+            <button id="export-btn" class="bg-emerald-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-emerald-700">⬇ Export</button>
+            <label class="bg-blue-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-blue-700 cursor-pointer text-center">
+                ⬆ Import
                 <input type="file" id="import-file" class="hidden" accept=".json">
             </label>
         </div>
     `;
     
-    // Only append if not already there
-    if(!$("backup-section")) {
-        backupContainer.id = "backup-section";
-        $("history").appendChild(backupContainer);
-    }
+    const container = $("backup-section-container") || $("history-list");
+    container.appendChild(backupContainer);
 
     $("export-btn").addEventListener("click", () => {
         const data = localStorage.getItem("golf_sessions");
@@ -246,24 +246,16 @@ function renderSkills() {
 
 function renderDrillSelect() {
   const container = $("drill-select");
+  const presets = $("presets-container"); // New Reference
   container.innerHTML = "";
   
-  // PRESETS LOGIC (Suggestion 5)
-  if (selectedSkills.size === 0) {
-      container.innerHTML = `
-        <div class="text-center py-8 bg-gray-50 rounded border border-dashed border-gray-300">
-            <p class="text-gray-500 mb-4">Select skills above OR choose a preset:</p>
-            <div class="flex flex-wrap gap-2 justify-center">
-                <button class="preset-btn bg-indigo-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow hover:bg-indigo-700 transition" data-type="random">🎲 Random (4)</button>
-                <button class="preset-btn bg-emerald-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow hover:bg-emerald-700 transition" data-type="shortgame">⛳ Short Game Only</button>
-                <button class="preset-btn bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow hover:bg-blue-700 transition" data-type="driver_iron">🚀 Driver & Irons</button>
-            </div>
-        </div>`;
-      
-      container.querySelectorAll(".preset-btn").forEach(btn => {
-          btn.addEventListener("click", () => generateSessionPreset(btn.dataset.type));
-      });
+  // TOGGLE PRESETS LOGIC
+  if (selectedSkills.size === 0 && selectedDrillIds.size === 0) {
+      if(presets) presets.classList.remove("hidden");
+      container.innerHTML = `<div class="text-center py-8 text-slate-400 text-sm italic">Select focus areas above...</div>`;
       return;
+  } else {
+      if(presets) presets.classList.add("hidden");
   }
 
   const drillsToShow = Object.values(DRILLS).flat().filter(d => d.skills.some(s => selectedSkills.has(s)));
@@ -285,7 +277,6 @@ function renderDrillSelect() {
       skillGroups[label].forEach(drill => {
           if(grp.querySelector(`[data-card-id="${drill.id}"]`)) return;
 
-          // PROGRESSION LOGIC (Suggestion 1 - Visual Indicator)
           let badge = "";
           if (drill.targetValues?.successThreshold) {
              badge = `<span class="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded ml-2">Goal: ${drill.targetValues.successThreshold}+</span>`;
@@ -317,24 +308,8 @@ function renderDrillSelect() {
 }
 
 function renderPreviewList() {
-    let box = $("preview-container");
-    if(!box) {
-        box = document.createElement("div"); box.id="preview-container"; box.className="card bg-indigo-50 border border-indigo-100 mb-6 hidden";
-        $("setup").insertBefore(box, $("go-to-log"));
-    }
-    if(selectedDrillIds.size===0) { box.classList.add("hidden"); return; }
-    
-    box.classList.remove("hidden");
-    let html = `<div class="flex justify-between mb-2"><h3 class="font-bold text-indigo-900">Session Plan (${selectedDrillIds.size})</h3><button id="clear-all" class="text-xs text-indigo-600 font-bold hover:text-indigo-800">Clear All</button></div><ul class="space-y-2">`;
-    selectedDrillIds.forEach(id => {
-        html += `<li class="flex justify-between bg-white p-2 rounded shadow-sm border border-indigo-100"><span class="text-sm font-medium text-gray-800">${allDrillsMap.get(id).name}</span><button data-del="${id}" class="text-red-400 hover:text-red-600 font-bold">✕</button></li>`;
-    });
-    box.innerHTML = html + "</ul>";
-    
-    box.querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", (e) => {
-        selectedDrillIds.delete(e.target.dataset.del); renderDrillSelect(); renderPreviewList(); updateGoToLogButton();
-    }));
-    $("clear-all").addEventListener("click", () => { selectedDrillIds.clear(); selectedSkills.clear(); renderSkills(); renderDrillSelect(); renderPreviewList(); updateGoToLogButton(); });
+    const badge = $("drill-count-badge");
+    if(badge) badge.innerText = selectedDrillIds.size;
 }
 
 // ================================
@@ -351,7 +326,6 @@ function renderSelectedDrills() {
         const card = document.createElement("div");
         card.className = "card border-l-4 border-black mb-6";
         
-        // Show Goal if available
         let goalText = "";
         if (drill.targetValues) {
             if (drill.targetValues.successThreshold) goalText = `<div class="bg-amber-50 text-amber-800 text-xs font-bold px-2 py-1 rounded mt-2 inline-block">🎯 Goal: ${drill.targetValues.successThreshold}/${drill.targetValues.shots}</div>`;
@@ -371,7 +345,6 @@ function renderSelectedDrills() {
         container.appendChild(card);
 
         // --- HANDLERS ---
-        
         const rollBtn = card.querySelector(".roll-btn");
         if(rollBtn) {
             rollBtn.addEventListener("click", (e) => {
@@ -465,10 +438,10 @@ function initSaveSession() {
             return { id, name: allDrillsMap.get(id)?.name, score: { raw, numeric: num }, notes: note };
         });
 
+        // Removed location from object
         saveSession({
             id: Date.now().toString(),
             date: $("session-date").value || new Date().toISOString().slice(0,10),
-            location: $("session-location").value,
             drills: Array.from(selectedDrillIds),
             drillResults,
             notes: $("session-notes").value,
@@ -476,11 +449,17 @@ function initSaveSession() {
         });
         
         alert("Saved!");
-        selectedDrillIds.clear(); selectedSkills.clear(); renderSkills(); renderDrillSelect(); renderPreviewList(); updateGoToLogButton();
+        selectedDrillIds.clear(); selectedSkills.clear(); 
+        
+        // Reset Logic
+        renderSkills(); 
+        renderDrillSelect(); // Will unhide presets
+        renderPreviewList(); 
+        updateGoToLogButton();
+        
         $("session-notes").value="";
         switchTab("history");
         
-        // CHECK PROGRESSION (Suggestion 1)
         checkProgression(drillResults);
     });
 }
@@ -495,6 +474,7 @@ function generateSessionPreset(type) {
     if(type === 'random') cats = ['driver','irons','wedges','putting'];
     if(type === 'shortgame') cats = ['wedges','short_game','putting'];
     if(type === 'driver_iron') cats = ['driver','irons'];
+    if(type === 'putting') cats = ['putting'];
 
     cats.forEach(cat => {
         if(DRILLS[cat]?.length) {
@@ -503,26 +483,23 @@ function generateSessionPreset(type) {
             d.skills.forEach(s => selectedSkills.add(s));
         }
     });
-    renderSkills(); renderDrillSelect(); renderPreviewList(); updateGoToLogButton();
+    renderSkills(); 
+    renderDrillSelect(); // This hides presets
+    renderPreviewList(); 
+    updateGoToLogButton();
 }
 
 function generateRandomSession() { generateSessionPreset('random'); }
 
 function checkProgression(results) {
-    // Simple logic: If you passed a level drill, congratulate
-    // In a real app, we'd check history for streaks.
     const passed = results.filter(r => {
         const drill = allDrillsMap.get(r.id);
         if (!drill.targetValues || !r.score.numeric) return false;
         
-        // For count (X/Y), numeric score is %. 
-        // 8/10 = 80%. Threshold 8/10 = 8. Need to normalize.
         if (drill.scoreType === 'count') {
-             // If goal is 8/10, that's 80%. 
              const goalPct = (drill.targetValues.successThreshold / drill.targetValues.shots) * 100;
              return r.score.numeric >= goalPct;
         }
-        // For SD, lower is better
         if (drill.scoreType === 'sd') {
             return r.score.numeric <= drill.targetValues.sd_target_yards;
         }
@@ -531,14 +508,13 @@ function checkProgression(results) {
 
     if (passed.length > 0) {
         const names = passed.map(p => p.name).join(", ");
-        alert(`🎉 Great job! You hit the target goal for: ${names}. Consider moving to the next level next time!`);
+        alert(`🎉 Goal Met: ${names}.`);
     }
 }
 
 function renderHistory() {
-    initDataBackup(); // Ensure backup buttons exist
+    initDataBackup(); 
     const box = $("history-list");
-    // Preserve backup section if it exists, clear lists
     const existingBackup = $("backup-section");
     box.innerHTML = ""; 
     if(existingBackup) box.appendChild(existingBackup);
@@ -554,7 +530,7 @@ function renderHistory() {
     sessions.slice().reverse().forEach(s => {
         const div = document.createElement("div");
         div.className = "card mb-4 relative hover:shadow-md cursor-pointer border border-transparent hover:border-gray-200";
-        div.innerHTML = `<div class="font-bold">${s.date} @ ${s.location}</div><div class="text-sm text-gray-600">${s.drills.length} drills</div><button class="del-btn absolute top-4 right-4 text-red-400 hover:text-red-600 p-2">✕</button>`;
+        div.innerHTML = `<div class="font-bold">${s.date}</div><div class="text-sm text-gray-600">${s.drills.length} drills</div><button class="del-btn absolute top-4 right-4 text-red-400 hover:text-red-600 p-2">✕</button>`;
         div.addEventListener("click", (e) => { if(!e.target.classList.contains("del-btn")) showSessionDetails(s); });
         div.querySelector(".del-btn").addEventListener("click", () => {
             if(confirm("Delete?")) {
@@ -582,7 +558,6 @@ function renderAnalytics() {
                 if(!data[r.id]) data[r.id] = { name: r.name, pts: [], targets: [] };
                 data[r.id].pts.push(r.score.numeric);
                 
-                // Track Target Line (Suggestion 2)
                 const drill = allDrillsMap.get(r.id);
                 let target = null;
                 if(drill?.targetValues?.successThreshold) target = (drill.targetValues.successThreshold / drill.targetValues.shots) * 100;
@@ -603,7 +578,6 @@ function renderAnalytics() {
         const cid = `c-${id}`;
         box.innerHTML += `<div class="card mb-4"><div class="flex justify-between mb-2 font-bold"><span>${d.name}</span><span class="bg-gray-100 px-2 rounded text-sm">Avg: ${avg}</span></div><div class="h-32"><canvas id="${cid}"></canvas></div></div>`;
         setTimeout(() => {
-            // GOAL LINE DATASET
             const datasets = [{ data: d.pts, borderColor: '#059669', tension:0.3, pointRadius:3 }];
             if (d.targets.some(t => t !== null)) {
                 datasets.push({
@@ -638,6 +612,10 @@ function switchTab(t) {
 function init() {
     createModal(); renderSkills(); renderDrillSelect(); initSaveSession();
     document.querySelectorAll(".tab-button").forEach(b => b.addEventListener("click", ()=>switchTab(b.dataset.tab)));
+    document.querySelectorAll(".preset-btn").forEach(btn => {
+        btn.addEventListener("click", () => generateSessionPreset(btn.dataset.type));
+    });
+    
     if($("go-to-log")) $("go-to-log").addEventListener("click", ()=> { if(selectedDrillIds.size) switchTab("log"); });
 }
 
