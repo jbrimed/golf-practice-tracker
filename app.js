@@ -1,6 +1,6 @@
 // ================================
 // app.js — ULTIMATE VERSION
-// Features: Collapsible, Charts, Randomizer, Delete History, Detailed History Modal, Improved Log
+// Features: Smart Scoring (7/10), Fixed Analytics Grouping, Collapsible, Charts
 // ================================
 
 import { DRILLS } from "./drills.js";
@@ -60,7 +60,7 @@ const skillMap = new Map(SKILLS.map(s => [s.id, s]));
 // UI COMPONENTS (MODAL)
 // ================================
 function createModal() {
-  if ($("app-modal")) return; // Already exists
+  if ($("app-modal")) return;
 
   const modalHtml = `
     <div id="app-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
@@ -94,14 +94,23 @@ function closeModal() {
 }
 
 // ================================
-// CORE LOGIC
+// CORE LOGIC (FIXED CATEGORIES)
 // ================================
 
 function detectCategory(drill) {
   if (!drill) return "other";
-  if (drill.category) return drill.category;
   
-  // Infer from DRILLS structure
+  // 1. Check explicit category and NORMALIZE IT
+  if (drill.category) {
+      const c = drill.category.toLowerCase();
+      // Fix mismatch between drill data and CATEGORIES keys
+      if (c === 'irons') return 'approach';
+      if (c === 'driver') return 'driving';
+      if (c === 'short_game') return 'shortgame';
+      return c; 
+  }
+  
+  // 2. Infer from DRILLS structure
   for (const groupName in DRILLS) {
     if (DRILLS[groupName].some(d => d.id === drill.id)) {
       switch (groupName) {
@@ -123,16 +132,29 @@ function getDrillMetric(drill) {
   return skill ? skill.metricType : METRIC_TYPES.CUSTOM;
 }
 
+// IMPROVED: Better placeholders and labels
 function getMetricInputHTML(id, type) {
   switch (type) {
     case METRIC_TYPES.PERCENTAGE:
-      return `<input data-id="${id}" type="number" min="0" max="100" class="input-style drill-score-input" placeholder="Enter %" />`;
+      return `
+        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Score (e.g. 7/10 or 70)</label>
+        <input data-id="${id}" type="text" class="input-style drill-score-input" placeholder="Made / Attempts" />
+      `;
     case METRIC_TYPES.DISTANCE_STDDEV:
-      return `<input data-id="${id}" type="text" class="input-style drill-score-input" placeholder="e.g. 175 / 5" />`;
+      return `
+        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Avg Dist / Deviation</label>
+        <input data-id="${id}" type="text" class="input-style drill-score-input" placeholder="e.g. 175 / 5" />
+      `;
     case METRIC_TYPES.PROXIMITY:
-      return `<input data-id="${id}" type="number" step="0.1" class="input-style drill-score-input" placeholder="Feet" />`;
+      return `
+        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Proximity (Feet)</label>
+        <input data-id="${id}" type="number" step="0.1" class="input-style drill-score-input" placeholder="Feet" />
+      `;
     default:
-      return `<input data-id="${id}" type="text" class="input-style drill-score-input" placeholder="Score" />`;
+      return `
+        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Score / Result</label>
+        <input data-id="${id}" type="text" class="input-style drill-score-input" placeholder="Result" />
+      `;
   }
 }
 
@@ -143,7 +165,6 @@ function renderSkills() {
   const container = $("skill-select");
   container.innerHTML = "";
 
-  // Group skills
   const groupedSkills = {};
   SKILLS.forEach(skill => {
     const cat = skill.category || "Other";
@@ -151,11 +172,9 @@ function renderSkills() {
     groupedSkills[cat].push(skill);
   });
 
-  // Render collapsible sections
   Object.keys(groupedSkills).forEach((category, index) => {
     const details = document.createElement("details");
     details.className = "group border border-gray-200 rounded-lg mb-2 overflow-hidden";
-    // Open the first one by default
     if (index === 0) details.open = true;
 
     const summary = document.createElement("summary");
@@ -176,7 +195,6 @@ function renderSkills() {
           <span class="text-gray-700 text-sm font-medium">${skill.label}</span>
         `;
         
-        // Sync state if re-rendering
         if (selectedSkills.has(skill.id)) {
             label.querySelector("input").checked = true;
         }
@@ -214,7 +232,6 @@ function renderDrillSelect() {
         </div>
     `;
     
-    // Bind Random Button
     const randBtn = $("random-session-btn");
     if(randBtn) randBtn.addEventListener("click", generateRandomSession);
     return;
@@ -247,7 +264,6 @@ function renderDrillSelect() {
           const btnClass = isAdded ? "bg-red-50 text-red-600 border border-red-200" : "bg-black text-white border border-black";
           const btnText = isAdded ? "Remove" : "Add";
 
-          // MODAL TRIGGER: The (i) button
           card.innerHTML = `
             <div class="flex-1 w-full">
                 <div class="flex items-center gap-2">
@@ -268,7 +284,6 @@ function renderDrillSelect() {
             </button>
           `;
 
-          // Button Logic
           card.querySelector(".add-drill").addEventListener("click", () => {
             if (selectedDrillIds.has(drill.id)) selectedDrillIds.delete(drill.id);
             else selectedDrillIds.add(drill.id);
@@ -277,7 +292,6 @@ function renderDrillSelect() {
             updateGoToLogButton();
           });
 
-          // Info Logic
           card.querySelector(".info-btn").addEventListener("click", () => {
               showModal(drill.name, `<p>${drill.description}</p><br><p class='text-xs text-gray-400'>Category: ${detectCategory(drill)}</p>`);
           });
@@ -291,11 +305,9 @@ function renderDrillSelect() {
 // RANDOMIZER
 // ================================
 function generateRandomSession() {
-    // Clear current
     selectedSkills.clear();
     selectedDrillIds.clear();
     
-    // Pick one from each major category if available
     const cats = ['driver', 'irons', 'wedges', 'putting'];
     
     cats.forEach(catKey => {
@@ -307,8 +319,7 @@ function generateRandomSession() {
         }
     });
 
-    // Update UI
-    renderSkills(); // Opens relevant accordion items
+    renderSkills();
     renderDrillSelect();
     renderPreviewList();
     updateGoToLogButton();
@@ -362,7 +373,7 @@ function renderPreviewList() {
 
     previewContainer.querySelectorAll("button[data-id]").forEach(btn => {
         btn.addEventListener("click", (e) => {
-            const id = e.currentTarget.dataset.id; // currentTarget handles svg clicks
+            const id = e.currentTarget.dataset.id;
             selectedDrillIds.delete(id);
             renderDrillSelect();
             renderPreviewList();
@@ -381,7 +392,7 @@ function renderPreviewList() {
 }
 
 // ================================
-// LOGGING & SAVING
+// LOGGING & SAVING (IMPROVED: Smart Scoring)
 // ================================
 function renderSelectedDrills() {
   const container = $("selected-drills-log");
@@ -397,7 +408,7 @@ function renderSelectedDrills() {
     const metric = getDrillMetric(drill);
 
     const card = document.createElement("div");
-    card.className = "card border-l-4 border-black"; // Distinct look for log
+    card.className = "card border-l-4 border-black";
 
     card.innerHTML = `
       <div class="mb-3">
@@ -410,11 +421,10 @@ function renderSelectedDrills() {
       
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
           <div>
-            <label class="text-xs font-bold text-gray-500 uppercase">Score / Result</label>
             ${getMetricInputHTML(id, metric)}
           </div>
           <div>
-            <label class="text-xs font-bold text-gray-500 uppercase">Notes</label>
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Notes</label>
             <textarea data-id="${id}" class="drill-notes-input input-style w-full h-10 resize-none py-2" placeholder="Feel, miss pattern..."></textarea>
           </div>
       </div>
@@ -443,8 +453,23 @@ function initSaveSession() {
 
       const raw = scoreInput?.value.trim() || "";
       let numeric = null;
-      const match = raw.match(/[-+]?\d*\.?\d+/);
-      if (match) numeric = parseFloat(match[0]);
+
+      // === SMART SCORING PARSER ===
+      // Check for Fraction format (e.g. "7/10")
+      if (raw.includes("/")) {
+          const parts = raw.split("/");
+          if (parts.length === 2) {
+              const num = parseFloat(parts[0]);
+              const den = parseFloat(parts[1]);
+              if (!isNaN(num) && !isNaN(den) && den !== 0) {
+                  numeric = (num / den) * 100; // Convert to Percentage
+              }
+          }
+      } else {
+          // Standard numeric parsing
+          const match = raw.match(/[-+]?\d*\.?\d+/);
+          if (match) numeric = parseFloat(match[0]);
+      }
 
       return {
         id,
@@ -455,7 +480,7 @@ function initSaveSession() {
     });
 
     const session = {
-      id: Date.now().toString(), // Added ID for deletion
+      id: Date.now().toString(),
       date: $("session-date").value || new Date().toISOString().slice(0, 10),
       location: $("session-location").value,
       skills: Array.from(selectedSkills),
@@ -503,7 +528,7 @@ function renderHistory() {
     const notesSnippet = s.notes ? `<p class="text-sm text-gray-500 mt-2 bg-gray-50 p-2 rounded truncate">"${s.notes}"</p>` : "";
     
     div.innerHTML = `
-      <div class="flex justify-between items-start pointer-events-none"> <!-- content ignores click -->
+      <div class="flex justify-between items-start pointer-events-none">
           <div>
             <h3 class="font-bold text-lg">${s.date} <span class="text-gray-400 font-normal">@</span> ${s.location}</h3>
             <p class="text-sm text-gray-800">${drillsCount} drills completed</p>
@@ -637,7 +662,6 @@ function renderAnalytics() {
 
       const details = document.createElement("details");
       details.className = "group border border-gray-200 rounded-lg mb-4 overflow-hidden bg-white shadow-sm";
-      // Open first category by default
       if (index === 0) details.open = true;
 
       const summary = document.createElement("summary");
@@ -662,7 +686,7 @@ function renderAnalytics() {
           card.innerHTML = `
             <div class="flex justify-between items-baseline mb-3 border-b border-gray-200 pb-2">
                 <h4 class="font-bold text-md text-gray-900">${data.name}</h4>
-                <span class="text-xs font-bold text-amber-600 bg-amber-100 px-2 py-1 rounded">PB: ${max}</span>
+                <span class="text-xs font-bold text-amber-600 bg-amber-100 px-2 py-1 rounded">PB: ${max.toFixed(1)}</span>
             </div>
             
             <div class="grid grid-cols-2 gap-4 text-center mb-3">
