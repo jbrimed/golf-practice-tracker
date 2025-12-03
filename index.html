@@ -72,40 +72,36 @@
 
 <body class="text-slate-800 pb-24">
 
-  <!-- ================= LOGIN SCREEN ================= -->
+  <!-- ================= LOGIN SCREEN (Google Only) ================= -->
   <div id="login-screen" class="min-h-screen flex flex-col items-center justify-center p-4 bg-slate-50">
-    <div class="card max-w-sm w-full space-y-6 shadow-xl">
-      <div class="text-center space-y-2">
-        <div class="inline-flex items-center justify-center bg-brand-100 p-4 rounded-full">
+    <div class="card max-w-sm w-full text-center space-y-8 shadow-xl">
+      
+      <!-- Logo / Title -->
+      <div class="space-y-4">
+        <div class="inline-flex items-center justify-center bg-brand-100 p-5 rounded-full shadow-inner">
           <!-- Golf Icon -->
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5 10 10 0 0 0-10 0Z"/><path d="m9 12 2 2 4-4"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5 10 10 0 0 0-10 0Z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
         </div>
-        <h1 class="text-2xl font-bold text-slate-900">Golf Hub</h1>
-        <p class="text-slate-500 text-sm">Sign in to sync your data</p>
+        <div>
+          <h1 class="text-3xl font-bold text-slate-900">Golf Hub</h1>
+          <p class="text-slate-500 text-sm mt-1">Sign in to track your progress</p>
+        </div>
       </div>
 
-      <!-- Email Form -->
-      <div class="space-y-3">
-        <input type="email" id="email-input" placeholder="Email" class="w-full input-style" />
-        <input type="password" id="password-input" placeholder="Password" class="w-full input-style" />
-        <button id="email-login-btn" class="w-full bg-brand-600 text-white font-bold py-3 rounded-lg hover:bg-brand-700 transition">Log In</button>
-        <button id="email-signup-btn" class="w-full bg-white border border-brand-600 text-brand-600 font-bold py-3 rounded-lg hover:bg-brand-50 transition">Sign Up</button>
-      </div>
-
-      <div class="relative">
-        <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-300"></div></div>
-        <div class="relative flex justify-center text-sm"><span class="px-2 bg-white text-slate-500">Or continue with</span></div>
-      </div>
-
-      <button id="google-login-btn" class="w-full flex items-center justify-center gap-3 bg-white border border-slate-300 text-slate-700 font-semibold py-3 px-4 rounded-lg hover:bg-slate-50 transition shadow-sm">
-        <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google">
-        <span>Google</span>
+      <!-- Google Button -->
+      <button id="google-login-btn" class="w-full flex items-center justify-center gap-3 bg-white border border-slate-300 text-slate-700 font-semibold py-3.5 px-4 rounded-xl hover:bg-slate-50 hover:shadow-md transition-all active:scale-95">
+        <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-6 h-6" alt="Google">
+        <span>Sign in with Google</span>
       </button>
+
     </div>
   </div>
 
-  <!-- ================= APP SCREEN ================= -->
-  <div id="app-screen" class="hidden">
+  <!-- ================= APP SCREEN (Hidden initially) ================= -->
+  <div id="app-screen" class="hidden animate-fade-in">
     <!-- HEADER -->
     <header class="bg-white sticky top-0 z-50 border-b border-slate-200 shadow-sm">
       <div class="max-w-3xl mx-auto px-4 py-3">
@@ -136,9 +132,9 @@
     <main class="max-w-3xl mx-auto px-4 py-6 space-y-8">
 
       <!-- 1. SETUP TAB -->
-      <section id="setup" class="tab-pane space-y-6 animate-fade-in">
+      <section id="setup" class="tab-pane space-y-6">
         
-        <!-- Quick Start Presets (Collapsible) -->
+        <!-- Quick Start Presets -->
         <div id="presets-container">
           <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Quick Start</h3>
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -158,7 +154,7 @@
           <hr class="border-slate-200 mt-6">
         </div>
 
-        <!-- Session Config (Reduced) -->
+        <!-- Session Config -->
         <div class="card space-y-4">
           <div class="flex items-center gap-2 pb-2 border-b border-slate-100">
             <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
