@@ -1,20 +1,14 @@
 // ================================
-// app.js — CLEAN PROFESSIONAL EDITION (v3.0)
-// Theme: High-Density Data, Natural Language, Light Mode
+// app.js — SCRATCH EDITION WITH WEEKLY PLANS
+// Features: Weekly Plan Builder, Raw Metric Logging, Dynamic Leveling
 // ================================
 
 import { DRILLS } from "./drills.js";
 import { SKILLS } from "./skills.js";
 import { 
-    saveSession, 
-    loadSessions, 
-    deleteSessionFromCloud, 
-    saveDraft, 
-    loadDraft, 
-    clearDraft,
-    loginWithGoogle,
-    logout,
-    subscribeToAuth
+    saveSession, loadSessions, deleteSessionFromCloud, 
+    saveDraft, loadDraft, clearDraft,
+    loginWithGoogle, logout, subscribeToAuth
 } from "./storage.js";
 
 const $ = (id) => document.getElementById(id);
@@ -32,27 +26,26 @@ const $ = (id) => document.getElementById(id);
 })();
 
 // ----------------------
-// STATE MANAGEMENT
+// STATE & INIT
 // ----------------------
 let selectedSkills = new Set();
 let selectedDrillIds = new Set();
+let userProgression = {}; 
+let activePlan = null; 
 
 const allDrillsMap = new Map(Object.values(DRILLS).flat().map(d => [d.id, d]));
-const skillMap = new Map(SKILLS.map(s => [s.id, s]));
 
-// ----------------------
-// INITIALIZATION
-// ----------------------
 document.addEventListener("DOMContentLoaded", () => {
     setupGlobalClicks();
     setupGlobalInputs();
+    
+    // Load persisted data
+    activePlan = JSON.parse(localStorage.getItem("golf_active_plan") || "null");
+    userProgression = JSON.parse(localStorage.getItem('golf_progression') || '{}');
 
     try {
         subscribeToAuth((user) => handleAuthChange(user));
-    } catch (e) {
-        console.error("Auth Error:", e);
-        initAppData(); 
-    }
+    } catch (e) { console.error("Auth Error:", e); initAppData(); }
 });
 
 function handleAuthChange(user) {
@@ -63,13 +56,12 @@ function handleAuthChange(user) {
     if (user) {
         if(loginScreen) loginScreen.classList.add("hidden");
         if(appScreen) appScreen.classList.remove("hidden");
-        
         if(userProfile) {
             userProfile.innerHTML = `
                 <div class="flex flex-col items-end">
                     <span class="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Player</span>
                     <div class="flex items-center gap-2">
-                        <span class="text-xs font-bold text-slate-900">${user.displayName || 'Golfer'}</span>
+                        <span class="text-xs font-bold text-slate-900">${user.displayName || 'Scratch Player'}</span>
                         <button class="text-[10px] text-slate-500 hover:text-red-600 border border-slate-300 hover:border-red-400 px-1 rounded-sm uppercase bg-white font-medium" data-action="logout">Sign Out</button>
                     </div>
                 </div>`;
@@ -83,7 +75,7 @@ function handleAuthChange(user) {
 
 function initAppData() {
     try { restoreDraft(); } catch (e) { clearDraft(); }
-    
+    renderPlanUI(); 
     renderSkills();
     renderDrillSelect();
     renderSelectedDrills(); 
@@ -91,7 +83,116 @@ function initAppData() {
 }
 
 // ----------------------
-// AUTO-SAVE LOGIC
+// HELPER: DRILL PARAMS
+// ----------------------
+function getDrillParams(id) {
+    const drill = allDrillsMap.get(id);
+    if (!drill) return null;
+    if (drill.progression) {
+        const currentLevel = userProgression[id] || 1;
+        // Find the current level params, fall back to level 1 if current level doesn't exist anymore
+        const params = drill.progression.find(p => p.level === currentLevel) || drill.progression[0];
+        
+        return {
+            ...drill,
+            ...params,
+            currentLevel,
+            description: `${params.name} // ${drill.description}`
+        };
+    }
+    return drill;
+}
+
+// ----------------------
+// PLAN BUILDER LOGIC
+// ----------------------
+function generateWeekPlan() {
+    const checks = document.querySelectorAll('.plan-focus-check:checked');
+    const areas = Array.from(checks).map(c => c.value);
+    
+    if(areas.length === 0) { alert("Select at least one focus area."); return; }
+
+    const tasks = [];
+    areas.forEach(area => {
+        const categoryDrills = Object.values(DRILLS[area] || {}).flat();
+        if(categoryDrills.length > 0) {
+            // Pick 3 diverse drills from this category (using a set to ensure unique IDs)
+            let chosen = new Set();
+            while(chosen.size < 3 && chosen.size < categoryDrills.length) {
+                const randomDrill = categoryDrills[Math.floor(Math.random() * categoryDrills.length)];
+                if (!chosen.has(randomDrill.id)) {
+                    chosen.add(randomDrill.id);
+                    tasks.push({ 
+                        id: randomDrill.id, 
+                        cat: area, 
+                        done: 0, // Target completion count: 0
+                        target: 3, // Goal: 3 successful completions this week
+                    });
+                }
+            }
+        }
+    });
+
+    if (tasks.length === 0) {
+        alert("Could not generate a sufficient plan based on selections. Try again.");
+        return;
+    }
+
+    activePlan = { focusAreas: areas, tasks: tasks, created: new Date().toISOString() };
+    localStorage.setItem("golf_active_plan", JSON.stringify(activePlan));
+    renderPlanUI();
+}
+
+function renderPlanUI() {
+    const activeView = $("active-plan-view");
+    const createView = $("create-plan-view");
+    const list = $("plan-tasks-list");
+    const progBar = $("plan-progress-bar");
+
+    if(!activePlan) {
+        activeView.classList.add("hidden");
+        createView.classList.remove("hidden");
+        return;
+    }
+
+    activeView.classList.remove("hidden");
+    createView.classList.add("hidden");
+    list.innerHTML = "";
+
+    const doneCount = activePlan.tasks.reduce((sum, t) => sum + Math.min(t.done, t.target), 0);
+    const totalTarget = activePlan.tasks.reduce((sum, t) => sum + t.target, 0);
+    const pct = totalTarget === 0 ? 0 : (doneCount / totalTarget) * 100;
+    
+    if(progBar) progBar.style.width = `${pct}%`;
+
+    activePlan.tasks.forEach((task) => {
+        const drill = getDrillParams(task.id);
+        const completion = Math.min(task.done, task.target);
+        const isComplete = task.done >= task.target;
+        
+        const item = document.createElement("div");
+        item.className = `flex justify-between items-center p-3 border rounded-sm ${isComplete ? 'bg-green-50 border-green-200 opacity-90' : 'bg-white border-l-4 border-l-tech-blue border-slate-200'}`;
+        
+        item.innerHTML = `
+            <div>
+                <div class="text-[10px] uppercase font-bold text-slate-400">${drill?.category || task.cat} - Lvl ${drill.currentLevel}</div>
+                <div class="text-xs font-bold text-slate-900">${drill?.name || task.id}</div>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="text-xs font-mono font-bold ${isComplete ? 'text-green-600' : 'text-tech-blue'}">${completion}/${task.target} Done</span>
+                <button class="load-plan-drill text-[10px] bg-slate-900 text-white px-2 py-1 rounded-sm uppercase disabled:opacity-50" 
+                        data-id="${task.id}" 
+                        ${isComplete ? 'disabled' : ''}>
+                    Load
+                </button>
+            </div>
+        `;
+        list.appendChild(item);
+    });
+}
+
+// ----------------------
+// AUTO-SAVE & DRAFT (No change needed)
 // ----------------------
 function triggerAutoSave() {
     const drillData = {};
@@ -130,224 +231,6 @@ function triggerAutoSave() {
     });
 }
 
-// ----------------------
-// GLOBAL EVENT DELEGATION
-// ----------------------
-function setupGlobalClicks() {
-    document.body.addEventListener("click", async (e) => {
-        const btn = e.target.closest("button");
-        if (!btn) return;
-
-        if (btn.id === "google-login-btn") {
-            try { await loginWithGoogle(); } catch(e) { alert("Login failed: " + e.message); }
-        }
-        if (btn.dataset.action === "logout") {
-            logout().then(() => location.reload());
-        }
-
-        if (btn.classList.contains("tab-button")) {
-            switchTab(btn.dataset.tab);
-        }
-
-        if (btn.classList.contains("preset-btn")) {
-            generateSessionPreset(btn.dataset.type);
-        }
-
-        if (btn.classList.contains("add-drill")) {
-            const id = btn.dataset.id;
-            if (selectedDrillIds.has(id)) selectedDrillIds.delete(id);
-            else selectedDrillIds.add(id);
-            
-            renderDrillSelect();
-            updateStartButton();
-            triggerAutoSave();
-        }
-
-        if (btn.id === "go-to-log") {
-            if (selectedDrillIds.size > 0) {
-                renderSelectedDrills(); 
-                switchTab("log");
-            }
-        }
-        if (btn.id === "save-session") {
-            handleSaveSession();
-        }
-
-        if (btn.classList.contains("roll-btn")) {
-            handleRngRoll(btn);
-        }
-        if (btn.classList.contains("rng-multi-btn")) {
-            handleMultiTargetGen(btn);
-        }
-
-        if (btn.classList.contains("del-hist-btn")) {
-            e.stopPropagation();
-            if(confirm("Delete this session record?")) {
-                await deleteSessionFromCloud(btn.dataset.id);
-                renderHistory();
-                renderAnalytics();
-            }
-        }
-    });
-}
-
-function setupGlobalInputs() {
-    document.body.addEventListener("input", (e) => {
-        const el = e.target;
-        if (el.classList.contains("calc-input")) {
-            const group = el.dataset.group;
-            calculateDispersion(group);
-        }
-        if (el.classList.contains("multi-inp")) {
-            const container = el.closest(".rng-table-container");
-            if(container) calculateRngScore(container);
-        }
-        if (el.matches("input, textarea")) {
-            triggerAutoSave();
-        }
-    });
-}
-
-// ----------------------
-// MATH & CALCULATIONS
-// ----------------------
-function calculateDispersion(id) {
-    const inputs = document.querySelectorAll(`.calc-input[data-group="${id}"]`);
-    const vals = Array.from(inputs).map(i => parseFloat(i.value)).filter(v => !isNaN(v));
-    
-    const sdEl = document.getElementById(`calc-sd-${id}`);
-    const avgEl = document.getElementById(`calc-avg-${id}`);
-    const hidden = document.querySelector(`.drill-score-input[data-id="${id}"]`);
-
-    if (vals.length > 1) {
-        const sum = vals.reduce((a,b) => a+b, 0);
-        const avg = sum / vals.length;
-        const variance = vals.reduce((t, n) => t + Math.pow(n - avg, 2), 0) / vals.length;
-        const sd = Math.sqrt(variance);
-
-        if(sdEl) sdEl.innerText = sd.toFixed(1);
-        if(avgEl) avgEl.innerText = Math.round(avg);
-        if(hidden) hidden.value = sd.toFixed(2);
-    } else {
-        if(sdEl) sdEl.innerText = "--";
-        if(avgEl) avgEl.innerText = "--";
-    }
-}
-
-function calculateRngScore(container) {
-    const id = container.id.replace("rng-table-", "");
-    const rows = container.querySelectorAll(".multi-row");
-    let totalErr = 0, count = 0;
-    
-    rows.forEach(row => {
-        const target = parseFloat(row.dataset.target);
-        const inputs = row.querySelectorAll("input");
-        const deltaDisplay = row.querySelector(".row-delta");
-        
-        const validShots = Array.from(inputs).map(i => parseFloat(i.value)).filter(v => !isNaN(v));
-        
-        if (validShots.length > 0) {
-            const rowAvg = validShots.reduce((a,b)=>a+b,0) / validShots.length;
-            const delta = Math.abs(rowAvg - target);
-            if(deltaDisplay) deltaDisplay.innerText = delta.toFixed(1);
-            
-            totalErr += delta;
-            count++;
-        } else {
-            if(deltaDisplay) deltaDisplay.innerText = "--";
-        }
-    });
-
-    const avgErr = count > 0 ? (totalErr / count).toFixed(1) : "--";
-    const scoreEl = document.getElementById(`rng-score-${id}`);
-    const hidden = document.querySelector(`.drill-score-input[data-id="${id}"]`);
-    
-    if(scoreEl) scoreEl.innerText = avgErr;
-    if(hidden) hidden.value = avgErr;
-}
-
-// ----------------------
-// RNG HANDLERS
-// ----------------------
-function handleRngRoll(btn) {
-    const choices = JSON.parse(btn.dataset.choices || "[]");
-    const targetEl = document.getElementById(btn.dataset.target);
-    
-    if(choices.length) {
-        targetEl.innerText = choices[Math.floor(Math.random()*choices.length)];
-    } else {
-        const min = parseInt(btn.dataset.min), max = parseInt(btn.dataset.max);
-        const val = Math.floor(Math.random()*(max-min+1))+min;
-        targetEl.innerText = "Target: " + val + "y";
-    }
-}
-
-function handleMultiTargetGen(btn) {
-    const id = btn.dataset.id;
-    const min = parseInt(btn.dataset.min);
-    const max = parseInt(btn.dataset.max);
-    const count = parseInt(btn.dataset.count);
-    
-    const rowsContainer = document.getElementById(`rng-rows-${id}`);
-    const tableContainer = document.getElementById(`rng-table-${id}`);
-    
-    // Updated natural headers
-    rowsContainer.innerHTML = `
-        <div class="grid grid-cols-4 gap-2 text-[10px] text-slate-500 mb-1 px-1 font-bold">
-            <span class="col-span-1">Target</span>
-            <span class="text-center">Shot 1</span>
-            <span class="text-center">Shot 2</span>
-            <span class="text-right">Delta</span>
-        </div>`;
-
-    for(let i=0; i<count; i++) {
-        const t = Math.floor(Math.random()*(max-min+1))+min;
-        rowsContainer.innerHTML += `
-        <div class="grid grid-cols-4 gap-2 items-center multi-row mb-1" data-target="${t}">
-            <div class="col-span-1 text-tech-blue font-mono font-bold text-sm bg-slate-50 border border-slate-200 py-1 text-center rounded-sm">${t}</div>
-            <input type="number" class="input-lcd h-8 px-1 text-center multi-inp text-xs rounded-sm" placeholder="-">
-            <input type="number" class="input-lcd h-8 px-1 text-center multi-inp text-xs rounded-sm" placeholder="-">
-            <div class="text-right text-xs font-mono text-slate-500 py-1 row-delta">--</div>
-        </div>`;
-    }
-    tableContainer.classList.remove("hidden");
-    btn.classList.add("hidden");
-}
-
-// ----------------------
-// PRESETS & DRAFT
-// ----------------------
-function generateSessionPreset(type) {
-    selectedDrillIds.clear();
-    selectedSkills.clear();
-    clearDraft();
-    
-    const map = {
-        'random': ['driver','irons','wedges','putting'],
-        'shortgame': ['wedges','short_game','putting'],
-        'driver_iron': ['driver','irons'],
-        'putting': ['putting']
-    };
-    
-    const cats = map[type] || [];
-    cats.forEach(cat => {
-        const list = DRILLS[cat];
-        if(list && list.length) {
-            const d = list[Math.floor(Math.random()*list.length)];
-            selectedDrillIds.add(d.id);
-            d.skills.forEach(s => selectedSkills.add(s));
-        }
-    });
-
-    renderSkills();
-    renderDrillSelect();
-    renderSelectedDrills();
-    updateStartButton();
-    triggerAutoSave();
-    
-    if(selectedDrillIds.size > 0) switchTab("log");
-}
-
 function restoreDraft() {
     const draft = loadDraft();
     if(!draft) return;
@@ -358,108 +241,156 @@ function restoreDraft() {
     if(draft.date && $("session-date")) $("session-date").value = draft.date;
     if(draft.notes && $("session-notes")) $("session-notes").value = draft.notes;
     
+    // Rerendering functions will call getDrillParams which handles progression
+}
+
+// ----------------------
+// SCORING & PROMOTION
+// ----------------------
+function evaluateResult(drill, rawScore) {
+    let numeric = 0;
+    // Streak and Count are simple integers/ratios
+    if (rawScore.includes('/')) {
+        const parts = rawScore.split('/');
+        // Use division for plotting percentage success/score ratio
+        numeric = parseFloat(parts[0]) / (parseFloat(parts[1]) || 1); 
+    } else {
+        // Simple numeric input (SD, Avg Error, Speed, Par Score)
+        numeric = parseFloat(rawScore);
+    }
+    if (isNaN(numeric)) return { passed: false, numeric: 0 };
+
+    let passed = false;
+
+    // Logic: Did they beat the threshold?
+    if (drill.scoreType === 'count' || drill.scoreType === 'streak' || drill.scoreType === 'numeric_high') {
+        const target = drill.goalThreshold || drill.targetStreak || drill.targetScore || 0;
+        passed = numeric >= target;
+    } else {
+        // Lower is better (SD, Avg Error, Par 18 Score)
+        const target = drill.sd_target_yards || drill.tolerance_yards || drill.targetScore || 999;
+        passed = numeric <= target;
+    }
+
+    return { passed, numeric: numeric }; // numeric is raw metric for charting
+}
+
+function checkAndApplyPromotion(drillId, passed) {
+    if (!passed) return;
+    
+    const drill = allDrillsMap.get(drillId);
+    if (!drill || !drill.progression) return;
+
+    const currentLevel = userProgression[drillId] || 1;
+    const maxLevel = drill.progression.length;
+    
+    if (currentLevel < maxLevel) {
+        const nextLevel = currentLevel + 1;
+        const nextLevelParams = drill.progression.find(p => p.level === nextLevel);
+
+        // Simple promotion logic: pass one session to be offered a promotion.
+        if (confirm(`Promotion available for ${drill.name}!\n\nYou achieved the Level ${currentLevel} standard.\n\nDo you want to move up to the next challenge: ${nextLevelParams.name}?`)) {
+            userProgression[drillId] = nextLevel;
+            localStorage.setItem('golf_progression', JSON.stringify(userProgression));
+            alert(`Level up complete! ${drill.name} is now at Level ${nextLevel}.`);
+        }
+    }
+}
+
+// ----------------------
+// SAVING
+// ----------------------
+async function handleSaveSession() {
+    if (selectedDrillIds.size === 0) { alert("Select drills first."); return; }
+
+    const results = Array.from(selectedDrillIds).map(id => {
+        const rawInput = document.querySelector(`.drill-score-input[data-id="${id}"]`)?.value || "";
+        const note = document.querySelector(`textarea[data-note-id="${id}"]`)?.value || "";
+        
+        const params = getDrillParams(id);
+        const evalResult = evaluateResult(params, rawInput);
+
+        // Update Plan if exists
+        if(activePlan) {
+            const task = activePlan.tasks.find(t => t.id === id && t.done < t.target);
+            if(task && evalResult.passed) {
+                task.done += 1;
+                localStorage.setItem("golf_active_plan", JSON.stringify(activePlan));
+            }
+        }
+
+        // Check Promotion
+        checkAndApplyPromotion(id, evalResult.passed); 
+
+        return { 
+            id, 
+            name: params.name, 
+            score: { raw: rawInput, numeric: evalResult.numeric }, 
+            notes: note,
+            level: params.currentLevel || 1,
+            scoreType: params.scoreType // Keep score type for analytics interpretation
+        };
+    });
+
+    await saveSession({
+        date: $("session-date")?.value || new Date().toISOString().split('T')[0],
+        drills: Array.from(selectedDrillIds),
+        drillResults: results,
+        notes: $("session-notes")?.value || "",
+        createdAt: new Date().toISOString()
+    });
+
+    alert("Session Saved");
+    selectedDrillIds.clear();
+    clearDraft();
+    renderPlanUI();
     renderSkills();
     renderDrillSelect();
     renderSelectedDrills();
     updateStartButton();
-
-    setTimeout(() => {
-        if(draft.drillData) {
-            Object.keys(draft.drillData).forEach(id => {
-                const d = draft.drillData[id];
-                const scoreInput = document.querySelector(`.drill-score-input[data-id="${id}"]`);
-                const noteInput = document.querySelector(`textarea[data-note-id="${id}"]`);
-                
-                if(scoreInput && d.score) scoreInput.value = d.score;
-                if(noteInput && d.note) noteInput.value = d.note;
-                
-                if(d.calcValues) {
-                    const calcs = document.querySelectorAll(`.calc-input[data-group="${id}"]`);
-                    calcs.forEach((inp, i) => { if(d.calcValues[i]) inp.value = d.calcValues[i]; });
-                    if(calcs.length) calculateDispersion(id);
-                }
-
-                if(d.rngTargets) {
-                    const btn = document.querySelector(`.rng-multi-btn[data-id="${id}"]`);
-                    if(btn && !btn.classList.contains("hidden")) {
-                        const rowsContainer = document.getElementById(`rng-rows-${id}`);
-                        const tableContainer = document.getElementById(`rng-table-${id}`);
-                        
-                        // Regenerate using Natural Headers
-                        rowsContainer.innerHTML = `
-                            <div class="grid grid-cols-4 gap-2 text-[10px] text-slate-500 mb-1 px-1 font-bold">
-                                <span class="col-span-1">Target</span>
-                                <span class="text-center">Shot 1</span>
-                                <span class="text-center">Shot 2</span>
-                                <span class="text-right">Delta</span>
-                            </div>`;
-                            
-                        d.rngTargets.forEach(t => {
-                             rowsContainer.innerHTML += `
-                                <div class="grid grid-cols-4 gap-2 items-center multi-row mb-1" data-target="${t}">
-                                    <div class="col-span-1 text-tech-blue font-mono font-bold text-sm bg-slate-50 border border-slate-200 py-1 text-center rounded-sm">${t}</div>
-                                    <input type="number" class="input-lcd h-8 px-1 text-center multi-inp text-xs rounded-sm" placeholder="-">
-                                    <input type="number" class="input-lcd h-8 px-1 text-center multi-inp text-xs rounded-sm" placeholder="-">
-                                    <div class="text-right text-xs font-mono text-slate-500 py-1 row-delta">--</div>
-                                </div>`;
-                        });
-                        tableContainer.classList.remove("hidden");
-                        btn.classList.add("hidden");
-                        
-                        if(d.rngValues) {
-                            const inputs = rowsContainer.querySelectorAll("input");
-                            inputs.forEach((inp, i) => { if(d.rngValues[i]) inp.value = d.rngValues[i]; });
-                            calculateRngScore(tableContainer);
-                        }
-                    }
-                }
-            });
-        }
-    }, 200);
+    if($("session-notes")) $("session-notes").value = "";
+    switchTab("history");
 }
 
 // ----------------------
-// UI RENDERERS
+// UI RENDERERS (Standard)
 // ----------------------
-
 function renderSkills() {
     const container = $("skill-select");
     if(!container) return;
     container.innerHTML = "";
     
-    // Group Skills by Category
-    const grouped = {};
-    SKILLS.forEach(skill => {
-        const cat = skill.category || "General";
-        if(!grouped[cat]) grouped[cat] = [];
-        grouped[cat].push(skill);
-    });
+    // Manual Grouping since skills.js is not provided and needs logical grouping
+    const allDrills = Object.values(DRILLS).flat();
+    const skillMap = new Map();
+    allDrills.forEach(d => d.skills.forEach(s => skillMap.set(s, true)));
 
-    const order = ["Driver", "Irons", "Wedges", "Short Game", "Putting", "General"];
-    
-    order.forEach(catName => {
-        if(!grouped[catName]) return;
+    const skillGroups = {
+        "Dispersion": ["driver_dispersion", "irons_distance", "wedges_distance"],
+        "Contact & Launch": ["driver_face", "irons_contact", "wedges_trajectory"],
+        "Shaping & Speed": ["driver_speed", "irons_workability", "wedges_spin"],
+        "Short Game": ["shortgame_scoring", "shortgame_pressure", "shortgame_control"],
+        "Putting": ["putting_pressure", "putting_speed", "putting_startline", "putting_read"]
+    };
+
+    Object.entries(skillGroups).forEach(([cat, skillIds]) => {
+        const relevantSkills = skillIds.filter(id => skillMap.has(id));
+        if(relevantSkills.length === 0) return;
         
-        // Category Header (Natural Language)
-        const header = document.createElement("div");
-        header.className = "bg-slate-100 text-[10px] font-bold text-slate-600 uppercase px-2 py-1 border-b border-t border-slate-200 first:border-t-0";
-        header.innerText = catName;
-        container.appendChild(header);
-
-        grouped[catName].forEach(skill => {
-            const lbl = document.createElement("label");
-            lbl.className = "flex items-center space-x-3 py-2 cursor-pointer hover:bg-slate-50 transition px-2 border-b border-slate-100 last:border-b-0";
-            const checked = selectedSkills.has(skill.id) ? "checked" : "";
-            lbl.innerHTML = `
-                <input type="checkbox" class="accent-tech-blue h-3 w-3 bg-white border-slate-300 rounded-sm" ${checked}>
-                <span class="text-xs text-slate-700 font-medium">${skill.label}</span>
-            `;
+        const h = document.createElement("div");
+        h.className = "bg-slate-100 text-[10px] font-bold text-slate-600 uppercase px-2 py-1 border-b border-t border-slate-200";
+        h.innerText = cat;
+        container.appendChild(h);
+        
+        relevantSkills.forEach(id => {
+            const labelText = id.split('_').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ').replace('Driver ', '').replace('Irons ', '').replace('Wedges ', '');
             
+            const lbl = document.createElement("label");
+            lbl.className = "flex items-center space-x-2 py-2 px-2 border-b border-slate-100";
+            lbl.innerHTML = `<input type="checkbox" class="accent-tech-blue" value="${id}"> <span class="text-xs text-slate-700">${labelText}</span>`;
             lbl.querySelector("input").addEventListener("change", (e) => {
-                if(e.target.checked) selectedSkills.add(skill.id); 
-                else selectedSkills.delete(skill.id);
+                e.target.checked ? selectedSkills.add(id) : selectedSkills.delete(id);
                 renderDrillSelect();
-                triggerAutoSave();
             });
             container.appendChild(lbl);
         });
@@ -467,267 +398,200 @@ function renderSkills() {
 }
 
 function renderDrillSelect() {
-  const container = $("drill-select");
-  const presets = $("presets-container");
-  if(!container) return;
-  container.innerHTML = "";
+    const container = $("drill-select");
+    if(!container) return;
+    container.innerHTML = "";
+    
+    const allDrills = Object.values(DRILLS).flat();
+    const active = allDrills.filter(d => d.skills.some(s => selectedSkills.has(s)));
+    
+    if(selectedSkills.size > 0 && active.length === 0) {
+        container.innerHTML = `<div class="text-center py-4 text-xs text-slate-400">No drills match filter</div>`;
+        return;
+    }
+    
+    if(selectedSkills.size === 0 && selectedDrillIds.size === 0) {
+        container.innerHTML = `<div class="text-center py-8 text-slate-300 text-[10px] uppercase">Select filters above</div>`;
+        return;
+    }
 
-  if (selectedSkills.size === 0 && selectedDrillIds.size === 0) {
-      if(presets) presets.classList.remove("hidden");
-      container.innerHTML = `<div class="text-center py-8 text-slate-400 font-medium text-[10px] uppercase border border-dashed border-slate-300 rounded bg-slate-50">Select drills or skills to begin...</div>`;
-      return;
-  } else {
-      if(presets) presets.classList.add("hidden");
-  }
-
-  const activeDrills = Object.values(DRILLS).flat().filter(d => d.skills.some(s => selectedSkills.has(s)));
-  
-  if(activeDrills.length === 0) {
-      container.innerHTML = `<div class="text-center py-4 text-slate-500 font-medium text-xs">No matching drills found</div>`;
-      return;
-  }
-
-  activeDrills.forEach(drill => {
-      // Prevent duplicates
-      if(container.querySelector(`[data-did="${drill.id}"]`)) return;
-
-      const isAdded = selectedDrillIds.has(drill.id);
-      
-      const cardClass = isAdded ? "border-tech-blue bg-white shadow-sm" : "border-slate-200 hover:border-slate-400 bg-white";
-      const btnText = isAdded ? "Remove" : "Add";
-      const btnClass = isAdded ? "text-red-600 border-red-200 hover:bg-red-50" : "text-tech-blue border-blue-200 hover:bg-blue-50";
-
-      const div = document.createElement("div");
-      div.className = `flex justify-between items-center p-2 border rounded-sm transition mb-1 ${cardClass}`;
-      div.setAttribute("data-did", drill.id);
-      
-      div.innerHTML = `
-        <div class="flex-1 min-w-0 pr-2">
-            <div class="flex items-baseline justify-between">
-                <h4 class="text-xs font-bold text-slate-800 truncate">${drill.name}</h4>
-                <span class="text-[10px] font-mono text-slate-400">${drill.duration}m</span>
+    active.forEach(drill => {
+        if(container.querySelector(`[data-did="${drill.id}"]`)) return;
+        const isAdded = selectedDrillIds.has(drill.id);
+        const params = getDrillParams(drill.id);
+        
+        const div = document.createElement("div");
+        div.className = `flex justify-between items-center p-2 border rounded-sm mb-1 ${isAdded ? 'border-tech-blue bg-blue-50' : 'border-slate-200 bg-white'}`;
+        div.innerHTML = `
+            <div class="flex-1">
+                <div class="text-xs font-bold text-slate-900">${params.name}</div>
+                <div class="text-[10px] text-slate-500">${params.duration}m • Lvl ${params.currentLevel || 1}</div>
             </div>
-        </div>
-        <button class="add-drill text-[10px] font-bold border px-2 py-0.5 rounded-sm uppercase tracking-wide transition ${btnClass}" data-id="${drill.id}">${btnText}</button>
-      `;
-      container.appendChild(div);
-  });
+            <button class="add-btn text-[10px] font-bold uppercase px-2 py-1 border rounded ${isAdded ? 'text-white bg-tech-blue border-tech-blue' : 'text-slate-500 border-slate-300 hover:bg-slate-50'}" data-id="${drill.id}">${isAdded ? 'Remove' : 'Add'}</button>
+        `;
+        container.appendChild(div);
+    });
 }
 
 function renderSelectedDrills() {
     const container = $("selected-drills-log");
-    if (!container) return;
+    if(!container) return;
     container.innerHTML = "";
     
-    if (selectedDrillIds.size === 0) return;
-
-    // Use Array.from to allow index access for numbering
-    Array.from(selectedDrillIds).forEach((id, index) => {
-        const drill = allDrillsMap.get(id);
-        if(!drill) return;
-
-        const metric = drill.metricType || "CUSTOM";
+    Array.from(selectedDrillIds).forEach((id) => {
+        const params = getDrillParams(id);
+        if (!params) return;
         const card = document.createElement("div");
-        card.className = "tech-card p-4 relative";
+        card.className = "tech-card p-4";
         
-        // Header
-        const header = `
-            <div class="flex justify-between items-start mb-4 border-b border-slate-100 pb-2">
-                <div>
-                    <h3 class="text-sm font-bold text-slate-900">${drill.name}</h3>
-                </div>
-                <div class="text-[10px] text-slate-500 max-w-[50%] text-right leading-tight">
-                    ${drill.description}
-                </div>
-            </div>`;
+        let inputHtml = "";
+        let placeholderText = "Enter score (e.g., 8/10 or 3.2)";
 
-        let inputsHtml = "";
-        
-        // 1. DISPERSION INPUT
-        if (metric === "DISPERSION_CALC") {
-            inputsHtml = `
-            <div class="bg-slate-50 border border-slate-200 p-2 rounded-sm mb-3">
-                <div class="flex justify-between text-[10px] text-slate-500 mb-1 px-1 font-bold">
-                    <span>Carry Distance</span>
-                    <span>(Yards)</span>
-                </div>
-                <div class="grid grid-cols-5 gap-1 mb-2">
-                    ${Array(5).fill(0).map(() => `<input type="number" class="calc-input bg-white border border-slate-300 text-slate-900 font-mono text-center text-sm py-1 focus:border-tech-blue focus:outline-none placeholder-slate-300 rounded-sm" placeholder="-" data-group="${id}">`).join('')}
-                </div>
-                <div class="flex justify-between items-center border-t border-slate-200 pt-2 px-1">
-                    <span class="text-[10px] text-slate-500 font-bold uppercase">Avg: <span id="calc-avg-${id}" class="text-slate-900 text-xs">--</span></span>
-                    <span class="text-[10px] text-slate-500 font-bold uppercase">SD: <span id="calc-sd-${id}" class="text-tech-blue font-bold text-xs">--</span></span>
-                </div>
+        if(params.metricType === "DISPERSION_CALC") {
+            placeholderText = "Enter 5-10 carry distances...";
+            inputHtml = `
+            <div class="grid grid-cols-5 gap-1 mb-2">
+                ${Array(params.shots||8).fill(0).map(()=>`<input type="number" class="calc-input input-lcd bg-slate-50 border border-slate-200 text-center text-sm py-1 rounded-sm" placeholder="-" data-group="${id}">`).join('')}
             </div>
-            <input type="hidden" data-id="${id}" class="drill-score-input" />`;
-            
-        // 2. RNG MULTI LOG
-        } else if (metric === "RNG_MULTILOG") {
-            inputsHtml = `
-            <div id="rng-table-${id}" class="rng-table-container">
-                <button class="rng-multi-btn w-full border border-dashed border-slate-300 text-slate-500 hover:border-tech-blue hover:text-tech-blue font-bold text-[10px] py-3 mb-2 rounded-sm transition uppercase tracking-widest bg-slate-50"
-                    data-id="${id}" data-min="${drill.randomizer.min}" data-max="${drill.randomizer.max}" data-count="${drill.randomizer.count||5}">
-                    Generate Targets
-                </button>
-                <div id="rng-rows-${id}" class="space-y-1"></div>
-                <div class="mt-2 flex justify-end">
-                    <div class="text-[10px] font-bold bg-slate-50 border border-slate-200 px-3 py-1 rounded-sm text-slate-500 uppercase">
-                        Avg Error: <span id="rng-score-${id}" class="text-tech-blue font-bold">--</span>
-                    </div>
-                </div>
-                <input type="hidden" data-id="${id}" class="drill-score-input" />
+            <div class="flex justify-between text-xs font-bold text-slate-500 uppercase">
+                <span>Target SD: ${params.sd_target_yards || params.sd_target} ${params.sd_target_yards ? 'y' : 'units'}</span>
+                <span>Actual SD: <span id="calc-sd-${id}" class="text-tech-blue">--</span></span>
             </div>`;
-            
-        // 3. STANDARD INPUT
-        } else {
-            let extra = "";
-            if (drill.randomizer) {
-                 extra = `
-                 <div class="flex justify-between items-center mb-2 bg-slate-50 p-2 border border-slate-200 rounded-sm">
-                    <span class="text-slate-900 text-xs font-bold" id="rand-target-${id}">Ready</span>
-                    <button class="roll-btn text-[10px] border border-slate-300 text-slate-600 px-2 py-1 hover:bg-white font-bold uppercase bg-white rounded-sm" 
-                        data-target="rand-target-${id}" 
-                        data-min="${drill.randomizer.min}" 
-                        data-max="${drill.randomizer.max}" 
-                        data-choices='${JSON.stringify(drill.randomizer.choices || [])}'>
-                        Roll
-                    </button>
-                 </div>`;
-            }
-            inputsHtml = `
-                ${extra}
-                <div class="flex items-center gap-3">
-                    <div class="flex-1">
-                        <label class="block text-[10px] text-slate-500 mb-1 uppercase font-bold">Score</label>
-                        <input data-id="${id}" type="text" class="drill-score-input input-lcd w-full p-2 text-sm rounded-sm bg-white" placeholder="Result" />
-                    </div>
-                </div>`;
+        } else if (params.metricType === "RNG_MULTILOG") {
+            placeholderText = "Avg Error (Calculated)";
+            inputHtml = `
+            <div id="rng-table-${id}" class="rng-table-container">
+                <button class="rng-multi-btn w-full border border-dashed border-slate-300 text-slate-500 text-[10px] font-bold py-2 mb-2 uppercase hover:bg-slate-50" data-id="${id}" data-min="${params.randomizer.min}" data-max="${params.randomizer.max}">Generate Targets</button>
+                <div id="rng-rows-${id}" class="space-y-1"></div>
+                <div class="flex justify-between text-xs font-bold text-slate-500 uppercase mt-2">
+                    <span>Target Err: ${params.tolerance_yards || params.tolerance_feet || 'N/A'}</span>
+                    <span>Avg Err: <span id="rng-score-${id}" class="text-tech-blue">--</span></span>
+                </div>
+            </div>`;
+        } else if (params.scoreType === 'streak') {
+             placeholderText = `Enter Max Streak (e.g., ${params.targetStreak})`;
+        } else if (params.scoreType === 'score_inverse') {
+             placeholderText = `Enter Total Score (e.g., 20)`;
+        } else if (params.scoreType === 'numeric_high') {
+             placeholderText = `Enter Avg Speed/Smash (e.g., 112)`;
         }
 
-        // Combine
+
         card.innerHTML = `
-            ${header}
-            ${inputsHtml}
-            <div class="mt-3 pt-3 border-t border-slate-100">
-                <textarea data-note-id="${id}" class="w-full bg-slate-50 text-slate-600 text-xs p-2 border border-slate-200 focus:border-tech-blue outline-none resize-none rounded-sm" rows="1" placeholder="Notes..."></textarea>
-            </div>`;
+            <div class="mb-3 border-b border-slate-100 pb-2">
+                <div class="text-sm font-bold text-slate-900">${params.name}</div>
+                <div class="text-[10px] text-slate-500">${params.description}</div>
+            </div>
+            ${inputHtml}
+            
+            <div class="mt-3">
+                <label class="block text-[10px] text-slate-500 mb-1 uppercase font-bold">Result</label>
+                <input data-id="${id}" type="text" class="drill-score-input input-lcd w-full p-2 text-sm rounded-sm bg-white" placeholder="${placeholderText}">
+            </div>
+            <textarea data-note-id="${id}" class="w-full mt-2 text-xs p-2 bg-slate-50 border border-slate-200 rounded-sm resize-none" rows="1" placeholder="Notes..."></textarea>
+            
+        `;
         container.appendChild(card);
     });
 }
 
-function updateStartButton() {
-    const btn = $("go-to-log");
-    const badge = $("drill-count-badge");
-    if(badge) badge.innerText = selectedDrillIds.size;
+// ----------------------
+// UTILS
+// ----------------------
+
+function calculateDispersion(id) {
+    const inputs = document.querySelectorAll(`.calc-input[data-group="${id}"]`);
+    const vals = Array.from(inputs).map(i => parseFloat(i.value)).filter(v => !isNaN(v));
+    const sdEl = $(`calc-sd-${id}`);
+    const hidden = document.querySelector(`.drill-score-input[data-id="${id}"]`);
     
-    if(btn) {
-        if (selectedDrillIds.size === 0) {
-            btn.disabled = true;
-            btn.classList.add("opacity-50", "cursor-not-allowed");
-        } else {
-            btn.disabled = false;
-            btn.classList.remove("opacity-50", "cursor-not-allowed");
-        }
+    if(vals.length > 1) {
+        const avg = vals.reduce((a,b)=>a+b,0)/vals.length;
+        const sd = Math.sqrt(vals.reduce((t,n)=>t+Math.pow(n-avg,2),0)/vals.length).toFixed(2);
+        if(sdEl) sdEl.innerText = sd;
+        if(hidden) hidden.value = sd;
+    } else {
+        if(sdEl) sdEl.innerText = "--";
+        if(hidden) hidden.value = "";
     }
 }
 
-// ----------------------
-// SAVING & HISTORY
-// ----------------------
+function handleMultiTargetGen(btn) {
+    const id = btn.dataset.id;
+    const min = parseInt(btn.dataset.min);
+    const max = parseInt(btn.dataset.max);
+    const rowsContainer = $(`rng-rows-${id}`);
+    const params = getDrillParams(id);
+    const count = params.randomizer.count || 5;
 
-async function handleSaveSession() {
-    if (selectedDrillIds.size === 0) { alert("Please select at least one drill."); return; }
-
-    const results = Array.from(selectedDrillIds).map(id => {
-        const drill = allDrillsMap.get(id);
-        const scoreInput = document.querySelector(`.drill-score-input[data-id="${id}"]`);
-        const noteInput = document.querySelector(`textarea[data-note-id="${id}"]`);
-        
-        const raw = scoreInput ? scoreInput.value : "";
-        const note = noteInput ? noteInput.value : "";
-        
-        let num = null;
-        if (raw) {
-            if (!isNaN(parseFloat(raw))) num = parseFloat(raw);
-            else if (raw.includes("/")) {
-                const [n, d] = raw.split("/");
-                if (d && parseFloat(d) !== 0) num = (parseFloat(n) / parseFloat(d)) * 100;
-            }
-        }
-        return { id, name: drill?.name || id, score: { raw, numeric: num !== null ? num : 0 }, notes: note };
-    });
-
-    const success = await saveSession({
-        date: $("session-date")?.value || new Date().toISOString().slice(0, 10),
-        drills: Array.from(selectedDrillIds),
-        drillResults: results,
-        notes: $("session-notes")?.value || "",
-        createdAt: new Date().toISOString()
-    });
-
-    if (success) {
-        alert("Session Saved");
-        selectedDrillIds.clear();
-        selectedSkills.clear();
-        clearDraft();
-        renderSkills();
-        renderDrillSelect();
-        renderSelectedDrills();
-        updateStartButton();
-        if($("session-notes")) $("session-notes").value = "";
-        switchTab("history");
+    let html = `<div class="grid grid-cols-4 gap-2 text-[10px] font-bold text-slate-500 mb-1"><span>Target</span><span class="text-center">Shot 1</span><span class="text-center">Shot 2</span><span class="text-right">Delta</span></div>`;
+    for(let i=0; i<count; i++) {
+        const t = Math.floor(Math.random()*(max-min+1))+min;
+        html += `<div class="grid grid-cols-4 gap-2 items-center mb-1 multi-row" data-target="${t}">
+            <div class="bg-slate-100 text-slate-900 font-bold text-center py-1 rounded text-xs">${t}${params.randomizer.unit || 'y'}</div>
+            <input type="number" class="input-lcd h-7 text-center multi-inp text-xs" placeholder="-">
+            <input type="number" class="input-lcd h-7 text-center multi-inp text-xs" placeholder="-">
+            <div class="text-right text-xs font-bold text-slate-500 py-1 row-delta">--</div>
+        </div>`;
     }
+    rowsContainer.innerHTML = html;
+    btn.classList.add("hidden");
 }
 
+function calculateRngScore(container) {
+    const id = container.id.replace("rng-table-", "");
+    let totalErr = 0, count = 0;
+    container.querySelectorAll(".multi-row").forEach(row => {
+        const t = parseFloat(row.dataset.target);
+        const shots = Array.from(row.querySelectorAll("input")).map(i => parseFloat(i.value)).filter(n => !isNaN(n));
+        
+        if(shots.length > 0) {
+            const avg = shots.reduce((a,b)=>a+b,0)/shots.length;
+            const delta = Math.abs(avg-t).toFixed(1);
+            row.querySelector(".row-delta").innerText = delta;
+            totalErr += parseFloat(delta);
+            count++;
+        }
+    });
+    const avgErr = count ? (totalErr/count).toFixed(1) : "--";
+    const scoreEl = $(`rng-score-${id}`);
+    if(scoreEl) scoreEl.innerText = avgErr;
+    const hidden = document.querySelector(`.drill-score-input[data-id="${id}"]`);
+    if(hidden) hidden.value = avgErr;
+}
+
+// ----------------------
+// HISTORY & ANALYTICS
+// ----------------------
 async function renderHistory() {
     const box = $("history-list");
     if(!box) return;
-    box.innerHTML = "<p class='text-slate-400 text-xs font-medium'>Loading...</p>";
     const sessions = await loadSessions();
-    box.innerHTML = sessions.length ? "" : "<p class='text-slate-400 text-xs font-medium'>No history found.</p>";
-    
+    box.innerHTML = sessions.length ? "" : "<div class='text-center text-xs text-slate-400'>No history</div>";
     sessions.forEach(s => {
         const div = document.createElement("div");
-        div.className = "tech-card mb-2 relative p-3 cursor-pointer hover:border-slate-400 transition group bg-white";
-        
-        const d = new Date(s.date).toLocaleDateString('en-US', {month:'short', day:'numeric'});
-        
+        div.className = "tech-card p-3 mb-2";
         div.innerHTML = `
-            <div class="flex justify-between items-center">
-                <div>
-                    <span class="text-slate-900 font-bold text-sm uppercase">${d}</span>
-                    <span class="text-slate-500 text-xs ml-2 font-medium">${s.drills.length} Drills</span>
-                </div>
-                <div class="text-slate-400 group-hover:text-red-500 transition z-10">
-                    <button class="del-hist-btn text-[10px] px-2 uppercase font-bold" data-id="${s.id}">Delete</button>
-                </div>
-            </div>`;
-            
-        div.addEventListener("click", (e) => { 
-            if(!e.target.matches(".del-hist-btn")) {
-                const details = (s.drillResults||[]).map(r => 
-                    `${r.name.substring(0,20)}... : ${r.score.raw || '--'}`
-                ).join('\n');
-                alert(`Date: ${s.date}\n\n${details}`);
-            }
-        });
+            <div class="flex justify-between font-bold text-sm">
+                <span>${new Date(s.date).toLocaleDateString()}</span>
+                <span class="text-tech-blue">${s.drills.length} Drills</span>
+            </div>
+            <div class="text-xs text-slate-500 mt-1">${s.drillResults.map(r=>`${r.name}: ${r.score.raw || r.score.numeric}`).join(', ')}</div>
+        `;
         box.appendChild(div);
     });
 }
 
-// ----------------------
-// ANALYTICS
-// ----------------------
 async function renderAnalytics() {
     const box = $("analytics-container");
     if(!box) return;
     const sessions = await loadSessions();
-    if(!sessions.length) { box.innerHTML = "<p class='text-slate-400 text-xs font-medium'>No data yet.</p>"; return; }
+    if(!sessions.length) { box.innerHTML = "No Data"; return; }
     
     const stats = {};
     sessions.sort((a,b)=>new Date(a.date)-new Date(b.date)).forEach(s => {
-        if(s.drillResults) s.drillResults.forEach(r => {
-            if(r.score && r.score.numeric !== null) {
+        s.drillResults.forEach(r => {
+            if(r.score && r.score.numeric) {
                 if(!stats[r.name]) stats[r.name] = [];
                 stats[r.name].push(r.score.numeric);
             }
@@ -737,77 +601,48 @@ async function renderAnalytics() {
     box.innerHTML = "";
     Object.keys(stats).forEach(name => {
         const scores = stats[name];
-        if(scores.length===0) return;
+        if(scores.length < 2) return;
+        const id = "c-" + Math.random().toString(36).substr(2,9);
+        box.innerHTML += `<div class="tech-card p-4 mb-4"><div class="text-xs font-bold mb-2">${name}</div><div class="h-32"><canvas id="${id}"></canvas></div></div>`;
         
-        const avg = (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1);
-        const cid = "c-" + Math.random().toString(36).substr(2,9);
+        // Determine if target line is needed (SD/Error drills tend to be lower is better)
+        const drillInfo = allDrillsMap.get(Object.keys(DRILLS).flatMap(k=>DRILLS[k]).find(d=>d.name===name)?.id);
         
-        box.innerHTML += `
-        <div class="tech-card mb-4 p-4 bg-white">
-            <div class="flex justify-between text-xs mb-2">
-                <span class="text-slate-500 uppercase font-bold">${name}</span>
-                <span class="text-tech-blue font-bold">Avg: ${avg}</span>
-            </div>
-            <div class="h-32">
-                <canvas id="${cid}"></canvas>
-            </div>
-        </div>`;
+        // Customize options based on score type
+        const isInverse = drillInfo && (drillInfo.scoreType === 'sd' || drillInfo.scoreType === 'smart_log_avg_error' || drillInfo.scoreType === 'score_inverse');
         
-        setTimeout(() => { 
-            new Chart(document.getElementById(cid), { 
-                type:'line', 
-                data:{
-                    labels:scores.map((_,i)=>i+1), 
-                    datasets:[{
-                        data:scores, 
-                        borderColor:'#2563eb', 
-                        backgroundColor: 'rgba(37, 99, 235, 0.05)',
-                        borderWidth: 2,
-                        tension:0.1, 
-                        pointRadius:3,
-                        pointBackgroundColor: '#fff',
-                        pointBorderColor: '#2563eb'
-                    }]
-                }, 
-                options:{
-                    plugins:{legend:{display:false}}, 
-                    maintainAspectRatio:false, 
-                    scales:{
-                        y:{
-                            beginAtZero:true,
-                            grid: { color: '#f1f5f9' },
-                            ticks: { color: '#64748b', font: {family: "'JetBrains Mono', monospace", size: 9} }
-                        },
-                        x: {
-                            grid: { display: false },
-                            ticks: { display: false }
-                        }
-                    }
-                }
-            }); 
-        }, 100);
+        const options = {
+            plugins: { legend: false }, 
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    reverse: isInverse, // Invert Y-axis for SD/Error so improvement goes up
+                    title: { display: true, text: isInverse ? 'Metric (Lower is Better)' : 'Metric (Higher is Better)' },
+                },
+                x: { grid: { display: false }, ticks: { display: false } }
+            }
+        };
+
+        setTimeout(() => {
+            new Chart($(id), {
+                type: 'line',
+                data: { labels: scores.map((_,i)=>i+1), datasets: [{ data: scores, borderColor: '#2563eb', tension: 0.1, fill: false }] },
+                options: options
+            });
+        }, 50);
     });
 }
 
 function switchTab(t) {
     document.querySelectorAll(".tab-pane").forEach(e => e.classList.add("hidden"));
-    document.querySelectorAll(".tab-button").forEach(e => {
-        e.classList.remove("active");
-        e.classList.remove("text-tech-blue");
-        e.classList.add("text-slate-400");
-    });
+    document.querySelectorAll(".nav-item").forEach(e => e.classList.remove("active"));
+    $(t).classList.remove("hidden");
+    const nav = document.querySelector(`button[data-tab="${t}"]`);
+    if(nav) nav.classList.add("active");
     
-    const target = $(t);
-    if (target) target.classList.remove("hidden");
-    
-    const btn = document.querySelector(`[data-tab="${t}"]`);
-    if (btn) {
-        btn.classList.add("active", "text-tech-blue");
-        btn.classList.remove("text-slate-400");
-    }
-
-    if (t === "history") renderHistory();
-    if (t === "analytics") renderAnalytics();
-    if (t === "log") renderSelectedDrills(); 
-    window.scrollTo(0,0);
+    if(t === "setup") renderPlanUI();
+    if(t === "history") renderHistory();
+    if(t === "analytics") renderAnalytics();
+    if(t === "log") renderSelectedDrills(); 
 }
