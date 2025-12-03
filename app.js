@@ -20,6 +20,18 @@ import {
 const $ = (id) => document.getElementById(id);
 
 // ----------------------
+// CHART LOADER
+// ----------------------
+(function loadChartJs() {
+  if (!document.getElementById("chartjs-script")) {
+    const script = document.createElement("script");
+    script.id = "chartjs-script";
+    script.src = "https://cdn.jsdelivr.net/npm/chart.js";
+    document.head.appendChild(script);
+  }
+})();
+
+// ----------------------
 // STATE
 // ----------------------
 let selectedSkills = new Set();
@@ -42,65 +54,10 @@ const allDrillsMap = new Map(Object.values(DRILLS).flat().map(d => [d.id, d]));
 const skillMap = new Map(SKILLS.map(s => [s.id, s]));
 
 // ----------------------
-// INITIALIZATION
+// INITIALIZATION & AUTH
 // ----------------------
-document.addEventListener("DOMContentLoaded", () => {
-    console.log("DOM Ready. Initializing...");
 
-    // 1. Setup Auth Listeners
-    try {
-        subscribeToAuth((user) => {
-            console.log("Auth State Changed:", user ? "Logged In" : "Logged Out");
-            handleAuthChange(user);
-        });
-    } catch (e) {
-        console.error("Auth Subscription Failed:", e);
-        // Fallback: Try initializing app anyway if auth fails (offline mode attempt)
-        initAppData();
-    }
-
-    // 2. Wire up Login Buttons (Always accessible)
-    const googleBtn = $("google-login-btn");
-    if (googleBtn) {
-        googleBtn.addEventListener("click", async () => {
-            try {
-                await loginWithGoogle();
-            } catch (err) {
-                alert("Login error: " + err.message);
-            }
-        });
-    }
-});
-
-function handleAuthChange(user) {
-    const loginScreen = $("login-screen");
-    const appScreen = $("app-screen");
-    const userProfile = $("user-profile");
-    
-    if (user) {
-        if(loginScreen) loginScreen.classList.add("hidden");
-        if(appScreen) appScreen.classList.remove("hidden");
-        
-        if(userProfile) {
-            userProfile.innerHTML = `
-                <div class="flex items-center gap-3">
-                    <img src="${user.photoURL || 'https://via.placeholder.com/30'}" class="w-8 h-8 rounded-full border border-slate-300">
-                    <div class="hidden sm:block text-right">
-                        <p class="text-xs font-bold text-slate-700">${user.displayName || 'Golfer'}</p>
-                        <button id="logout-btn" class="text-xs text-red-500 hover:underline">Sign Out</button>
-                    </div>
-                </div>
-            `;
-            const logoutBtn = $("logout-btn");
-            if (logoutBtn) logoutBtn.addEventListener("click", () => logout().then(() => location.reload()));
-        }
-        initAppData(); 
-    } else {
-        if(loginScreen) loginScreen.classList.remove("hidden");
-        if(appScreen) appScreen.classList.add("hidden");
-    }
-}
-
+// Main Init Function (Moved to top scope to fix ReferenceError)
 function initAppData() {
     console.log("Initializing App Data...");
     
@@ -145,6 +102,65 @@ function initAppData() {
 
     console.log("App Initialized Successfully.");
 }
+
+function handleAuthChange(user) {
+    const loginScreen = $("login-screen");
+    const appScreen = $("app-screen");
+    const userProfile = $("user-profile");
+    
+    if (user) {
+        if(loginScreen) loginScreen.classList.add("hidden");
+        if(appScreen) appScreen.classList.remove("hidden");
+        
+        if(userProfile) {
+            userProfile.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <img src="${user.photoURL || 'https://via.placeholder.com/30'}" class="w-8 h-8 rounded-full border border-slate-300">
+                    <div class="hidden sm:block text-right">
+                        <p class="text-xs font-bold text-slate-700">${user.displayName || 'Golfer'}</p>
+                        <button id="logout-btn" class="text-xs text-red-500 hover:underline">Sign Out</button>
+                    </div>
+                </div>
+            `;
+            const logoutBtn = $("logout-btn");
+            if (logoutBtn) logoutBtn.addEventListener("click", () => logout().then(() => location.reload()));
+        }
+        // NOW this function is defined and accessible
+        initAppData(); 
+    } else {
+        if(loginScreen) loginScreen.classList.remove("hidden");
+        if(appScreen) appScreen.classList.add("hidden");
+    }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    console.log("DOM Ready. Initializing...");
+
+    // 1. Setup Auth Listeners
+    try {
+        subscribeToAuth((user) => {
+            console.log("Auth State Changed:", user ? "Logged In" : "Logged Out");
+            handleAuthChange(user);
+        });
+    } catch (e) {
+        console.error("Auth Subscription Failed:", e);
+        // Fallback: Try initializing app anyway if auth fails (offline mode attempt)
+        initAppData();
+    }
+
+    // 2. Wire up Login Buttons (Always accessible)
+    const googleBtn = $("google-login-btn");
+    if (googleBtn) {
+        googleBtn.addEventListener("click", async () => {
+            try {
+                await loginWithGoogle();
+            } catch (err) {
+                alert("Login error: " + err.message);
+            }
+        });
+    }
+});
+
 
 // Wrapper for tab clicks
 function handleTabClick(e) {
@@ -425,12 +441,80 @@ function renderSelectedDrills() {
                 }
             }));
         }
+
+        if(metric === METRIC_TYPES.RNG_MULTILOG) {
+            const btn = card.querySelector(".rng-multi-btn");
+            const tableContainer = document.getElementById(`rng-table-${id}`);
+            const rowsContainer = document.getElementById(`rng-rows-${id}`);
+            
+            if(btn) {
+                btn.addEventListener("click", () => {
+                    const min = parseInt(btn.dataset.min), max = parseInt(btn.dataset.max), count = parseInt(btn.dataset.count);
+                    if(rowsContainer) {
+                        rowsContainer.innerHTML = ""; 
+                        for(let i=0; i<count; i++) {
+                            const target = Math.floor(Math.random()*(max-min+1)) + min;
+                            rowsContainer.innerHTML += `
+                                <div class="grid grid-cols-3 gap-2 items-center multi-row" data-target="${target}">
+                                    <span class="font-mono font-bold text-indigo-700 bg-indigo-100 px-2 py-1 rounded text-center">${target}y</span>
+                                    <input type="number" class="input-style h-9 px-1 text-center multi-inp font-mono" placeholder="Carry 1">
+                                    <input type="number" class="input-style h-9 px-1 text-center multi-inp font-mono" placeholder="Carry 2">
+                                </div>`;
+                        }
+                    }
+                    if(tableContainer) tableContainer.classList.remove("hidden");
+                    btn.classList.add("hidden"); 
+                    
+                    if(rowsContainer) {
+                        rowsContainer.querySelectorAll(".multi-inp").forEach(inp => {
+                            inp.addEventListener("input", calculateMultiError);
+                            inp.addEventListener("input", triggerAutoSave);
+                        });
+                    }
+                });
+            }
+
+            function calculateMultiError() {
+                let totalError = 0, shotCount = 0;
+                if(rowsContainer) {
+                    rowsContainer.querySelectorAll(".multi-row").forEach(row => {
+                        const target = parseFloat(row.dataset.target);
+                        row.querySelectorAll("input").forEach(inp => {
+                            const val = parseFloat(inp.value);
+                            if(!isNaN(val)) {
+                                totalError += Math.abs(val - target);
+                                shotCount++;
+                            }
+                        });
+                    });
+                }
+                const avgErr = shotCount ? (totalError/shotCount).toFixed(1) : "--";
+                const scoreEl = document.getElementById(`rng-score-${id}`);
+                if(scoreEl) scoreEl.innerText = avgErr;
+                const scoreInp = card.querySelector(`.drill-score-input`);
+                if(scoreInp) scoreInp.value = avgErr; 
+            }
+        }
     });
 }
 
 function getMetricInputHTML(id, type, drill) {
+  let extraHTML = "";
+  
+  if (drill.randomizer && type !== METRIC_TYPES.RNG_MULTILOG) {
+      extraHTML = `
+        <div class="mb-3 p-3 bg-indigo-50 rounded border border-indigo-100 flex justify-between items-center">
+             <span class="text-indigo-900 font-bold text-sm" id="rand-display-${id}">Target: ???</span>
+             <button class="roll-btn bg-indigo-600 text-white px-3 py-1 rounded text-xs font-bold" 
+                data-choices='${JSON.stringify(drill.randomizer.choices || [])}'
+                data-min="${drill.randomizer.min}" 
+                data-max="${drill.randomizer.max}"
+                data-target="rand-display-${id}">🎲 Roll</button>
+        </div>`;
+  }
+
     if(type === METRIC_TYPES.DISPERSION_CALC) {
-        return `
+        return extraHTML + `
             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Enter 5 Carry Distances</label>
             <div class="grid grid-cols-5 gap-1 mb-2">
                 ${Array(5).fill(0).map(() => `<input type="number" class="calc-input input-style px-1 text-center font-mono" data-group="${id}">`).join('')}
@@ -440,8 +524,29 @@ function getMetricInputHTML(id, type, drill) {
             </div>
             <input type="hidden" data-id="${id}" class="drill-score-input" />`;
     }
+    
+    if(type === METRIC_TYPES.RNG_MULTILOG) {
+        return `
+            <div class="mb-2">
+                <button class="rng-multi-btn w-full bg-indigo-600 text-white py-2 rounded text-sm font-bold mb-2 transition hover:bg-indigo-700"
+                    data-id="${id}"
+                    data-min="${drill.randomizer.min}"
+                    data-max="${drill.randomizer.max}"
+                    data-count="${drill.randomizer.count || 5}" 
+                    data-shots="${drill.randomizer.shotsPerTarget || 2}">
+                    🎲 Generate 5 Targets
+                </button>
+                <div id="rng-table-${id}" class="hidden bg-gray-50 p-2 rounded text-sm border border-gray-200">
+                    <div class="grid grid-cols-3 gap-2 font-bold text-xs text-gray-500 border-b pb-2 mb-2 text-center"><span>TARGET</span><span>SHOT 1</span><span>SHOT 2</span></div>
+                    <div id="rng-rows-${id}" class="space-y-2"></div>
+                </div>
+                <div class="mt-2 text-xs text-right text-gray-500 font-medium">Avg Error: <span id="rng-score-${id}" class="font-bold text-emerald-600 text-sm">--</span> y</div>
+                <input type="hidden" data-id="${id}" class="drill-score-input" />
+            </div>`;
+    }
+
     // Default text input for others
-    return `<label class="block text-xs font-bold text-gray-500 uppercase mb-1">Score</label><input data-id="${id}" type="text" class="input-style drill-score-input" placeholder="Result" />`;
+    return extraHTML + `<label class="block text-xs font-bold text-gray-500 uppercase mb-1">Score</label><input data-id="${id}" type="text" class="input-style drill-score-input" placeholder="Result" />`;
 }
 
 function initSaveSession() {
@@ -488,26 +593,6 @@ function initSaveSession() {
             renderSkills(); renderDrillSelect(); renderPreviewList(); updateGoToLogButton();
             switchTab("history");
         }
-    });
-}
-
-function triggerAutoSave() {
-    const drillData = {};
-    selectedDrillIds.forEach(id => {
-        const scoreInput = document.querySelector(`.drill-score-input[data-id="${id}"]`);
-        const noteInput = document.querySelector(`textarea[data-note-id="${id}"]`);
-        drillData[id] = {
-            score: scoreInput ? scoreInput.value : "",
-            note: noteInput ? noteInput.value : ""
-        };
-    });
-    
-    saveDraft({
-        date: $("session-date")?.value,
-        skills: Array.from(selectedSkills),
-        drills: Array.from(selectedDrillIds),
-        drillData: drillData,
-        mainNotes: $("session-notes")?.value
     });
 }
 
