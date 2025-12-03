@@ -1,7 +1,7 @@
 // ================================
 // app.js — SCRATCH EDITION WITH WEEKLY PLANS
 // Features: Weekly Plan Builder, Raw Metric Logging, Dynamic Leveling
-// REFACTORED: Uses imported SKILLS array for filter rendering.
+// FIX: Added local storage reset logic for corruption stability.
 // ================================
 
 import { DRILLS } from "./drills.js";
@@ -34,16 +34,33 @@ let selectedDrillIds = new Set();
 let userProgression = {}; 
 let activePlan = null; 
 
-// Map of all drills from drills.js for fast lookup
 const allDrillsMap = new Map(Object.values(DRILLS).flat().map(d => [d.id, d]));
 
 document.addEventListener("DOMContentLoaded", () => {
     setupGlobalClicks();
     setupGlobalInputs();
     
-    // Load persisted data
-    activePlan = JSON.parse(localStorage.getItem("golf_active_plan") || "null");
-    userProgression = JSON.parse(localStorage.getItem('golf_progression') || '{}');
+    // SAFETY CHECK: Try to parse local storage. If it fails or has bad data, reset it.
+    try {
+        const rawPlan = localStorage.getItem("golf_active_plan");
+        if (rawPlan) {
+            const parsed = JSON.parse(rawPlan);
+            // Check if plan has valid structure
+            if (parsed && parsed.tasks && Array.isArray(parsed.tasks)) {
+                activePlan = parsed;
+            } else {
+                console.warn("Invalid plan data found. Resetting.");
+                localStorage.removeItem("golf_active_plan");
+            }
+        }
+        userProgression = JSON.parse(localStorage.getItem('golf_progression') || '{}');
+    } catch (e) {
+        console.error("Data corruption detected. Resetting local state.", e);
+        localStorage.removeItem("golf_active_plan");
+        localStorage.removeItem('golf_progression');
+        activePlan = null;
+        userProgression = {};
+    }
 
     try {
         subscribeToAuth((user) => handleAuthChange(user));
@@ -63,7 +80,7 @@ function handleAuthChange(user) {
                 <div class="flex flex-col items-end">
                     <span class="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Player</span>
                     <div class="flex items-center gap-2">
-                        <span class="text-xs font-bold text-slate-900">${user.displayName || 'Scratch Player'}</span>
+                        <span class="text-xs font-bold text-slate-900">${user.displayName || 'Golfer'}</span>
                         <button class="text-[10px] text-slate-500 hover:text-red-600 border border-slate-300 hover:border-red-400 px-1 rounded-sm uppercase bg-white font-medium" data-action="logout">Sign Out</button>
                     </div>
                 </div>`;
@@ -84,16 +101,12 @@ function initAppData() {
     updateStartButton();
 }
 
-// ----------------------
-// HELPER: DRILL PARAMS
-// ----------------------
 function getDrillParams(id) {
     const drill = allDrillsMap.get(id);
     if (!drill) return null;
     if (drill.progression) {
         const currentLevel = userProgression[id] || 1;
         const params = drill.progression.find(p => p.level === currentLevel) || drill.progression[0];
-        
         return {
             ...drill,
             ...params,
@@ -115,12 +128,13 @@ function generateWeekPlan() {
 
     const tasks = [];
     areas.forEach(area => {
-        // Find the top-level categories based on the checkbox value (e.g., 'driver', 'irons')
-        const categoryDrills = Object.values(DRILLS[area] || {}).flat();
+        const categoryDrills = DRILLS[area] || [];
+        
         if(categoryDrills.length > 0) {
-            
             let chosen = new Set();
-            while(chosen.size < 3 && chosen.size < categoryDrills.length) {
+            let attempts = 0;
+            // Try to pick 3 unique drills from the chosen category
+            while(chosen.size < 3 && chosen.size < categoryDrills.length && attempts < 50) {
                 const randomDrill = categoryDrills[Math.floor(Math.random() * categoryDrills.length)];
                 if (!chosen.has(randomDrill.id)) {
                     chosen.add(randomDrill.id);
@@ -128,15 +142,16 @@ function generateWeekPlan() {
                         id: randomDrill.id, 
                         cat: area, 
                         done: 0, 
-                        target: 3, // Goal: 3 successful completions this week
+                        target: 3 
                     });
                 }
+                attempts++;
             }
         }
     });
 
     if (tasks.length === 0) {
-        alert("Could not generate a sufficient plan based on selections. Try again.");
+        alert("No drills found for selected areas.");
         return;
     }
 
@@ -150,6 +165,8 @@ function renderPlanUI() {
     const createView = $("create-plan-view");
     const list = $("plan-tasks-list");
     const progBar = $("plan-progress-bar");
+
+    if(!activeView || !createView) return; // Safely exit if elements don't exist
 
     if(!activePlan) {
         activeView.classList.add("hidden");
@@ -169,19 +186,21 @@ function renderPlanUI() {
 
     activePlan.tasks.forEach((task) => {
         const drill = getDrillParams(task.id);
+        if (!drill) return; 
+
         const completion = Math.min(task.done, task.target);
         const isComplete = task.done >= task.target;
         
         const item = document.createElement("div");
-        item.className = `flex justify-between items-center p-3 border rounded-sm ${isComplete ? 'bg-green-50 border-green-200 opacity-90' : 'bg-white border-l-4 border-l-4 border-l-tech-blue border-slate-200'}`;
+        item.className = `flex justify-between items-center p-3 border rounded-sm ${isComplete ? 'bg-green-50 border-green-200 opacity-90' : 'bg-white border-l-4 border-l-tech-blue border-slate-200'}`;
         
         item.innerHTML = `
             <div>
-                <div class="text-[10px] uppercase font-bold text-slate-400">${drill?.category || task.cat} - Lvl ${drill.currentLevel}</div>
-                <div class="text-xs font-bold text-slate-900">${drill?.name || task.id}</div>
+                <div class="text-[10px] uppercase font-bold text-slate-400">${drill.category || task.cat} - Lvl ${drill.currentLevel}</div>
+                <div class="text-xs font-bold text-slate-900">${drill.name}</div>
             </div>
             <div class="flex items-center gap-3">
-                <span class="text-xs font-mono font-bold ${isComplete ? 'text-green-600' : 'text-tech-blue'}">${completion}/${task.target} Done</span>
+                <span class="text-xs font-mono font-bold ${isComplete ? 'text-green-600' : 'text-tech-blue'}">${completion}/${task.target}</span>
                 <button class="load-plan-drill text-[10px] bg-slate-900 text-white px-2 py-1 rounded-sm uppercase disabled:opacity-50" 
                         data-id="${task.id}" 
                         ${isComplete ? 'disabled' : ''}>
@@ -238,12 +257,7 @@ function restoreDraft() {
     if(!draft) return;
     
     if(draft.skills) draft.skills.forEach(s => selectedSkills.add(s));
-    if(draft.drills) draft.drills.forEach(d => selectedDrillIds.add(d));
-    
-    if(draft.date && $("session-date")) $("session-date").value = draft.date;
-    if(draft.notes && $("session-notes")) $("session-notes").value = draft.notes;
-    
-    // Rerendering functions will call getDrillParams which handles progression
+    if(draft.drills) draft.drills.forEach(id => selectedDrillIds.add(id));
 }
 
 // ----------------------
@@ -251,13 +265,13 @@ function restoreDraft() {
 // ----------------------
 function evaluateResult(drill, rawScore) {
     let numeric = 0;
-    // Streak and Count are simple integers/ratios
+    // Check for fraction format (X/Y)
     if (rawScore.includes('/')) {
         const parts = rawScore.split('/');
-        // Use division for plotting percentage success/score ratio
+        // Store ratio for charting: 8/10 = 0.8
         numeric = parseFloat(parts[0]) / (parseFloat(parts[1]) || 1); 
     } else {
-        // Simple numeric input (SD, Avg Error, Speed, Par Score)
+        // Simple numeric input (SD, Avg Error, Speed)
         numeric = parseFloat(rawScore);
     }
     if (isNaN(numeric)) return { passed: false, numeric: 0 };
@@ -274,7 +288,7 @@ function evaluateResult(drill, rawScore) {
         passed = numeric <= target;
     }
 
-    return { passed, numeric: numeric }; // numeric is raw metric for charting
+    return { passed, numeric: numeric }; 
 }
 
 function checkAndApplyPromotion(drillId, passed) {
@@ -361,7 +375,6 @@ function renderSkills() {
     if(!container) return;
     container.innerHTML = "";
     
-    // Group SKILLS by their category property for the UI structure
     const grouped = SKILLS.reduce((acc, skill) => {
         const cat = skill.category;
         if (!acc[cat]) acc[cat] = [];
@@ -369,7 +382,6 @@ function renderSkills() {
         return acc;
     }, {});
     
-    // Define the preferred display order
     const order = ["Driver", "Irons", "Wedges", "Short Game", "Putting"];
 
     order.forEach(catName => {
@@ -442,41 +454,37 @@ function renderSelectedDrills() {
         card.className = "tech-card p-4";
         
         let inputHtml = "";
-        let placeholderText = "Enter score (e.g., 8/10 or 3.2)";
+        let placeholderText = "Enter score (e.g., 8/10)";
 
         if(params.metricType === "DISPERSION_CALC") {
-            placeholderText = "Enter 5-10 carry distances...";
-            // Use progression params for shots count
             inputHtml = `
             <div class="grid grid-cols-5 gap-1 mb-2">
                 ${Array(params.shots||8).fill(0).map(()=>`<input type="number" class="calc-input input-lcd bg-slate-50 border border-slate-200 text-center text-sm py-1 rounded-sm" placeholder="-" data-group="${id}">`).join('')}
             </div>
             <div class="flex justify-between text-xs font-bold text-slate-500 uppercase">
-                <span>Target SD: ${params.sd_target_yards || params.sd_target} ${params.sd_target_yards ? 'y' : 'units'}</span>
-                <span>Actual SD: <span id="calc-sd-${id}" class="text-tech-blue">--</span></span>
+                <span>Target SD: ${params.sd_target_yards || params.sd_target || '--'}</span>
+                <span>Actual: <span id="calc-sd-${id}" class="text-tech-blue">--</span></span>
             </div>`;
         } else if (params.metricType === "RNG_MULTILOG") {
-            placeholderText = "Avg Error (Calculated)";
             const unit = params.tolerance_yards ? 'y' : (params.tolerance_feet ? 'ft' : '');
             inputHtml = `
             <div id="rng-table-${id}" class="rng-table-container">
-                <button class="rng-multi-btn w-full border border-dashed border-slate-300 text-slate-500 text-[10px] font-bold py-2 mb-2 uppercase hover:bg-slate-50" data-id="${id}" data-min="${params.randomizer.min}" data-max="${params.randomizer.max}">Generate Targets</button>
+                <button class="rng-multi-btn w-full border border-dashed border-slate-300 text-slate-500 text-[10px] font-bold py-2 mb-2 uppercase hover:bg-slate-50" data-id="${id}" data-min="${params.randomizer?.min}" data-max="${params.randomizer?.max}">Generate Targets</button>
                 <div id="rng-rows-${id}" class="space-y-1"></div>
                 <div class="flex justify-between text-xs font-bold text-slate-500 uppercase mt-2">
-                    <span>Target Err: ${params.tolerance_yards || params.tolerance_feet || 'N/A'} ${unit}</span>
+                    <span>Target: ${params.tolerance_yards || params.tolerance_feet || '--'}${unit}</span>
                     <span>Avg Err: <span id="rng-score-${id}" class="text-tech-blue">--</span></span>
                 </div>
             </div>`;
-        } else if (params.scoreType === 'streak') {
-             placeholderText = `Enter Max Streak (e.g., ${params.targetStreak})`;
-        } else if (params.scoreType === 'score_inverse') {
-             placeholderText = `Enter Total Score (e.g., ${params.targetScore || 20})`;
-        } else if (params.scoreType === 'numeric_high') {
-             placeholderText = `Enter Avg Metric (e.g., 112)`;
-        } else if (params.metricType === 'COUNT') {
-             placeholderText = `Enter count (e.g., ${params.goalThreshold || 7}/${params.targetShots || 10})`;
+        } else {
+            // Contextual placeholders
+            if (params.scoreType === 'streak') placeholderText = "Max Streak (e.g. 12)";
+            else if (params.scoreType === 'score_inverse') placeholderText = "Total Score (e.g. 21)";
+            else if (params.scoreType === 'numeric_high') placeholderText = "Value (e.g. 112)";
+            else if (params.metricType === 'COUNT') placeholderText = `Count (e.g., ${params.goalThreshold || 7}/${params.targetShots || 10})`;
+            
+            inputHtml = `<input data-id="${id}" type="text" class="drill-score-input input-lcd w-full p-2 text-sm rounded-sm bg-white" placeholder="${placeholderText}">`;
         }
-
 
         card.innerHTML = `
             <div class="mb-3 border-b border-slate-100 pb-2">
@@ -495,10 +503,6 @@ function renderSelectedDrills() {
         container.appendChild(card);
     });
 }
-
-// ----------------------
-// UTILS
-// ----------------------
 
 function calculateDispersion(id) {
     const inputs = document.querySelectorAll(`.calc-input[data-group="${id}"]`);
@@ -545,7 +549,8 @@ function calculateRngScore(container) {
     let totalErr = 0, count = 0;
     container.querySelectorAll(".multi-row").forEach(row => {
         const t = parseFloat(row.dataset.target);
-        const shots = Array.from(row.querySelectorAll("input")).map(i => parseFloat(i.value)).filter(n => !isNaN(n));
+        const inputs = row.querySelectorAll("input");
+        const shots = Array.from(inputs).map(i => parseFloat(i.value)).filter(n => !isNaN(n));
         
         if(shots.length > 0) {
             const avg = shots.reduce((a,b)=>a+b,0)/shots.length;
@@ -558,18 +563,78 @@ function calculateRngScore(container) {
     const avgErr = count ? (totalErr/count).toFixed(1) : "--";
     const scoreEl = $(`rng-score-${id}`);
     if(scoreEl) scoreEl.innerText = avgErr;
-    const hidden = document.querySelector(`.drill-score-input[data-id="${id}"]`);
-    if(hidden) hidden.value = avgErr;
+    
+    // Find hidden input or create it to store value for save logic
+    let hidden = document.querySelector(`.drill-score-input[data-id="${id}"]`);
+    if(!hidden) {
+        hidden = document.createElement("input");
+        hidden.type = "hidden";
+        hidden.className = "drill-score-input";
+        hidden.setAttribute("data-id", id);
+        // Append to parent container if needed
+        const parentDiv = container.closest(".tech-card");
+        if (parentDiv) parentDiv.appendChild(hidden);
+    }
+    hidden.value = avgErr;
 }
 
-// ----------------------
-// HISTORY & ANALYTICS
-// ----------------------
+function setupGlobalClicks() {
+    document.body.addEventListener("click", async (e) => {
+        const btn = e.target.closest("button");
+        if (!btn) return;
+
+        if (btn.id === "google-login-btn") try { await loginWithGoogle(); } catch(e) { alert(e.message); }
+        if (btn.dataset.action === "logout") logout().then(() => location.reload());
+        if (btn.classList.contains("tab-button")) switchTab(btn.dataset.tab);
+        if (btn.id === "generate-plan-btn") generateWeekPlan();
+        if (btn.id === "delete-plan-btn") { activePlan = null; localStorage.removeItem("golf_active_plan"); renderPlanUI(); }
+        
+        if (btn.classList.contains("load-plan-drill")) {
+            const id = btn.dataset.id;
+            selectedDrillIds.add(id);
+            // Re-render UI state based on new selection
+            renderSkills();
+            renderDrillSelect();
+            renderSelectedDrills();
+            switchTab("log");
+        }
+        
+        if (btn.classList.contains("add-btn")) {
+            const id = btn.dataset.id;
+            selectedDrillIds.has(id) ? selectedDrillIds.delete(id) : selectedDrillIds.add(id);
+            renderDrillSelect();
+            renderSelectedDrills();
+            updateStartButton();
+        }
+        
+        if (btn.id === "go-to-log") switchTab("log");
+        if (btn.id === "save-session") handleSaveSession();
+        
+        if (btn.classList.contains("rng-multi-btn")) handleMultiTargetGen(btn);
+        
+        if (btn.classList.contains("del-hist-btn")) {
+            if(confirm("Delete this record?")) { await deleteSessionFromCloud(btn.dataset.id); renderHistory(); renderAnalytics(); }
+        }
+    });
+}
+
+function setupGlobalInputs() {
+    document.body.addEventListener("input", (e) => {
+        if(e.target.classList.contains("calc-input")) calculateDispersion(e.target.dataset.group);
+        if(e.target.classList.contains("multi-inp")) calculateRngScore(e.target.closest(".rng-table-container"));
+    });
+}
+
+function updateStartButton() {
+    const btn = $("go-to-log");
+    if(btn) btn.disabled = selectedDrillIds.size === 0;
+}
+
 async function renderHistory() {
     const box = $("history-list");
     if(!box) return;
     const sessions = await loadSessions();
-    box.innerHTML = sessions.length ? "" : "<div class='text-center text-xs text-slate-400'>No history</div>";
+    box.innerHTML = sessions.length ? "" : "<div class='text-center text-xs text-slate-400'>No history found</div>";
     sessions.forEach(s => {
         const div = document.createElement("div");
         div.className = "tech-card p-3 mb-2";
@@ -593,7 +658,7 @@ async function renderAnalytics() {
     const stats = {};
     sessions.sort((a,b)=>new Date(a.date)-new Date(b.date)).forEach(s => {
         s.drillResults.forEach(r => {
-            if(r.score && r.score.numeric) {
+            if(r.score && (r.score.numeric !== undefined)) {
                 if(!stats[r.name]) stats[r.name] = [];
                 stats[r.name].push(r.score.numeric);
             }
@@ -609,7 +674,6 @@ async function renderAnalytics() {
         
         const drillInfo = allDrillsMap.get(Object.keys(DRILLS).flatMap(k=>DRILLS[k]).find(d=>d.name===name)?.id);
         
-        // Inverse plotting logic (lower is better for SD/Error/Score)
         const isInverse = drillInfo && (drillInfo.scoreType === 'sd' || drillInfo.scoreType === 'smart_log_avg_error' || drillInfo.scoreType === 'score_inverse');
         
         const options = {
@@ -618,7 +682,7 @@ async function renderAnalytics() {
             scales: {
                 y: {
                     beginAtZero: true,
-                    reverse: isInverse, // Invert Y-axis for SD/Error so improvement goes up
+                    reverse: isInverse, 
                     title: { display: true, text: isInverse ? 'Metric (Lower is Better)' : 'Metric (Higher is Better)' },
                 },
                 x: { grid: { display: false }, ticks: { display: false } }
@@ -626,7 +690,7 @@ async function renderAnalytics() {
         };
 
         setTimeout(() => {
-            new Chart($(id), {
+            new Chart(document.getElementById(id), {
                 type: 'line',
                 data: { labels: scores.map((_,i)=>i+1), datasets: [{ data: scores, borderColor: '#2563eb', tension: 0.1, fill: false }] },
                 options: options
@@ -638,12 +702,15 @@ async function renderAnalytics() {
 function switchTab(t) {
     document.querySelectorAll(".tab-pane").forEach(e => e.classList.add("hidden"));
     document.querySelectorAll(".nav-item").forEach(e => e.classList.remove("active"));
-    $(t).classList.remove("hidden");
+    
+    const target = $(t);
+    if(target) target.classList.remove("hidden");
+    
     const nav = document.querySelector(`button[data-tab="${t}"]`);
     if(nav) nav.classList.add("active");
     
     if(t === "setup") renderPlanUI();
     if(t === "history") renderHistory();
     if(t === "analytics") renderAnalytics();
-    if (t === "log") renderSelectedDrills(); 
+    if(t === "log") renderSelectedDrills(); 
 }
