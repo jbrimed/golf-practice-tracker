@@ -1,6 +1,5 @@
 // ================================
-// app.js — ROBUST VERSION (Event Delegation)
-// Fixes button unresponsiveness and calculation errors
+// app.js — ULTIMATE VERSION (REVIEWED & FIXED)
 // ================================
 
 import { DRILLS } from "./drills.js";
@@ -20,16 +19,44 @@ import {
 const $ = (id) => document.getElementById(id);
 
 // ----------------------
+// CHART LOADER
+// ----------------------
+(function loadChartJs() {
+  if (!document.getElementById("chartjs-script")) {
+    const script = document.createElement("script");
+    script.id = "chartjs-script";
+    script.src = "https://cdn.jsdelivr.net/npm/chart.js";
+    document.head.appendChild(script);
+  }
+})();
+
+// ----------------------
 // STATE
 // ----------------------
 let selectedSkills = new Set();
 let selectedDrillIds = new Set();
 
 // ----------------------
+// METRIC TYPES
+// ----------------------
+const METRIC_TYPES = {
+  PERCENTAGE: "PERCENTAGE",
+  NUMERIC: "NUMERIC",
+  DISTANCE_STDDEV: "DISTANCE_STDDEV",
+  PROXIMITY: "PROXIMITY",
+  CUSTOM: "CUSTOM",
+  DISPERSION_CALC: "DISPERSION_CALC",
+  RNG_MULTILOG: "RNG_MULTILOG"
+};
+
+const allDrillsMap = new Map(Object.values(DRILLS).flat().map(d => [d.id, d]));
+const skillMap = new Map(SKILLS.map(s => [s.id, s]));
+
+// ----------------------
 // INITIALIZATION
 // ----------------------
 document.addEventListener("DOMContentLoaded", () => {
-    console.log("App Starting...");
+    console.log("DOM Ready. Initializing...");
 
     // 1. Global Event Listeners (Delegation)
     setupGlobalListeners();
@@ -39,12 +66,12 @@ document.addEventListener("DOMContentLoaded", () => {
         handleAuthChange(user);
     });
 
-    // 3. Load Charts
-    if (!document.getElementById("chartjs-script")) {
-        const script = document.createElement("script");
-        script.id = "chartjs-script";
-        script.src = "https://cdn.jsdelivr.net/npm/chart.js";
-        document.head.appendChild(script);
+    // 3. Login Buttons
+    const googleBtn = $("google-login-btn");
+    if (googleBtn) {
+        googleBtn.addEventListener("click", async () => {
+            try { await loginWithGoogle(); } catch (err) { alert("Login error: " + err.message); }
+        });
     }
 });
 
@@ -83,28 +110,23 @@ function initAppData() {
     }
     renderSkills();
     renderDrillSelect();
-    renderSelectedDrills();
+    renderSelectedDrills(); // This might be empty initially, which is fine
     updateStartButton();
 }
 
 // ----------------------
-// GLOBAL LISTENER (The Fix)
+// GLOBAL LISTENER
 // ----------------------
 function setupGlobalListeners() {
     document.body.addEventListener("click", (e) => {
         const target = e.target;
         
-        // 1. Login Buttons
-        if (target.closest("#google-login-btn")) {
-            loginWithGoogle().catch(err => alert(err.message));
-        }
-        
-        // 2. Action Buttons (data-action)
+        // Action Buttons
         const btn = target.closest("[data-action]");
         if (!btn) return;
 
         const action = btn.dataset.action;
-        const id = btn.dataset.id; // drill id if applicable
+        const id = btn.dataset.id; 
 
         if (action === "logout") {
             logout().then(() => location.reload());
@@ -123,7 +145,10 @@ function setupGlobalListeners() {
             triggerAutoSave();
         }
         else if (action === "start-session") {
-            if (selectedDrillIds.size > 0) switchTab("log");
+            if (selectedDrillIds.size > 0) {
+                renderSelectedDrills(); // Ensure log is up to date
+                switchTab("log");
+            }
         }
         else if (action === "save-session") {
             handleSaveSession();
@@ -139,15 +164,9 @@ function setupGlobalListeners() {
                 deleteSessionFromCloud(id).then(() => renderHistory());
             }
         }
-        else if (action === "view-details") {
-            // handled in history render logic usually, but safe here
-        }
-        else if (action === "show-modal") {
-             // Handled by specific logic or drill info
-        }
     });
 
-    // Input Listeners for Math & AutoSave
+    // Input Listeners
     document.body.addEventListener("input", (e) => {
         if (e.target.matches(".drill-score-input") || e.target.matches("textarea")) {
             triggerAutoSave();
@@ -190,7 +209,6 @@ function handleCalcInput(input) {
 }
 
 function handleMultiInput(input) {
-    // Find parent container
     const container = input.closest(".rng-table-container");
     if (!container) return;
     
@@ -266,7 +284,6 @@ async function handleSaveSession() {
     if (selectedDrillIds.size === 0) { alert("No drills selected."); return; }
     
     // Build Results
-    const allDrillsMap = new Map(Object.values(DRILLS).flat().map(d => [d.id, d]));
     const drillResults = Array.from(selectedDrillIds).map(id => {
         const drill = allDrillsMap.get(id);
         const scoreInput = document.querySelector(`.drill-score-input[data-id="${id}"]`);
@@ -281,7 +298,7 @@ async function handleSaveSession() {
                 const [n, d] = raw.split("/");
                 if (d && parseFloat(d) !== 0) num = (parseFloat(n) / parseFloat(d)) * 100;
             } else {
-                const match = raw.match(/[\d\.]+/);
+                const match = raw.match(/[-+]?\d*\.?\d+/);
                 if (match) num = parseFloat(match[0]);
             }
         }
@@ -306,6 +323,7 @@ async function handleSaveSession() {
         clearDraft();
         renderSkills();
         renderDrillSelect();
+        renderSelectedDrills(); // Clear log UI
         updateStartButton();
         switchTab("history");
     }
@@ -315,19 +333,22 @@ async function handleSaveSession() {
 // GENERATORS
 // ----------------------
 function generateSessionPreset(type) {
-    selectedDrillIds.clear();
+    console.log("Generating Preset:", type);
+    selectedDrillIds.clear(); 
     selectedSkills.clear();
     clearDraft();
 
     let cats = [];
     if(type === 'random') cats = ['driver','irons','wedges','putting'];
-    if(type === 'shortgame') cats = ['wedges','short_game','putting'];
+    if(type === 'shortgame') cats = ['wedges','short_game','putting']; 
     if(type === 'driver_iron') cats = ['driver','irons'];
     if(type === 'putting') cats = ['putting'];
 
     cats.forEach(cat => {
-        if (DRILLS[cat]?.length) {
-            const d = DRILLS[cat][Math.floor(Math.random() * DRILLS[cat].length)];
+        // FIX: Access DRILLS properties safely using optional chaining or direct access if structure is guaranteed
+        const categoryDrills = DRILLS[cat]; 
+        if (categoryDrills && categoryDrills.length > 0) {
+            const d = categoryDrills[Math.floor(Math.random() * categoryDrills.length)];
             selectedDrillIds.add(d.id);
             d.skills.forEach(s => selectedSkills.add(s));
         }
@@ -338,6 +359,11 @@ function generateSessionPreset(type) {
     renderSelectedDrills();
     updateStartButton();
     triggerAutoSave();
+    
+    if(selectedDrillIds.size > 0) {
+         // Optional: auto-switch to log or just show drills
+         // switchTab("log"); 
+    }
 }
 
 // ----------------------
@@ -382,9 +408,6 @@ function renderSkills() {
 
         grouped[cat].forEach(skill => {
             const isChecked = selectedSkills.has(skill.id) ? "checked" : "";
-            // Note: We use 'change' listener on the input via Global Delegation? 
-            // No, checkboxes are tricky. Let's add inline logic here for simplicity or specific listener.
-            // Actually, let's just add the listener here to keep it simple.
             const row = document.createElement("label");
             row.className = "flex items-center space-x-3 p-2 rounded hover:bg-emerald-50 cursor-pointer transition";
             row.innerHTML = `<input type="checkbox" class="skill-check h-4 w-4 text-emerald-600 rounded" data-skill="${skill.id}" ${isChecked}><span class="text-sm font-medium text-gray-700">${skill.label}</span>`;
@@ -419,7 +442,6 @@ function renderDrillSelect() {
     const drillsToShow = Object.values(DRILLS).flat().filter(d => d.skills.some(s => selectedSkills.has(s)));
     const skillGroups = {};
     
-    // Group drills
     selectedSkills.forEach(sId => {
         const skill = SKILLS.find(s => s.id === sId);
         if (skill) {
@@ -436,7 +458,6 @@ function renderDrillSelect() {
         const grp = sec.querySelector("div");
 
         skillGroups[label].forEach(drill => {
-            // Dedup
             if (grp.querySelector(`[data-card-id="${drill.id}"]`)) return;
 
             const isAdded = selectedDrillIds.has(drill.id);
@@ -464,13 +485,12 @@ function updateStartButton() {
         btn.querySelector("span").innerText = selectedDrillIds.size > 0 ? `Start Practice (${selectedDrillIds.size})` : "Start Session";
         if (selectedDrillIds.size === 0) {
             btn.classList.add("opacity-50", "cursor-not-allowed");
-            btn.setAttribute("data-action", ""); // Disable action
+            btn.setAttribute("data-action", ""); 
         } else {
             btn.classList.remove("opacity-50", "cursor-not-allowed");
-            btn.setAttribute("data-action", "start-session"); // Enable action
+            btn.setAttribute("data-action", "start-session"); 
         }
     }
-    // Badge
     const badge = $("drill-count-badge");
     if(badge) badge.innerText = selectedDrillIds.size;
 }
@@ -482,10 +502,8 @@ function renderSelectedDrills() {
     
     if (selectedDrillIds.size === 0) return;
 
-    const allDrills = Object.values(DRILLS).flat();
-    
     selectedDrillIds.forEach(id => {
-        const drill = allDrills.find(d => d.id === id);
+        const drill = allDrillsMap.get(id);
         if (!drill) return;
 
         const metric = drill.metricType || "CUSTOM";
@@ -494,7 +512,6 @@ function renderSelectedDrills() {
         
         let inputsHtml = "";
         
-        // GENERATE INPUTS
         if (metric === "DISPERSION_CALC") {
             inputsHtml = `
             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Enter 5 Carry Distances</label>
@@ -523,7 +540,6 @@ function renderSelectedDrills() {
                 <input type="hidden" data-id="${id}" class="drill-score-input" />
             </div>`;
         } else {
-            // Default
             let extra = "";
             if (drill.randomizer) {
                  extra = `
@@ -558,7 +574,7 @@ function renderSelectedDrills() {
 async function renderHistory() {
     const box = $("history-list");
     if(!box) return;
-    box.innerHTML = "<p class='text-gray-400'>Loading...</p>";
+    box.innerHTML = "<p class='text-gray-400 text-sm'>Loading...</p>";
     const sessions = await loadSessions();
     box.innerHTML = sessions.length ? "" : "<p class='text-gray-400'>No history found.</p>";
 
@@ -570,8 +586,6 @@ async function renderHistory() {
             <div class="text-sm text-gray-600">${s.drills ? s.drills.length : 0} drills</div>
             <button class="action-btn absolute top-4 right-4 text-red-300 hover:text-red-600 font-bold px-2" data-action="delete-history" data-id="${s.id}">✕</button>
         `;
-        // We handle click via global listener, but specific item clicks for modal details can be tricky with delegation on the delete button.
-        // Adding a specific listener for the card body for details is often easier here.
         div.addEventListener("click", (e) => {
             if(!e.target.matches(".action-btn")) {
                 let content = (s.drillResults || []).map(r => `<div class="flex justify-between border-b pb-1 mb-1"><span>${r.name}</span><span class="font-bold text-emerald-600">${r.score.raw || '-'}</span></div>`).join('');
