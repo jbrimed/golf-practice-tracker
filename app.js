@@ -1,11 +1,18 @@
 // ================================
-// app.js — ULTIMATE VERSION (FIXED)
-// Features: Fixed Buttons, Robust Saving, Smart Scoring
+// app.js — ULTIMATE VERSION (FIREBASE READY)
+// Features: Cloud Sync, Auto-Save Drafts, Smart Scoring
 // ================================
 
 import { DRILLS } from "./drills.js";
 import { SKILLS } from "./skills.js";
-import { saveSession, loadSessions } from "./storage.js";
+import { 
+    saveSession, 
+    loadSessions, 
+    deleteSessionFromCloud, 
+    saveDraft, 
+    loadDraft, 
+    clearDraft 
+} from "./storage.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -89,61 +96,92 @@ function calculateSD(values) {
 }
 
 // ================================
-// DATA BACKUP (EXPORT/IMPORT)
+// AUTO-SAVE LOGIC
 // ================================
-function initDataBackup() {
-    if($("backup-section")) return;
-
-    const backupContainer = document.createElement("div");
-    backupContainer.id = "backup-section";
-    backupContainer.className = "card mt-8 bg-gray-50 border border-gray-200";
-    backupContainer.innerHTML = `
-        <h3 class="font-bold text-lg mb-2">Data Backup</h3>
-        <p class="text-sm text-gray-600 mb-4">Download history or restore from file.</p>
-        <div class="flex gap-4">
-            <button id="export-btn" class="bg-emerald-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-emerald-700">⬇ Export</button>
-            <label class="bg-blue-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-blue-700 cursor-pointer text-center">
-                ⬆ Import
-                <input type="file" id="import-file" class="hidden" accept=".json">
-            </label>
-        </div>
-    `;
+function triggerAutoSave() {
+    const drillData = {};
     
-    // Safety check for container
-    const container = $("backup-section-container") || $("history-list");
-    if (container) container.appendChild(backupContainer);
-
-    $("export-btn").addEventListener("click", () => {
-        const data = localStorage.getItem("golf_sessions");
-        const blob = new Blob([data], {type: "application/json"});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `golf_data_${new Date().toISOString().slice(0,10)}.json`;
-        a.click();
-    });
-
-    $("import-file").addEventListener("change", (e) => {
-        const file = e.target.files[0];
-        if(!file) return;
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            try {
-                const sessions = JSON.parse(event.target.result);
-                if(Array.isArray(sessions)) {
-                    localStorage.setItem("golf_sessions", JSON.stringify(sessions));
-                    alert("Data restored successfully!");
-                    renderHistory();
-                    renderAnalytics();
-                } else {
-                    alert("Invalid file format.");
-                }
-            } catch(err) {
-                alert("Error parsing file. Check format.");
-            }
+    // Capture scores and notes for current drills
+    selectedDrillIds.forEach(id => {
+        const scoreInput = document.querySelector(`.drill-score-input[data-id="${id}"]`);
+        const noteInput = document.querySelector(`textarea[data-note-id="${id}"]`);
+        
+        drillData[id] = {
+            score: scoreInput ? scoreInput.value : "",
+            note: noteInput ? noteInput.value : ""
         };
-        reader.readAsText(file);
+        
+        // Capture calculator inputs if they exist
+        const calcInputs = document.querySelectorAll(`.calc-input[data-group="${id}"]`);
+        if(calcInputs.length) {
+            drillData[id].calcValues = Array.from(calcInputs).map(i => i.value);
+        }
     });
+
+    const draft = {
+        date: $("session-date")?.value,
+        skills: Array.from(selectedSkills),
+        drills: Array.from(selectedDrillIds),
+        drillData: drillData,
+        mainNotes: $("session-notes")?.value
+    };
+    saveDraft(draft);
+}
+
+function restoreDraft() {
+    const draft = loadDraft();
+    if (!draft) return;
+
+    if (draft.skills) {
+        draft.skills.forEach(s => selectedSkills.add(s));
+        renderSkills(); // Updates checkboxes
+    }
+    
+    if (draft.drills) {
+        draft.drills.forEach(d => selectedDrillIds.add(d));
+        // Force render drills so we can populate them
+        renderDrillSelect(); 
+        renderPreviewList();
+        updateGoToLogButton();
+        
+        // If we have drills, assume we might be in log mode, so render log inputs
+        if (selectedDrillIds.size > 0) {
+            // We don't auto-switch tabs, but we populate the Log view in background
+            renderSelectedDrills(); 
+            
+            // Now populate values
+            setTimeout(() => {
+                if(draft.drillData) {
+                    Object.keys(draft.drillData).forEach(id => {
+                        const data = draft.drillData[id];
+                        const scoreInput = document.querySelector(`.drill-score-input[data-id="${id}"]`);
+                        const noteInput = document.querySelector(`textarea[data-note-id="${id}"]`);
+                        
+                        if(scoreInput) scoreInput.value = data.score || "";
+                        if(noteInput) noteInput.value = data.note || "";
+                        
+                        // Restore calculator inputs
+                        if(data.calcValues) {
+                            const calcInputs = document.querySelectorAll(`.calc-input[data-group="${id}"]`);
+                            calcInputs.forEach((inp, idx) => {
+                                if(data.calcValues[idx]) inp.value = data.calcValues[idx];
+                            });
+                            // Trigger input event to re-calculate SD visually
+                            if(calcInputs.length > 0) calcInputs[0].dispatchEvent(new Event('input'));
+                        }
+                    });
+                }
+                
+                if(draft.mainNotes && $("session-notes")) {
+                    $("session-notes").value = draft.mainNotes;
+                }
+            }, 100);
+        }
+    }
+    
+    if (draft.date && $("session-date")) {
+        $("session-date").value = draft.date;
+    }
 }
 
 // ================================
@@ -217,6 +255,7 @@ function getMetricInputHTML(id, type, drill) {
 // ================================
 function renderSkills() {
   const container = $("skill-select");
+  if(!container) return;
   container.innerHTML = "";
   const grouped = {};
   SKILLS.forEach(s => { const c = s.category||"Other"; if(!grouped[c]) grouped[c]=[]; grouped[c].push(s); });
@@ -237,6 +276,7 @@ function renderSkills() {
         row.querySelector("input").addEventListener("change", (e) => {
             if(e.target.checked) selectedSkills.add(skill.id); else selectedSkills.delete(skill.id);
             renderDrillSelect();
+            triggerAutoSave(); // Save on skill change
         });
         content.appendChild(row);
     });
@@ -247,11 +287,10 @@ function renderSkills() {
 
 function renderDrillSelect() {
   const container = $("drill-select");
-  const presets = $("presets-container"); // Reference to top presets
+  const presets = $("presets-container");
+  if(!container) return;
   container.innerHTML = "";
   
-  // TOGGLE PRESETS LOGIC
-  // If no skills/drills selected, show the top presets. Otherwise hide them.
   if (selectedSkills.size === 0 && selectedDrillIds.size === 0) {
       if(presets) presets.classList.remove("hidden");
       container.innerHTML = `<div class="text-center py-8 text-slate-400 text-sm italic">Select focus areas above to add custom drills...</div>`;
@@ -302,6 +341,7 @@ function renderDrillSelect() {
           card.querySelector(".add-drill").addEventListener("click", () => {
               if(selectedDrillIds.has(drill.id)) selectedDrillIds.delete(drill.id); else selectedDrillIds.add(drill.id);
               renderDrillSelect(); renderPreviewList(); updateGoToLogButton();
+              triggerAutoSave(); // Save on drill add
           });
           card.querySelector(".info-btn").addEventListener("click", () => showModal(drill.name, drill.description));
           grp.appendChild(card);
@@ -319,6 +359,7 @@ function renderPreviewList() {
 // ================================
 function renderSelectedDrills() {
     const container = $("selected-drills-log");
+    if(!container) return;
     container.innerHTML = "";
     if (selectedDrillIds.size === 0) { container.innerHTML = "<p class='text-center text-gray-500'>No drills selected.</p>"; return; }
 
@@ -346,7 +387,14 @@ function renderSelectedDrills() {
             </div>`;
         container.appendChild(card);
 
-        // --- HANDLERS ---
+        // --- HANDLERS (Autosave attached to all inputs) ---
+        
+        // 1. Basic Inputs
+        card.querySelectorAll("input, textarea").forEach(el => {
+            el.addEventListener("input", triggerAutoSave);
+        });
+
+        // 2. Simple Randomizer
         const rollBtn = card.querySelector(".roll-btn");
         if(rollBtn) {
             rollBtn.addEventListener("click", (e) => {
@@ -360,6 +408,7 @@ function renderSelectedDrills() {
             });
         }
 
+        // 3. SD Calc
         if(metric === METRIC_TYPES.DISPERSION_CALC) {
             const inputs = card.querySelectorAll(`.calc-input[data-group="${id}"]`);
             inputs.forEach(i => i.addEventListener("input", () => {
@@ -371,9 +420,11 @@ function renderSelectedDrills() {
                     document.getElementById(`calc-sd-${id}`).innerText = sd.toFixed(1);
                     card.querySelector(`.drill-score-input`).value = sd.toFixed(2);
                 }
+                triggerAutoSave();
             }));
         }
 
+        // 4. RNG MULTILOG
         if(metric === METRIC_TYPES.RNG_MULTILOG) {
             const btn = card.querySelector(".rng-multi-btn");
             const tableContainer = document.getElementById(`rng-table-${id}`);
@@ -393,7 +444,11 @@ function renderSelectedDrills() {
                 }
                 tableContainer.classList.remove("hidden");
                 btn.classList.add("hidden"); 
-                rowsContainer.querySelectorAll(".multi-inp").forEach(inp => inp.addEventListener("input", calculateMultiError));
+                
+                rowsContainer.querySelectorAll(".multi-inp").forEach(inp => {
+                    inp.addEventListener("input", calculateMultiError);
+                    inp.addEventListener("input", triggerAutoSave);
+                });
             });
 
             function calculateMultiError() {
@@ -429,7 +484,7 @@ function initSaveSession() {
     const saveBtn = $("save-session");
     if(!saveBtn) return;
 
-    saveBtn.addEventListener("click", () => {
+    saveBtn.addEventListener("click", async () => {
         try {
             // Safety check: Are there drills?
             if (selectedDrillIds.size === 0) {
@@ -457,8 +512,8 @@ function initSaveSession() {
             const dateInput = $("session-date");
             const dateVal = dateInput ? dateInput.value : new Date().toISOString().slice(0,10);
 
-            saveSession({
-                id: Date.now().toString(),
+            // SAVE TO FIREBASE
+            const success = await saveSession({
                 date: dateVal,
                 drills: Array.from(selectedDrillIds),
                 drillResults,
@@ -466,19 +521,18 @@ function initSaveSession() {
                 createdAt: new Date().toISOString()
             });
             
-            alert("Session Saved Successfully!");
-            
-            // Reset
-            selectedDrillIds.clear(); 
-            selectedSkills.clear(); 
-            renderSkills(); 
-            renderDrillSelect(); // Will unhide presets
-            renderPreviewList(); 
-            updateGoToLogButton();
-            if($("session-notes")) $("session-notes").value="";
-            switchTab("history");
-            checkProgression(drillResults);
-
+            if (success) {
+                alert("Session saved to cloud!");
+                selectedDrillIds.clear(); 
+                selectedSkills.clear(); 
+                renderSkills(); 
+                renderDrillSelect(); 
+                renderPreviewList(); 
+                updateGoToLogButton();
+                if($("session-notes")) $("session-notes").value="";
+                switchTab("history");
+                checkProgression(drillResults);
+            }
         } catch (err) {
             console.error(err);
             alert("Error saving session: " + err.message);
@@ -514,6 +568,7 @@ function generateSessionPreset(type) {
     renderDrillSelect(); 
     renderPreviewList(); 
     updateGoToLogButton();
+    triggerAutoSave();
 }
 
 function generateRandomSession() { generateSessionPreset('random'); }
@@ -539,14 +594,14 @@ function checkProgression(results) {
     }
 }
 
-function renderHistory() {
-    initDataBackup(); 
+async function renderHistory() {
     const box = $("history-list");
-    const existingBackup = $("backup-section");
-    box.innerHTML = ""; 
-    if(existingBackup) box.appendChild(existingBackup);
+    if(!box) return;
+    box.innerHTML = "<p class='text-gray-500'>Loading history...</p>";
 
-    const sessions = loadSessions();
+    const sessions = await loadSessions(); // ASYNC WAIT
+    
+    box.innerHTML = ""; 
     if (!sessions.length) { 
         const p = document.createElement("p");
         p.innerText = "No history recorded yet.";
@@ -555,16 +610,16 @@ function renderHistory() {
         return; 
     }
 
-    sessions.slice().reverse().forEach(s => {
+    sessions.forEach(s => {
         const div = document.createElement("div");
         div.className = "card mb-4 relative hover:shadow-md cursor-pointer border border-transparent hover:border-gray-200";
         div.innerHTML = `<div class="font-bold">${s.date}</div><div class="text-sm text-gray-600">${s.drills.length} drills</div><button class="del-btn absolute top-4 right-4 text-red-400 hover:text-red-600 p-2">✕</button>`;
         div.addEventListener("click", (e) => { if(!e.target.classList.contains("del-btn")) showSessionDetails(s); });
-        div.querySelector(".del-btn").addEventListener("click", () => {
-            if(confirm("Delete this session?")) {
-                const newS = loadSessions().filter(x => x.id !== s.id);
-                localStorage.setItem("golf_sessions", JSON.stringify(newS));
-                renderHistory(); renderAnalytics();
+        div.querySelector(".del-btn").addEventListener("click", async () => {
+            if(confirm("Delete this session from cloud?")) {
+                await deleteSessionFromCloud(s.id);
+                renderHistory(); 
+                renderAnalytics();
             }
         });
         box.appendChild(div);
@@ -574,13 +629,20 @@ function renderHistory() {
 function showSessionDetails(s) {
     let h = `<div class="space-y-2">`;
     s.drillResults.forEach(r => h += `<div class="flex justify-between border-b pb-1"><span>${r.name}</span><span class="font-mono bg-emerald-100 px-2 rounded font-bold">${r.score.raw||"-"}</span></div>`);
+    if(s.notes) h += `<div class="mt-4 bg-gray-50 p-2 text-sm italic">"${s.notes}"</div>`;
     showModal("Session Details", h + "</div>");
 }
 
-function renderAnalytics() {
+async function renderAnalytics() {
     const box = $("analytics-container");
+    if(!box) return;
+    const sessions = await loadSessions(); // ASYNC WAIT
+    
+    if(!sessions.length) { box.innerHTML = "<p>No data recorded yet.</p>"; return; }
+    
     const data = {};
-    loadSessions().sort((a,b)=>new Date(a.date)-new Date(b.date)).forEach(s => {
+    // Sort oldest first
+    sessions.sort((a,b)=>new Date(a.date)-new Date(b.date)).forEach(s => {
         s.drillResults.forEach(r => {
             if(r.score.numeric !== null) {
                 if(!data[r.id]) data[r.id] = { name: r.name, pts: [], targets: [] };
@@ -597,9 +659,7 @@ function renderAnalytics() {
         });
     });
     
-    if(!Object.keys(data).length) { box.innerHTML = "<p>No data recorded yet.</p>"; return; }
     box.innerHTML = "";
-    
     Object.keys(data).forEach(id => {
         const d = data[id];
         const avg = (d.pts.reduce((a,b)=>a+b,0)/d.pts.length).toFixed(1);
@@ -629,8 +689,9 @@ function renderAnalytics() {
 function switchTab(t) {
     document.querySelectorAll(".tab-pane").forEach(e=>e.classList.add("hidden"));
     document.querySelectorAll(".tab-button").forEach(e=>e.classList.remove("active"));
-    $(`${t}`).classList.remove("hidden");
-    document.querySelector(`[data-tab="${t}"]`).classList.add("active");
+    const p = $(t); if(p) p.classList.remove("hidden");
+    const b = document.querySelector(`[data-tab="${t}"]`); if(b) b.classList.add("active");
+    
     if(t==="history") renderHistory();
     if(t==="analytics") renderAnalytics();
     if(t==="log") renderSelectedDrills();
@@ -643,17 +704,17 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function init() {
-    createModal(); renderSkills(); renderDrillSelect(); initSaveSession();
+    createModal(); 
+    restoreDraft(); // Auto-load saved draft on refresh
+    renderSkills(); 
+    renderDrillSelect(); 
+    initSaveSession();
     
-    // Tab Navigation
     document.querySelectorAll(".tab-button").forEach(b => b.addEventListener("click", ()=>switchTab(b.dataset.tab)));
-    
-    // Preset Buttons (Wait for DOM)
     document.querySelectorAll(".preset-btn").forEach(btn => {
         btn.addEventListener("click", () => generateSessionPreset(btn.dataset.type));
     });
     
-    // Start Button
     const goLog = $("go-to-log");
     if(goLog) goLog.addEventListener("click", ()=> { if(selectedDrillIds.size) switchTab("log"); });
 }
