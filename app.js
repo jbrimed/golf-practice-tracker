@@ -41,13 +41,69 @@ const allDrillsMap = new Map(Object.values(DRILLS).flat().map(d => [d.id, d]));
 const skillMap = new Map(SKILLS.map(s => [s.id, s]));
 
 // ----------------------
+// METRIC TYPES
+// ----------------------
+const METRIC_TYPES = {
+  PERCENTAGE: "PERCENTAGE",
+  NUMERIC: "NUMERIC",
+  DISTANCE_STDDEV: "DISTANCE_STDDEV",
+  PROXIMITY: "PROXIMITY",
+  CUSTOM: "CUSTOM",
+  DISPERSION_CALC: "DISPERSION_CALC",
+  RNG_MULTILOG: "RNG_MULTILOG"
+};
+
+// ----------------------
+// HELPER: AUTO-SAVE (Moved to Top Scope)
+// ----------------------
+function triggerAutoSave() {
+    const drillData = {};
+    selectedDrillIds.forEach(id => {
+        // Save main input
+        const scoreInput = document.querySelector(`.drill-score-input[data-id="${id}"]`);
+        const noteInput = document.querySelector(`textarea[data-note-id="${id}"]`);
+        
+        drillData[id] = {
+            score: scoreInput ? scoreInput.value : "",
+            note: noteInput ? noteInput.value : ""
+        };
+        
+        // Save calc inputs
+        const calcInputs = document.querySelectorAll(`.calc-input[data-group="${id}"]`);
+        if(calcInputs.length) {
+            drillData[id].calcValues = Array.from(calcInputs).map(i => i.value);
+        }
+        
+        // Save RNG multi inputs
+        const rngContainer = document.getElementById(`rng-rows-${id}`);
+        if(rngContainer) {
+            const rows = rngContainer.querySelectorAll(".multi-row");
+            drillData[id].rngTargets = Array.from(rows).map(r => r.dataset.target);
+            const inputs = rngContainer.querySelectorAll("input");
+            drillData[id].rngValues = Array.from(inputs).map(i => i.value);
+        }
+    });
+
+    const sessionDate = $("session-date");
+    const sessionNotes = $("session-notes");
+
+    saveDraft({
+        date: sessionDate ? sessionDate.value : "",
+        skills: Array.from(selectedSkills),
+        drills: Array.from(selectedDrillIds),
+        drillData: drillData,
+        mainNotes: sessionNotes ? sessionNotes.value : ""
+    });
+}
+
+// ----------------------
 // INITIALIZATION
 // ----------------------
 document.addEventListener("DOMContentLoaded", () => {
-    // 1. Setup Global Click Listener (Handles all buttons)
+    // 1. Setup Global Click Listener
     setupGlobalClicks();
 
-    // 2. Setup Global Input Listener (Handles math & autosave)
+    // 2. Setup Global Input Listener
     setupGlobalInputs();
 
     // 3. Listen for Auth
@@ -55,7 +111,7 @@ document.addEventListener("DOMContentLoaded", () => {
         subscribeToAuth((user) => handleAuthChange(user));
     } catch (e) {
         console.error("Auth Error:", e);
-        initAppData(); // Fallback
+        initAppData(); 
     }
 });
 
@@ -86,7 +142,6 @@ function handleAuthChange(user) {
 }
 
 function initAppData() {
-    // Load Draft if exists, otherwise clean start
     try {
         restoreDraft();
     } catch (e) {
@@ -100,14 +155,13 @@ function initAppData() {
 }
 
 // ----------------------
-// GLOBAL EVENT DELEGATION (The Fix)
+// GLOBAL EVENT DELEGATION
 // ----------------------
 function setupGlobalClicks() {
     document.body.addEventListener("click", async (e) => {
         const btn = e.target.closest("button");
         if (!btn) return;
 
-        // 1. Navigation & Auth
         if (btn.id === "google-login-btn") {
             try { await loginWithGoogle(); } catch(e) { alert(e.message); }
         }
@@ -117,13 +171,9 @@ function setupGlobalClicks() {
         if (btn.classList.contains("tab-button")) {
             switchTab(btn.dataset.tab);
         }
-
-        // 2. Presets
         if (btn.classList.contains("preset-btn")) {
             generateSessionPreset(btn.dataset.type);
         }
-
-        // 3. Drill Selection
         if (btn.classList.contains("add-drill")) {
             const id = btn.dataset.id;
             if (selectedDrillIds.has(id)) selectedDrillIds.delete(id);
@@ -132,29 +182,21 @@ function setupGlobalClicks() {
             updateStartButton();
             triggerAutoSave();
         }
-
-        // 4. Start Session
         if (btn.id === "go-to-log") {
             if (selectedDrillIds.size > 0) {
-                renderSelectedDrills(); // Ensure log is populated
+                renderSelectedDrills(); 
                 switchTab("log");
             }
         }
-
-        // 5. Save / Complete
         if (btn.id === "save-session") {
             handleSaveSession();
         }
-
-        // 6. RNG Generators
         if (btn.classList.contains("roll-btn")) {
             handleRngRoll(btn);
         }
         if (btn.classList.contains("rng-multi-btn")) {
             handleMultiTargetGen(btn);
         }
-
-        // 7. Delete History
         if (btn.classList.contains("del-hist-btn")) {
             e.stopPropagation();
             if(confirm("Delete this session?")) {
@@ -169,20 +211,14 @@ function setupGlobalClicks() {
 function setupGlobalInputs() {
     document.body.addEventListener("input", (e) => {
         const el = e.target;
-
-        // Auto-Calc for Dispersion
         if (el.classList.contains("calc-input")) {
             const group = el.dataset.group;
             calculateDispersion(group);
         }
-
-        // Auto-Calc for RNG Table
         if (el.classList.contains("multi-inp")) {
             const container = el.closest(".rng-table-container");
             if(container) calculateRngScore(container);
         }
-
-        // Global Autosave
         if (el.matches("input, textarea")) {
             triggerAutoSave();
         }
@@ -219,18 +255,21 @@ function calculateRngScore(container) {
     
     rows.forEach(row => {
         const target = parseFloat(row.dataset.target);
-        row.querySelectorAll("input").forEach(inp => {
+        const inputs = row.querySelectorAll("input");
+        inputs.forEach(inp => {
             const v = parseFloat(inp.value);
-            if(!isNaN(v)) {
+            if (!isNaN(v)) {
                 totalErr += Math.abs(v - target);
                 count++;
             }
         });
     });
 
-    const avg = count ? (totalErr/count).toFixed(1) : "--";
-    document.getElementById(`rng-score-${id}`).innerText = avg;
+    const avg = count > 0 ? (totalErr / count).toFixed(1) : "--";
+    const scoreEl = document.getElementById(`rng-score-${id}`);
     const hidden = document.querySelector(`.drill-score-input[data-id="${id}"]`);
+    
+    if(scoreEl) scoreEl.innerText = avg;
     if(hidden) hidden.value = avg;
 }
 
@@ -274,7 +313,7 @@ function handleMultiTargetGen(btn) {
 function generateSessionPreset(type) {
     selectedDrillIds.clear();
     selectedSkills.clear();
-    clearDraft(); // Nuke draft to prevent conflict
+    clearDraft();
     
     const map = {
         'random': ['driver','irons','wedges','putting'],
@@ -293,16 +332,12 @@ function generateSessionPreset(type) {
         }
     });
 
-    // Force UI update sequence
     renderSkills();
     renderDrillSelect();
     renderSelectedDrills();
     updateStartButton();
-    
-    // Save new state immediately
     triggerAutoSave();
     
-    // Automatically go to log if drills found
     if(selectedDrillIds.size > 0) switchTab("log");
 }
 
@@ -321,7 +356,6 @@ function restoreDraft() {
     renderSelectedDrills();
     updateStartButton();
 
-    // Restore Inputs (Delayed to ensure DOM is ready)
     setTimeout(() => {
         if(draft.drillData) {
             Object.keys(draft.drillData).forEach(id => {
@@ -332,7 +366,6 @@ function restoreDraft() {
                 if(scoreInput && d.score) scoreInput.value = d.score;
                 if(noteInput && d.note) noteInput.value = d.note;
                 
-                // Trigger calcs to restore UI values (Avg/SD)
                 if(d.calcValues) {
                     const calcs = document.querySelectorAll(`.calc-input[data-group="${id}"]`);
                     calcs.forEach((inp, i) => { if(d.calcValues[i]) inp.value = d.calcValues[i]; });
@@ -390,8 +423,7 @@ function renderDrillSelect() {
   if(!container) return;
   container.innerHTML = "";
 
-  // Toggle Presets Visibility
-  if(selectedSkills.size === 0 && selectedDrillIds.size === 0) {
+  if (selectedSkills.size === 0 && selectedDrillIds.size === 0) {
       if(presets) presets.classList.remove("hidden");
       container.innerHTML = `<div class="text-center py-8 text-slate-400 text-sm italic">Select focus areas...</div>`;
       return;
@@ -418,7 +450,7 @@ function renderDrillSelect() {
       const list = sec.querySelector("div");
 
       groups[label].forEach(drill => {
-          if(list.querySelector(`[data-did="${drill.id}"]`)) return; // Dedupe
+          if(list.querySelector(`[data-did="${drill.id}"]`)) return;
 
           const isAdded = selectedDrillIds.has(drill.id);
           const btnClass = isAdded ? "bg-red-50 text-red-600 border-red-200" : "bg-black text-white hover:bg-gray-800";
@@ -435,7 +467,7 @@ function renderDrillSelect() {
                 <div class="flex items-center gap-2"><h4 class="font-bold text-gray-800">${drill.name}</h4>${badge}</div>
                 <span class="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-500 font-medium">⏱ ${drill.duration}m</span>
             </div>
-            <button class="add-drill px-4 py-2 rounded text-sm font-bold transition ${btnClass}" data-action="add-drill" data-id="${drill.id}">${btnText}</button>
+            <button class="add-drill px-4 py-2 rounded text-sm font-bold border transition ${btnClass}" data-id="${drill.id}">${btnText}</button>
           `;
           list.appendChild(card);
       });
@@ -455,10 +487,10 @@ function updateStartButton() {
         btn.querySelector("span").innerText = selectedDrillIds.size > 0 ? `Start Practice (${selectedDrillIds.size})` : "Start Session";
         if (selectedDrillIds.size === 0) {
             btn.classList.add("opacity-50", "cursor-not-allowed");
-            btn.setAttribute("data-action", ""); // Disable action
+            btn.setAttribute("data-action", ""); 
         } else {
             btn.classList.remove("opacity-50", "cursor-not-allowed");
-            btn.setAttribute("data-action", "start-session"); // Enable action
+            btn.setAttribute("data-action", "start-session"); 
         }
     }
 }
@@ -476,7 +508,7 @@ function renderSelectedDrills() {
 
     selectedDrillIds.forEach(id => {
         const drill = allDrillsMap.get(id);
-        if (!drill) return;
+        if(!drill) return;
 
         const metric = drill.metricType || "CUSTOM";
         const card = document.createElement("div");
@@ -497,16 +529,12 @@ function renderSelectedDrills() {
         } else if (metric === "RNG_MULTILOG") {
             inputsHtml = `
             <div class="mb-2 rng-table-container" id="rng-table-${id}">
-                <button class="action-btn w-full bg-indigo-600 text-white py-2 rounded text-sm font-bold mb-2 transition hover:bg-indigo-700"
-                    data-action="gen-targets"
-                    data-id="${id}"
-                    data-min="${drill.randomizer.min}"
-                    data-max="${drill.randomizer.max}"
-                    data-count="${drill.randomizer.count || 5}">🎲 Generate 5 Targets</button>
-                
+                <button class="rng-multi-btn w-full bg-indigo-600 text-white py-2 rounded text-sm font-bold mb-2 transition hover:bg-indigo-700"
+                    data-id="${id}" data-min="${drill.randomizer.min}" data-max="${drill.randomizer.max}" data-count="${drill.randomizer.count||5}">
+                    🎲 Generate Targets
+                </button>
                 <div id="rng-rows-${id}" class="space-y-2"></div>
-                
-                <div class="mt-2 text-xs text-right text-gray-500 font-medium hidden" id="rng-table-${id}-stats">
+                <div class="mt-2 text-xs text-right text-gray-500 font-medium">
                     Avg Error: <span id="rng-score-${id}" class="font-bold text-emerald-600 text-sm">--</span> y
                 </div>
                 <input type="hidden" data-id="${id}" class="drill-score-input" />
@@ -514,16 +542,7 @@ function renderSelectedDrills() {
         } else {
             let extra = "";
             if (drill.randomizer) {
-                 extra = `
-                 <div class="mb-2 flex justify-between items-center bg-indigo-50 p-2 rounded">
-                    <span class="text-indigo-900 text-sm font-bold" id="rand-target-${id}">Target: ???</span>
-                    <button class="action-btn bg-indigo-600 text-white px-2 py-1 rounded text-xs" 
-                        data-action="roll-rng" 
-                        data-target="rand-target-${id}"
-                        data-min="${drill.randomizer.min}"
-                        data-max="${drill.randomizer.max}"
-                        data-choices='${JSON.stringify(drill.randomizer.choices || [])}'>Roll</button>
-                 </div>`;
+                 extra = `<div class="mb-2 flex justify-between items-center bg-indigo-50 p-2 rounded"><span class="text-indigo-900 text-sm font-bold" id="rand-target-${id}">Target: ???</span><button class="roll-btn bg-indigo-600 text-white px-2 py-1 rounded text-xs" data-target="rand-target-${id}" data-min="${drill.randomizer.min}" data-max="${drill.randomizer.max}" data-choices='${JSON.stringify(drill.randomizer.choices || [])}'>Roll</button></div>`;
             }
             inputsHtml = extra + `<label class="block text-xs font-bold text-gray-500 uppercase mb-1">Score</label><input data-id="${id}" type="text" class="drill-score-input input-style" placeholder="Result" />`;
         }
@@ -534,9 +553,13 @@ function renderSelectedDrills() {
                 <div>${inputsHtml}</div>
                 <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Notes</label><textarea data-note-id="${id}" class="input-style w-full h-24 resize-none" placeholder="Notes..."></textarea></div>
             </div>`;
-        
         container.appendChild(card);
     });
+}
+
+function getDrillMetric(drill) {
+    // Prioritize specific metricType, fallback to CUSTOM
+    return drill.metricType || "CUSTOM";
 }
 
 async function handleSaveSession() {
@@ -597,8 +620,8 @@ async function renderHistory() {
     sessions.forEach(s => {
         const div = document.createElement("div");
         div.className = "card mb-4 relative border border-gray-200 p-4 cursor-pointer";
-        div.innerHTML = `<div class="font-bold">${s.date}</div><div class="text-sm text-gray-600">${s.drills.length} drills</div><button class="action-btn absolute top-4 right-4 text-red-300 hover:text-red-500 font-bold px-2" data-action="delete-history" data-id="${s.id}">✕</button>`;
-        div.addEventListener("click", (e) => { if(!e.target.matches(".action-btn")) {
+        div.innerHTML = `<div class="font-bold">${s.date}</div><div class="text-sm text-gray-600">${s.drills.length} drills</div><button class="del-hist-btn absolute top-4 right-4 text-red-300 hover:text-red-500 font-bold px-2" data-id="${s.id}">✕</button>`;
+        div.addEventListener("click", (e) => { if(!e.target.matches(".del-hist-btn")) {
              const c = (s.drillResults||[]).map(r=>`<div class="flex justify-between border-b pb-1 mb-1"><span>${r.name}</span><span class="font-bold text-emerald-600">${r.score.raw||'-'}</span></div>`).join('');
              showModal(s.date, c);
         }});
