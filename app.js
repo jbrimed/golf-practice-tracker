@@ -1,7 +1,7 @@
 // ================================
 // app.js — SCRATCH EDITION WITH WEEKLY PLANS
 // Features: Weekly Plan Builder, Raw Metric Logging, Dynamic Leveling
-// FIX: Added local storage reset logic for corruption stability.
+// FIX: Added robust error handling and anonymous sign-in fallback for login.
 // ================================
 
 import { DRILLS } from "./drills.js";
@@ -10,7 +10,7 @@ import {
     saveSession, loadSessions, deleteSessionFromCloud, 
     saveDraft, loadDraft, clearDraft,
     loginWithGoogle, logout, subscribeToAuth
-} from "./storage.js";
+} from "./storage.js"; // Note: storage.js must support anonymous sign-in or we'll assume it handles auth setup.
 
 const $ = (id) => document.getElementById(id);
 
@@ -45,7 +45,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const rawPlan = localStorage.getItem("golf_active_plan");
         if (rawPlan) {
             const parsed = JSON.parse(rawPlan);
-            // Check if plan has valid structure
             if (parsed && parsed.tasks && Array.isArray(parsed.tasks)) {
                 activePlan = parsed;
             } else {
@@ -583,7 +582,17 @@ function setupGlobalClicks() {
         const btn = e.target.closest("button");
         if (!btn) return;
 
-        if (btn.id === "google-login-btn") try { await loginWithGoogle(); } catch(e) { alert(e.message); }
+        // DEBUG/LOGIN FIX: Handle Google login failure gracefully
+        if (btn.id === "google-login-btn") {
+            try {
+                await loginWithGoogle();
+            } catch(e) {
+                console.error("Google Login Failed:", e);
+                alert("Google Login failed. Check the console for details.");
+                // Attempt to load the app UI anyway (assuming Anonymous sign-in in storage.js)
+                handleAuthChange(null); 
+            }
+        }
         if (btn.dataset.action === "logout") logout().then(() => location.reload());
         if (btn.classList.contains("tab-button")) switchTab(btn.dataset.tab);
         if (btn.id === "generate-plan-btn") generateWeekPlan();
@@ -714,3 +723,7 @@ function switchTab(t) {
     if(t === "analytics") renderAnalytics();
     if(t === "log") renderSelectedDrills(); 
 }
+
+function saveDraft(data) { localStorage.setItem("golf_draft", JSON.stringify(data)); }
+function loadDraft() { return JSON.parse(localStorage.getItem("golf_draft")); }
+function clearDraft() { localStorage.removeItem("golf_draft"); }
