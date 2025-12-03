@@ -1,7 +1,7 @@
 // ================================
 // app.js — SCRATCH EDITION WITH WEEKLY PLANS
 // Features: Weekly Plan Builder, Raw Metric Logging, Dynamic Leveling
-// FIX: Added robust error handling and anonymous sign-in fallback for login.
+// Compatible with the updated storage.js file.
 // ================================
 
 import { DRILLS } from "./drills.js";
@@ -10,7 +10,7 @@ import {
     saveSession, loadSessions, deleteSessionFromCloud, 
     saveDraft, loadDraft, clearDraft,
     loginWithGoogle, logout, subscribeToAuth
-} from "./storage.js"; // Note: storage.js must support anonymous sign-in or we'll assume it handles auth setup.
+} from "./storage.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -40,30 +40,25 @@ document.addEventListener("DOMContentLoaded", () => {
     setupGlobalClicks();
     setupGlobalInputs();
     
-    // SAFETY CHECK: Try to parse local storage. If it fails or has bad data, reset it.
+    // SAFETY CHECK: Clear corrupt data
     try {
         const rawPlan = localStorage.getItem("golf_active_plan");
         if (rawPlan) {
             const parsed = JSON.parse(rawPlan);
-            if (parsed && parsed.tasks && Array.isArray(parsed.tasks)) {
-                activePlan = parsed;
-            } else {
-                console.warn("Invalid plan data found. Resetting.");
+            if (!(parsed && parsed.tasks && Array.isArray(parsed.tasks))) {
                 localStorage.removeItem("golf_active_plan");
             }
         }
         userProgression = JSON.parse(localStorage.getItem('golf_progression') || '{}');
     } catch (e) {
-        console.error("Data corruption detected. Resetting local state.", e);
         localStorage.removeItem("golf_active_plan");
         localStorage.removeItem('golf_progression');
-        activePlan = null;
-        userProgression = {};
     }
 
     try {
+        // subscribeToAuth will handle the initial sign-in state (anonymous or Google)
         subscribeToAuth((user) => handleAuthChange(user));
-    } catch (e) { console.error("Auth Error:", e); initAppData(); }
+    } catch (e) { console.error("Auth subscription failed:", e); initAppData(); }
 });
 
 function handleAuthChange(user) {
@@ -79,13 +74,14 @@ function handleAuthChange(user) {
                 <div class="flex flex-col items-end">
                     <span class="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Player</span>
                     <div class="flex items-center gap-2">
-                        <span class="text-xs font-bold text-slate-900">${user.displayName || 'Golfer'}</span>
+                        <span class="text-xs font-bold text-slate-900">${user.displayName || (user.isAnonymous ? 'Anonymous' : 'Golfer')}</span>
                         <button class="text-[10px] text-slate-500 hover:text-red-600 border border-slate-300 hover:border-red-400 px-1 rounded-sm uppercase bg-white font-medium" data-action="logout">Sign Out</button>
                     </div>
                 </div>`;
         }
         initAppData();
     } else {
+        // Only show login if Firebase fails to provide any user (even anonymous)
         if(loginScreen) loginScreen.classList.remove("hidden");
         if(appScreen) appScreen.classList.add("hidden");
     }
@@ -132,7 +128,6 @@ function generateWeekPlan() {
         if(categoryDrills.length > 0) {
             let chosen = new Set();
             let attempts = 0;
-            // Try to pick 3 unique drills from the chosen category
             while(chosen.size < 3 && chosen.size < categoryDrills.length && attempts < 50) {
                 const randomDrill = categoryDrills[Math.floor(Math.random() * categoryDrills.length)];
                 if (!chosen.has(randomDrill.id)) {
@@ -165,7 +160,7 @@ function renderPlanUI() {
     const list = $("plan-tasks-list");
     const progBar = $("plan-progress-bar");
 
-    if(!activeView || !createView) return; // Safely exit if elements don't exist
+    if(!activeView || !createView) return;
 
     if(!activePlan) {
         activeView.classList.add("hidden");
@@ -212,7 +207,7 @@ function renderPlanUI() {
 }
 
 // ----------------------
-// AUTO-SAVE & DRAFT (No change needed)
+// AUTO-SAVE & DRAFT
 // ----------------------
 function triggerAutoSave() {
     const drillData = {};
@@ -264,25 +259,20 @@ function restoreDraft() {
 // ----------------------
 function evaluateResult(drill, rawScore) {
     let numeric = 0;
-    // Check for fraction format (X/Y)
     if (rawScore.includes('/')) {
         const parts = rawScore.split('/');
-        // Store ratio for charting: 8/10 = 0.8
         numeric = parseFloat(parts[0]) / (parseFloat(parts[1]) || 1); 
     } else {
-        // Simple numeric input (SD, Avg Error, Speed)
         numeric = parseFloat(rawScore);
     }
     if (isNaN(numeric)) return { passed: false, numeric: 0 };
 
     let passed = false;
 
-    // Logic: Did they beat the threshold?
     if (drill.scoreType === 'count' || drill.scoreType === 'streak' || drill.scoreType === 'numeric_high') {
         const target = drill.goalThreshold || drill.targetStreak || drill.targetScore || 0;
         passed = numeric >= target;
     } else {
-        // Lower is better (SD, Avg Error, Par 18 Score)
         const target = drill.sd_target_yards || drill.tolerance_yards || drill.targetScore || 999;
         passed = numeric <= target;
     }
@@ -413,8 +403,8 @@ function renderDrillSelect() {
     const allDrills = Object.values(DRILLS).flat();
     const active = allDrills.filter(d => d.skills.some(s => selectedSkills.has(s)));
     
-    if(selectedSkills.size > 0 && active.length === 0) {
-        container.innerHTML = `<div class="text-center py-4 text-xs text-slate-400">No drills match filter</div>`;
+    if(selectedSkills.size === 0 && active.length === 0) {
+        container.innerHTML = `<div class="text-center py-4 text-xs text-slate-400">Select skills or drills to begin.</div>`;
         return;
     }
     
@@ -570,7 +560,6 @@ function calculateRngScore(container) {
         hidden.type = "hidden";
         hidden.className = "drill-score-input";
         hidden.setAttribute("data-id", id);
-        // Append to parent container if needed
         const parentDiv = container.closest(".tech-card");
         if (parentDiv) parentDiv.appendChild(hidden);
     }
@@ -582,14 +571,12 @@ function setupGlobalClicks() {
         const btn = e.target.closest("button");
         if (!btn) return;
 
-        // DEBUG/LOGIN FIX: Handle Google login failure gracefully
         if (btn.id === "google-login-btn") {
             try {
                 await loginWithGoogle();
             } catch(e) {
                 console.error("Google Login Failed:", e);
                 alert("Google Login failed. Check the console for details.");
-                // Attempt to load the app UI anyway (assuming Anonymous sign-in in storage.js)
                 handleAuthChange(null); 
             }
         }
@@ -601,7 +588,6 @@ function setupGlobalClicks() {
         if (btn.classList.contains("load-plan-drill")) {
             const id = btn.dataset.id;
             selectedDrillIds.add(id);
-            // Re-render UI state based on new selection
             renderSkills();
             renderDrillSelect();
             renderSelectedDrills();
