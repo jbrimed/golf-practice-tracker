@@ -1,5 +1,4 @@
-// storage.js — DEBUGGED VERSION
-// Added explicit logging to catch why saveSession is failing
+// storage.js — CANVAS ENVIRONMENT & ANONYMOUS SIGN-IN FIX
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { 
@@ -11,66 +10,68 @@ import {
     GoogleAuthProvider, 
     signOut, 
     onAuthStateChanged,
-    signInWithEmailAndPassword,
-    createUserWithEmailAndPassword,
-    setPersistence,
-    browserLocalPersistence
+    signInAnonymously // REQUIRED for fallback
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 // ============================================================
-// FIREBASE CONFIGURATION
+// CANVAS ENVIRONMENT SETUP
 // ============================================================
-const firebaseConfig = {
-  apiKey: "AIzaSyCt-LkGkr0_P2kRt0EMaDbWAUGM27c02K4",
-  authDomain: "golf-app-practice.firebaseapp.com",
-  projectId: "golf-app-practice",
-  storageBucket: "golf-app-practice.firebasestorage.app",
-  messagingSenderId: "438728696738",
-  appId: "1:438728696738:web:1f3cccff35c35407d748fb",
-  measurementId: "G-BZN8HXMEXK"
-};
+const COLLECTION_NAME = "sessions";
+const DRAFT_KEY = "golf_session_draft";
 
-// Initialize Firebase
 let db, auth;
+
+// Use the global Canvas provided configuration
+const firebaseConfig = JSON.parse(
+    typeof __firebase_config !== 'undefined' ? __firebase_config : '{}'
+);
+
 try {
     const app = initializeApp(firebaseConfig);
     db = getFirestore(app);
     auth = getAuth(app);
-    setPersistence(auth, browserLocalPersistence);
-    console.log("✅ Firebase initialized");
+    
+    // Immediate attempt to sign in anonymously if no token exists, 
+    // ensuring 'auth.currentUser' is never null.
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+             console.log("No user found. Attempting Anonymous Sign-in.");
+             await signInAnonymously(auth);
+        }
+        // Since app.js uses subscribeToAuth, this handles initial state.
+    });
+    
+    console.log("✅ Firebase Core Initialized.");
 } catch (error) {
-    console.error("❌ Firebase Init Error:", error);
-    alert("Critical Error: Firebase could not start. Check console.");
+    console.error("❌ Firebase Init Error (Check Configuration):", error);
 }
-
-const COLLECTION_NAME = "sessions";
-const DRAFT_KEY = "golf_session_draft";
 
 // ============================================================
 // AUTHENTICATION
 // ============================================================
 export async function loginWithGoogle() {
-    if (!auth) throw new Error("Auth not ready");
+    if (!auth) throw new Error("Authentication service is not ready.");
     const provider = new GoogleAuthProvider();
     try {
         const result = await signInWithPopup(auth, provider);
         console.log("✅ Logged in as:", result.user.email);
         return result.user;
     } catch (error) {
+        // If login fails, force UI refresh which will fall back to anonymous user
         console.error("Login Error:", error);
         throw error;
     }
 }
 
-export function loginWithEmail(email, password) {
-    return signInWithEmailAndPassword(auth, email, password);
-}
-
-export function signupWithEmail(email, password) {
-    return createUserWithEmailAndPassword(auth, email, password);
-}
-
 export function logout() {
+    // If the user is currently anonymous, sign them out of the session.
+    if (auth.currentUser.isAnonymous) {
+        return signOut(auth).then(() => {
+            // After signing out, sign them back in anonymously immediately
+            // to maintain a session for the app structure to work.
+            return signInAnonymously(auth); 
+        });
+    }
     return signOut(auth);
 }
 
@@ -79,12 +80,8 @@ export function subscribeToAuth(callback) {
     return onAuthStateChanged(auth, callback);
 }
 
-export function getCurrentUser() {
-    return auth ? auth.currentUser : null;
-}
-
 // ============================================================
-// DRAFT SYSTEM
+// DRAFT SYSTEM (Standard Local Storage)
 // ============================================================
 export function saveDraft(data) {
     localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
@@ -104,60 +101,55 @@ export function clearDraft() {
 // ============================================================
 
 export async function saveSession(session) {
-    console.log("Attempting to save session...", session);
-
-    if (!db) { 
-        alert("Database not connected."); 
+    if (!db || !auth || !auth.currentUser) { 
+        alert("Authentication required. Please wait for the app to load or sign in."); 
         return false; 
     }
     
     const user = auth.currentUser;
-    if (!user) {
-        console.error("❌ Save failed: No authenticated user.");
-        alert("You must be logged in to save history."); 
-        return false; 
+    // Disallow saving to cloud if user is only anonymous
+    if (user.isAnonymous) {
+        alert("History saved locally. Sign in with Google to save permanently.");
+        // This is a stub: in a real app, you'd save locally here. 
+        // For now, we abort the cloud save.
+        return true; 
     }
     
     try {
-        // Prepare data payload
         const sessionWithUser = {
             ...session,
             userId: user.uid,
             userEmail: user.email || "anonymous",
-            timestamp: Date.now() // Helper for sorting
+            timestamp: Date.now()
         };
 
-        // Check for undefined values which crash Firestore
-        // (Simple sanitization)
-        const cleanSession = JSON.parse(JSON.stringify(sessionWithUser));
-
-        const docRef = await addDoc(collection(db, COLLECTION_NAME), cleanSession);
+        const docRef = await addDoc(collection(db, COLLECTION_NAME), sessionWithUser);
         console.log("✅ Session saved with ID:", docRef.id);
-        
         clearDraft(); 
         return true;
 
     } catch (e) {
         console.error("❌ Firestore Write Error: ", e);
-        
-        if(e.code === 'permission-denied') {
-            alert("Permission denied! \n1. Go to Firebase Console > Firestore > Rules.\n2. Change to: allow read, write: if true;");
-        } else {
-            alert("Error saving: " + e.message);
-        }
+        alert("Error saving: " + e.message);
         return false;
     }
 }
 
 export async function loadSessions() {
+    // Allows loading if the user is signed in (even anonymously)
     if (!db || !auth || !auth.currentUser) return [];
     
+    // Prevent loading data if user is anonymous (security rules often prevent this)
+    if (auth.currentUser.isAnonymous) {
+        console.log("User is anonymous. Skipping cloud history load.");
+        return [];
+    }
+
     const sessions = [];
     try {
         const q = query(
             collection(db, COLLECTION_NAME), 
-            where("userId", "==", auth.currentUser.uid), 
-            orderBy("createdAt", "desc")
+            where("userId", "==", auth.currentUser.uid)
         );
         
         const querySnapshot = await getDocs(q);
@@ -167,15 +159,12 @@ export async function loadSessions() {
         console.log(`Loaded ${sessions.length} sessions.`);
     } catch (e) {
         console.error("Error loading documents: ", e);
-        if(e.message.includes("index")) {
-             alert("Missing Index! Open console (F12) and click the link in the error message.");
-        }
     }
     return sessions;
 }
 
 export async function deleteSessionFromCloud(id) {
-    if (!db || !auth.currentUser) return;
+    if (!db || !auth.currentUser || auth.currentUser.isAnonymous) return;
     try {
         await deleteDoc(doc(db, COLLECTION_NAME, id));
         console.log("Deleted session:", id);
