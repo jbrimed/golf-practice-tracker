@@ -517,8 +517,10 @@ function initSaveSession() {
             }
 
             const drillResults = Array.from(selectedDrillIds).map(id => {
-                const raw = document.querySelector(`.drill-score-input[data-id="${id}"]`)?.value || "";
-                const note = document.querySelector(`textarea[data-note-id="${id}"]`)?.value || "";
+                const scoreInput = document.querySelector(`.drill-score-input[data-id="${id}"]`);
+                const noteInput = document.querySelector(`textarea[data-note-id="${id}"]`);
+                const raw = scoreInput ? scoreInput.value : "";
+                const note = noteInput ? noteInput.value : "";
                 let num = null;
                 
                 if(raw.includes("/")) {
@@ -553,7 +555,7 @@ function initSaveSession() {
                 renderDrillSelect(); 
                 renderPreviewList(); 
                 updateGoToLogButton();
-                if($("session-notes")) $("session-notes").value="";
+                if(sessionNotes) sessionNotes.value="";
                 switchTab("history");
                 checkProgression(drillResults);
             }
