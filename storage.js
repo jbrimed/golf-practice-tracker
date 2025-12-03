@@ -49,9 +49,19 @@ const DRAFT_KEY = "golf_session_draft";
 // ============================================================
 // AUTHENTICATION
 // ============================================================
-export function loginWithGoogle() {
+export async function loginWithGoogle() {
+    if (!auth) {
+        console.error("Auth not initialized");
+        throw new Error("Firebase Auth not initialized");
+    }
     const provider = new GoogleAuthProvider();
-    return signInWithPopup(auth, provider);
+    try {
+        const result = await signInWithPopup(auth, provider);
+        return result.user;
+    } catch (error) {
+        console.error("Google Sign-In Error:", error);
+        throw error;
+    }
 }
 
 // NEW: Email Login
@@ -70,11 +80,12 @@ export function logout() {
 
 // Subscribe to auth changes
 export function subscribeToAuth(callback) {
+    if (!auth) return;
     return onAuthStateChanged(auth, callback);
 }
 
 export function getCurrentUser() {
-    return auth.currentUser;
+    return auth ? auth.currentUser : null;
 }
 
 // ============================================================
@@ -133,7 +144,7 @@ export async function saveSession(session) {
 }
 
 export async function loadSessions() {
-    if (!db || !auth.currentUser) return [];
+    if (!db || !auth || !auth.currentUser) return [];
     
     const sessions = [];
     try {
