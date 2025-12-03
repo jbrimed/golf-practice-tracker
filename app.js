@@ -94,7 +94,8 @@ function handleAuthChange(user) {
                     </div>
                     <img src="${user.photoURL}" class="w-8 h-8 rounded-full border border-slate-300">
                 </div>`;
-            $("logout-btn")?.addEventListener("click", () => logout().then(() => location.reload()));
+            const logoutBtn = $("logout-btn");
+            if(logoutBtn) logoutBtn.addEventListener("click", () => logout().then(() => location.reload()));
         }
         initAppData();
     } else {
@@ -125,6 +126,115 @@ function initAppData() {
     if(goLog) goLog.addEventListener("click", () => {
         if(selectedDrillIds.size > 0) switchTab("log");
     });
+
+    // Global Event Delegation for dynamic elements
+    document.body.addEventListener("input", handleGlobalInput);
+    document.body.addEventListener("click", handleGlobalClick);
+}
+
+// ----------------------
+// GLOBAL HANDLERS (Delegation)
+// ----------------------
+
+function handleGlobalInput(e) {
+    // Auto-save trigger
+    if (e.target.matches("input, textarea")) {
+        triggerAutoSave();
+    }
+
+    // Calc Logic: Dispersion
+    if (e.target.classList.contains("calc-input")) {
+        const groupId = e.target.dataset.group;
+        const inputs = document.querySelectorAll(`.calc-input[data-group="${groupId}"]`);
+        const values = Array.from(inputs).map(i => parseFloat(i.value)).filter(v => !isNaN(v));
+        
+        if (values.length > 1) {
+            const sd = calculateSD(values);
+            const avg = values.reduce((a, b) => a + b, 0) / values.length;
+            
+            const sdEl = document.getElementById(`calc-sd-${groupId}`);
+            const avgEl = document.getElementById(`calc-avg-${groupId}`);
+            const hiddenInput = document.querySelector(`.drill-score-input[data-id="${groupId}"]`);
+
+            if (sdEl) sdEl.innerText = sd.toFixed(2);
+            if (avgEl) avgEl.innerText = avg.toFixed(1);
+            if (hiddenInput) hiddenInput.value = sd.toFixed(2);
+        }
+    }
+
+    // Calc Logic: RNG Multilog
+    if (e.target.classList.contains("multi-inp")) {
+        const container = e.target.closest(".rng-table-container");
+        if (container) {
+            const drillId = container.id.replace("rng-table-", "");
+            const rows = container.querySelectorAll(".multi-row");
+            let totalError = 0;
+            let count = 0;
+
+            rows.forEach(row => {
+                const target = parseFloat(row.dataset.target);
+                const inputs = row.querySelectorAll("input");
+                inputs.forEach(inp => {
+                    const val = parseFloat(inp.value);
+                    if (!isNaN(val)) {
+                        totalError += Math.abs(val - target);
+                        count++;
+                    }
+                });
+            });
+
+            const avgError = count > 0 ? (totalError / count).toFixed(1) : "--";
+            const scoreEl = document.getElementById(`rng-score-${drillId}`);
+            const hiddenInput = document.querySelector(`.drill-score-input[data-id="${drillId}"]`);
+
+            if (scoreEl) scoreEl.innerText = avgError;
+            if (hiddenInput) hiddenInput.value = avgError; // This saves the "Score"
+        }
+    }
+}
+
+function handleGlobalClick(e) {
+    // RNG Single Roll
+    if (e.target.classList.contains("roll-btn")) {
+        const btn = e.target;
+        const choices = JSON.parse(btn.dataset.choices);
+        const targetEl = document.getElementById(btn.dataset.target);
+        
+        if(choices.length > 0) {
+            targetEl.innerText = choices[Math.floor(Math.random() * choices.length)];
+        } else {
+            const min = parseInt(btn.dataset.min);
+            const max = parseInt(btn.dataset.max);
+            targetEl.innerText = "Target: " + (Math.floor(Math.random() * (max - min + 1)) + min) + "y";
+        }
+    }
+
+    // RNG Multilog Generator
+    if (e.target.classList.contains("rng-multi-btn")) {
+        const btn = e.target;
+        const id = btn.dataset.id;
+        const min = parseInt(btn.dataset.min);
+        const max = parseInt(btn.dataset.max);
+        const count = parseInt(btn.dataset.count);
+        
+        const rowsContainer = document.getElementById(`rng-rows-${id}`);
+        const tableContainer = document.getElementById(`rng-table-${id}`);
+        
+        if(rowsContainer) {
+            rowsContainer.innerHTML = "";
+            for(let i=0; i<count; i++) {
+                const target = Math.floor(Math.random() * (max - min + 1)) + min;
+                rowsContainer.innerHTML += `
+                <div class="grid grid-cols-3 gap-2 items-center multi-row mb-2" data-target="${target}">
+                    <span class="font-mono font-bold text-indigo-700 bg-indigo-100 px-2 py-1 rounded text-center">${target}y</span>
+                    <input type="number" class="input-style h-9 px-1 text-center multi-inp font-mono" placeholder="1">
+                    <input type="number" class="input-style h-9 px-1 text-center multi-inp font-mono" placeholder="2">
+                </div>`;
+            }
+            if(tableContainer) tableContainer.classList.remove("hidden");
+            btn.classList.add("hidden");
+        }
+    }
 }
 
 // ----------------------
@@ -249,7 +359,11 @@ function restoreDraft() {
                 if(d.calcValues) {
                     const calcs = document.querySelectorAll(`.calc-input[data-group="${id}"]`);
                     calcs.forEach((inp, i) => { if(d.calcValues[i]) inp.value = d.calcValues[i]; });
-                    if(calcs.length) calcs[0].dispatchEvent(new Event('input')); // Trigger math
+                    if(calcs.length) {
+                         // Manually trigger calculation logic
+                         // We can reuse the global handler but we need a fake event target
+                         handleCalcInput(calcs[0]); 
+                    }
                 }
                 
                 // 3. Restore RNG Tables
@@ -257,13 +371,13 @@ function restoreDraft() {
                     // Re-build the table first!
                     const rowsContainer = document.getElementById(`rng-rows-${id}`);
                     const tableContainer = document.getElementById(`rng-table-${id}`);
-                    const btn = document.querySelector(`#rng-table-${id} button`); // The generate button
+                    const btn = document.querySelector(`#rng-table-${id} .rng-multi-btn`); 
                     
                     if(rowsContainer) {
                         rowsContainer.innerHTML = "";
                         d.rngTargets.forEach((target, idx) => {
                             rowsContainer.innerHTML += `
-                            <div class="grid grid-cols-3 gap-2 items-center multi-row" data-target="${target}">
+                            <div class="grid grid-cols-3 gap-2 items-center multi-row mb-2" data-target="${target}">
                                 <span class="font-mono font-bold text-indigo-700 bg-indigo-100 px-2 py-1 rounded text-center">${target}y</span>
                                 <input type="number" class="input-style h-9 px-1 text-center multi-inp font-mono" placeholder="Carry 1">
                                 <input type="number" class="input-style h-9 px-1 text-center multi-inp font-mono" placeholder="Carry 2">
@@ -274,15 +388,12 @@ function restoreDraft() {
                         if(d.rngValues) {
                             const inputs = rowsContainer.querySelectorAll("input");
                             inputs.forEach((inp, i) => { if(d.rngValues[i]) inp.value = d.rngValues[i]; });
+                            // Trigger math for this row if inputs exist
+                            if(inputs.length > 0) handleMultiInput(inputs[0]);
                         }
                         
                         if(tableContainer) tableContainer.classList.remove("hidden");
                         if(btn) btn.classList.add("hidden");
-                        
-                        // Re-attach listeners
-                        attachRngListeners(id);
-                        // Trigger math
-                        if(rowsContainer.querySelector("input")) rowsContainer.querySelector("input").dispatchEvent(new Event('input'));
                     }
                 }
             });
@@ -339,7 +450,7 @@ function renderDrillSelect() {
     // Toggle Presets Visibility
     if(selectedSkills.size === 0 && selectedDrillIds.size === 0) {
         if(presets) presets.classList.remove("hidden");
-        container.innerHTML = `<div class="text-center py-8 text-slate-400 text-sm italic">Select focus areas above...</div>`;
+        container.innerHTML = `<div class="text-center py-8 text-slate-400 text-sm italic">Select focus areas...</div>`;
         return;
     } else {
         if(presets) presets.classList.add("hidden");
@@ -362,13 +473,14 @@ function renderDrillSelect() {
         sec.className = "mb-6";
         sec.innerHTML = `<h3 class="text-md font-bold text-emerald-900 border-l-4 border-emerald-500 pl-3 mb-3 bg-emerald-50 py-1 rounded-r">${label}</h3><div class="space-y-3"></div>`;
         container.appendChild(sec);
-        const list = sec.querySelector("div");
+        const grp = sec.querySelector("div");
 
         groups[label].forEach(drill => {
-            if(list.querySelector(`[data-did="${drill.id}"]`)) return; // Dedupe
+            if(grp.querySelector(`[data-did="${drill.id}"]`)) return; // Dedupe
 
             const isAdded = selectedDrillIds.has(drill.id);
             const btnClass = isAdded ? "bg-red-50 text-red-600 border-red-200" : "bg-black text-white hover:bg-gray-800";
+            const btnText = isAdded ? "Remove" : "Add";
             
             const card = document.createElement("div");
             card.className = "card border border-gray-200 shadow-sm p-4 flex flex-col sm:flex-row gap-3 justify-between items-center";
@@ -381,19 +493,27 @@ function renderDrillSelect() {
                     <div class="flex items-center gap-2"><h4 class="font-bold text-gray-800">${drill.name}</h4>${badge}</div>
                     <span class="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-500 font-medium">⏱ ${drill.duration}m</span>
                 </div>
-                <button class="px-4 py-2 rounded text-sm font-bold border transition ${btnClass} add-btn">${isAdded?'Remove':'Add'}</button>
+                <button class="add-btn px-4 py-2 rounded text-sm font-bold border transition ${btnClass}">${btnText}</button>
             `;
             
             card.querySelector(".add-btn").addEventListener("click", () => {
-                if(selectedDrillIds.has(drill.id)) selectedDrillIds.delete(drill.id); else selectedDrillIds.add(drill.id);
-                renderDrillSelect();
-                renderSelectedDrills(); // Update log immediately
-                updateStartButton();
+                if(selectedDrillIds.has(drill.id)) selectedDrillIds.delete(drill.id); 
+                else selectedDrillIds.add(drill.id);
+                
+                renderDrillSelect(); 
+                renderPreviewList(); 
+                updateStartButton(); 
                 triggerAutoSave();
             });
-            list.appendChild(card);
+            
+            grp.appendChild(card);
         });
     });
+}
+
+function renderPreviewList() {
+    const badge = $("drill-count-badge");
+    if(badge) badge.innerText = selectedDrillIds.size;
 }
 
 function updateStartButton() {
@@ -401,9 +521,12 @@ function updateStartButton() {
     const badge = $("drill-count-badge");
     if(badge) badge.innerText = selectedDrillIds.size;
     if(btn) {
-        btn.querySelector("span").innerText = selectedDrillIds.size ? `Start Practice (${selectedDrillIds.size})` : "Start Session";
-        btn.disabled = selectedDrillIds.size === 0;
-        if(selectedDrillIds.size===0) btn.classList.add("opacity-50"); else btn.classList.remove("opacity-50");
+        btn.querySelector("span").innerText = selectedDrillIds.size > 0 ? `Start Practice (${selectedDrillIds.size})` : "Start Session";
+        if (selectedDrillIds.size === 0) {
+            btn.classList.add("opacity-50", "cursor-not-allowed");
+        } else {
+            btn.classList.remove("opacity-50", "cursor-not-allowed");
+        }
     }
 }
 
@@ -429,111 +552,59 @@ function renderSelectedDrills() {
         const card = document.createElement("div");
         card.className = "card border-l-4 border-black mb-6";
         
-        let html = `
-            <div class="mb-3">
-                <h3 class="text-lg font-bold">${drill.name}</h3>
-                <div class="bg-gray-50 p-3 rounded text-sm mt-2 text-gray-700 border border-gray-100">${drill.description}</div>
+        let inputsHtml = "";
+        
+        if (metric === METRIC_TYPES.DISPERSION_CALC) {
+            inputsHtml = `
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Enter 5 Carry Distances</label>
+            <div class="grid grid-cols-5 gap-1 mb-2">
+                ${Array(5).fill(0).map(() => `<input type="number" class="calc-input input-style px-1 text-center font-mono" data-group="${id}">`).join('')}
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="input-area"></div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Notes</label>
-                    <textarea data-note-id="${id}" class="input-style w-full h-24 resize-none" placeholder="Notes..."></textarea>
+            <div class="text-xs font-mono text-gray-700 bg-gray-100 p-2 rounded flex justify-between">
+                <span>Avg: <strong id="calc-avg-${id}">--</strong></span><span>SD: <strong id="calc-sd-${id}" class="text-emerald-600">--</strong></span>
+            </div>
+            <input type="hidden" data-id="${id}" class="drill-score-input" />`;
+        } else if (metric === METRIC_TYPES.RNG_MULTILOG) {
+            inputsHtml = `
+            <div class="mb-2 rng-table-container" id="rng-table-${id}">
+                <button class="rng-multi-btn w-full bg-indigo-600 text-white py-2 rounded text-sm font-bold mb-2 transition hover:bg-indigo-700"
+                    data-id="${id}"
+                    data-min="${drill.randomizer.min}"
+                    data-max="${drill.randomizer.max}"
+                    data-count="${drill.randomizer.count || 5}">🎲 Generate 5 Targets</button>
+                
+                <div id="rng-rows-${id}" class="space-y-2"></div>
+                
+                <div class="mt-2 text-xs text-right text-gray-500 font-medium">
+                    Avg Error: <span id="rng-score-${id}" class="font-bold text-emerald-600 text-sm">--</span> y
                 </div>
+                <input type="hidden" data-id="${id}" class="drill-score-input" />
             </div>`;
-        
-        card.innerHTML = html;
-        const inputArea = card.querySelector(".input-area");
-        
-        // --- INPUT GENERATION ---
-        if(metric === METRIC_TYPES.DISPERSION_CALC) {
-            inputArea.innerHTML = `
-                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Enter 5 Carry Distances</label>
-                <div class="grid grid-cols-5 gap-1 mb-2">
-                    ${Array(5).fill(0).map(() => `<input type="number" class="calc-input input-style px-1 text-center font-mono" data-group="${id}">`).join('')}
-                </div>
-                <div class="text-xs font-mono text-gray-700 bg-gray-100 p-2 rounded flex justify-between">
-                    <span>Avg: <strong id="calc-avg-${id}">--</strong></span><span>SD: <strong id="calc-sd-${id}" class="text-emerald-600">--</strong></span>
-                </div>
-                <input type="hidden" data-id="${id}" class="drill-score-input" />`;
-            
-            // Calc Logic
-            const inputs = inputArea.querySelectorAll("input");
-            inputs.forEach(i => i.addEventListener("input", () => {
-                const vals = Array.from(inputs).map(inp => parseFloat(inp.value)).filter(v=>!isNaN(v));
-                if(vals.length > 1) {
-                    const sd = calculateSD(vals);
-                    const avg = vals.reduce((a,b)=>a+b,0)/vals.length;
-                    card.querySelector(`#calc-sd-${id}`).innerText = sd.toFixed(1);
-                    card.querySelector(`#calc-avg-${id}`).innerText = avg.toFixed(1);
-                    card.querySelector(`.drill-score-input`).value = sd.toFixed(2);
-                }
-                triggerAutoSave();
-            }));
-
-        } else if(metric === METRIC_TYPES.RNG_MULTILOG) {
-            inputArea.innerHTML = `
-                <div class="mb-2 rng-table-container" id="rng-table-${id}">
-                    <button class="gen-btn w-full bg-indigo-600 text-white py-2 rounded text-sm font-bold mb-2">🎲 Generate 5 Targets</button>
-                    <div id="rng-rows-${id}" class="space-y-2"></div>
-                    <div class="mt-2 text-xs text-right text-gray-500 font-medium">
-                        Avg Error: <span id="rng-score-${id}" class="font-bold text-emerald-600 text-sm">--</span> y
-                    </div>
-                    <input type="hidden" data-id="${id}" class="drill-score-input" />
-                </div>`;
-            
-            // Gen Logic
-            const btn = inputArea.querySelector(".gen-btn");
-            btn.addEventListener("click", () => {
-                const min = drill.randomizer?.min || 50;
-                const max = drill.randomizer?.max || 150;
-                const rows = inputArea.querySelector(`#rng-rows-${id}`);
-                rows.innerHTML = "";
-                for(let i=0; i<5; i++) {
-                    const t = Math.floor(Math.random()*(max-min+1))+min;
-                    rows.innerHTML += `
-                        <div class="grid grid-cols-3 gap-2 items-center multi-row" data-target="${t}">
-                            <span class="font-mono font-bold text-indigo-700 bg-indigo-100 px-2 py-1 rounded text-center">${t}y</span>
-                            <input type="number" class="input-style h-9 px-1 text-center multi-inp" placeholder="1">
-                            <input type="number" class="input-style h-9 px-1 text-center multi-inp" placeholder="2">
-                        </div>`;
-                }
-                btn.classList.add("hidden");
-                attachRngListeners(id);
-                triggerAutoSave();
-            });
-
         } else {
-            // Default
-            inputArea.innerHTML = `<label class="block text-xs font-bold text-gray-500 uppercase mb-1">Score</label><input data-id="${id}" type="text" class="drill-score-input input-style" placeholder="Result (e.g. 8/10)" />`;
-            inputArea.querySelector("input").addEventListener("input", triggerAutoSave);
+            let extra = "";
+            if (drill.randomizer) {
+                 extra = `
+                 <div class="mb-2 flex justify-between items-center bg-indigo-50 p-2 rounded">
+                    <span class="text-indigo-900 text-sm font-bold" id="rand-target-${id}">Target: ???</span>
+                    <button class="roll-btn bg-indigo-600 text-white px-2 py-1 rounded text-xs" 
+                        data-target="rand-target-${id}"
+                        data-min="${drill.randomizer.min}"
+                        data-max="${drill.randomizer.max}"
+                        data-choices='${JSON.stringify(drill.randomizer.choices || [])}'>Roll</button>
+                 </div>`;
+            }
+            inputsHtml = extra + `<label class="block text-xs font-bold text-gray-500 uppercase mb-1">Score</label><input data-id="${id}" type="text" class="drill-score-input input-style" placeholder="Result" />`;
         }
 
-        // Note Listener
-        card.querySelector("textarea").addEventListener("input", triggerAutoSave);
+        card.innerHTML = `
+            <div class="mb-3"><h3 class="text-lg font-bold">${drill.name}</h3><div class="bg-gray-50 p-3 rounded text-sm mt-2 text-gray-700 border border-gray-100">${drill.description}</div></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>${inputsHtml}</div>
+                <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Notes</label><textarea data-note-id="${id}" class="input-style w-full h-24 resize-none" placeholder="Notes..."></textarea></div>
+            </div>`;
+        
         container.appendChild(card);
     });
-}
-
-function attachRngListeners(id) {
-    const container = document.getElementById(`rng-rows-${id}`);
-    if(!container) return;
-    
-    const inputs = container.querySelectorAll("input");
-    inputs.forEach(inp => inp.addEventListener("input", () => {
-        let totalErr = 0, count = 0;
-        container.querySelectorAll(".multi-row").forEach(row => {
-            const target = parseFloat(row.dataset.target);
-            row.querySelectorAll("input").forEach(i => {
-                const v = parseFloat(i.value);
-                if(!isNaN(v)) { totalErr += Math.abs(v - target); count++; }
-            });
-        });
-        const avg = count ? (totalErr/count).toFixed(1) : "--";
-        document.getElementById(`rng-score-${id}`).innerText = avg;
-        document.querySelector(`.drill-score-input[data-id="${id}"]`).value = avg;
-        triggerAutoSave();
-    }));
 }
 
 // ================================
@@ -544,7 +615,7 @@ function initSaveSession() {
     const btn = $("save-session");
     if(!btn) return;
 
-    // Clean listeners
+    // Use replacement to ensure fresh listener
     const newBtn = btn.cloneNode(true);
     btn.parentNode.replaceChild(newBtn, btn);
 
@@ -563,9 +634,7 @@ function initSaveSession() {
             // Parse Number
             let num = null;
             if(raw) {
-                // Try direct number first
                 if(!isNaN(parseFloat(raw))) num = parseFloat(raw);
-                // Try fraction (8/10)
                 else if(raw.includes("/")) {
                     const [n, d] = raw.split("/");
                     if(d && parseFloat(d)!==0) num = (parseFloat(n)/parseFloat(d))*100;
@@ -575,7 +644,7 @@ function initSaveSession() {
             return { 
                 id, 
                 name: drill?.name || id, 
-                score: { raw, numeric: num }, 
+                score: { raw, numeric: num || 0 }, // Fallback to 0 if parsing failed
                 notes: note 
             };
         });
@@ -623,7 +692,9 @@ async function renderHistory() {
             <div class="text-sm text-gray-600">${s.drills ? s.drills.length : 0} drills completed</div>
             <button class="del-btn absolute top-4 right-4 text-red-300 hover:text-red-500 font-bold px-2">✕</button>
         `;
-        div.querySelector(".del-btn").addEventListener("click", async (e) => {
+        
+        const delBtn = div.querySelector(".del-btn");
+        delBtn.addEventListener("click", async (e) => {
             e.stopPropagation();
             if(confirm("Delete this session?")) {
                 await deleteSessionFromCloud(s.id);
@@ -631,8 +702,9 @@ async function renderHistory() {
                 renderAnalytics();
             }
         });
+        
         div.addEventListener("click", (e) => {
-            if(!e.target.classList.contains("del-btn")) {
+            if(e.target !== delBtn) {
                 const content = (s.drillResults || []).map(r => 
                     `<div class="flex justify-between border-b pb-1 mb-1"><span>${r.name}</span><span class="font-bold text-emerald-600">${r.score.raw || '-'}</span></div>`
                 ).join('');
@@ -653,6 +725,7 @@ async function renderAnalytics() {
     sessions.sort((a,b)=>new Date(a.date)-new Date(b.date)).forEach(s => {
         if(s.drillResults) {
             s.drillResults.forEach(r => {
+                // Robust check for numeric value
                 if(r.score && r.score.numeric !== null && !isNaN(r.score.numeric)) {
                     if(!stats[r.name]) stats[r.name] = [];
                     stats[r.name].push(r.score.numeric);
@@ -697,6 +770,6 @@ function switchTab(t) {
 
     if (t === "history") renderHistory();
     if (t === "analytics") renderAnalytics();
-    if (t === "log") renderSelectedDrills(); // ensure input fields are fresh
+    if (t === "log") renderSelectedDrills(); 
     window.scrollTo(0,0);
 }
