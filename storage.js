@@ -1,5 +1,5 @@
-// storage.js — Connected to Firebase Firestore & Auth
-// Configured for Project: golf-app-practice
+// storage.js — DEBUGGED VERSION
+// Added explicit logging to catch why saveSession is failing
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { 
@@ -36,11 +36,11 @@ try {
     const app = initializeApp(firebaseConfig);
     db = getFirestore(app);
     auth = getAuth(app);
-    // Explicitly set persistence (though it's default)
     setPersistence(auth, browserLocalPersistence);
-    console.log("Firebase initialized successfully");
+    console.log("✅ Firebase initialized");
 } catch (error) {
-    console.error("Firebase failed to initialize:", error);
+    console.error("❌ Firebase Init Error:", error);
+    alert("Critical Error: Firebase could not start. Check console.");
 }
 
 const COLLECTION_NAME = "sessions";
@@ -50,26 +50,22 @@ const DRAFT_KEY = "golf_session_draft";
 // AUTHENTICATION
 // ============================================================
 export async function loginWithGoogle() {
-    if (!auth) {
-        console.error("Auth not initialized");
-        throw new Error("Firebase Auth not initialized");
-    }
+    if (!auth) throw new Error("Auth not ready");
     const provider = new GoogleAuthProvider();
     try {
         const result = await signInWithPopup(auth, provider);
+        console.log("✅ Logged in as:", result.user.email);
         return result.user;
     } catch (error) {
-        console.error("Google Sign-In Error:", error);
+        console.error("Login Error:", error);
         throw error;
     }
 }
 
-// NEW: Email Login
 export function loginWithEmail(email, password) {
     return signInWithEmailAndPassword(auth, email, password);
 }
 
-// NEW: Email Signup
 export function signupWithEmail(email, password) {
     return createUserWithEmailAndPassword(auth, email, password);
 }
@@ -78,7 +74,6 @@ export function logout() {
     return signOut(auth);
 }
 
-// Subscribe to auth changes
 export function subscribeToAuth(callback) {
     if (!auth) return;
     return onAuthStateChanged(auth, callback);
@@ -89,7 +84,7 @@ export function getCurrentUser() {
 }
 
 // ============================================================
-// DRAFT SYSTEM (Local Auto-Save)
+// DRAFT SYSTEM
 // ============================================================
 export function saveDraft(data) {
     localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
@@ -109,33 +104,44 @@ export function clearDraft() {
 // ============================================================
 
 export async function saveSession(session) {
+    console.log("Attempting to save session...", session);
+
     if (!db) { 
-        alert("Database connection failed."); 
+        alert("Database not connected."); 
         return false; 
     }
     
-    // Ensure we have a user (even if auth state is lagging slightly)
     const user = auth.currentUser;
     if (!user) {
+        console.error("❌ Save failed: No authenticated user.");
         alert("You must be logged in to save history."); 
         return false; 
     }
     
     try {
-        // Add User ID to the session document
+        // Prepare data payload
         const sessionWithUser = {
             ...session,
-            userId: user.uid, // CRITICAL: Link data to user
-            userEmail: user.email || "anonymous"
+            userId: user.uid,
+            userEmail: user.email || "anonymous",
+            timestamp: Date.now() // Helper for sorting
         };
 
-        await addDoc(collection(db, COLLECTION_NAME), sessionWithUser);
+        // Check for undefined values which crash Firestore
+        // (Simple sanitization)
+        const cleanSession = JSON.parse(JSON.stringify(sessionWithUser));
+
+        const docRef = await addDoc(collection(db, COLLECTION_NAME), cleanSession);
+        console.log("✅ Session saved with ID:", docRef.id);
+        
         clearDraft(); 
         return true;
+
     } catch (e) {
-        console.error("Error adding document: ", e);
+        console.error("❌ Firestore Write Error: ", e);
+        
         if(e.code === 'permission-denied') {
-            alert("Permission denied. Check Firestore rules in Firebase Console.");
+            alert("Permission denied! \n1. Go to Firebase Console > Firestore > Rules.\n2. Change to: allow read, write: if true;");
         } else {
             alert("Error saving: " + e.message);
         }
@@ -148,10 +154,9 @@ export async function loadSessions() {
     
     const sessions = [];
     try {
-        // Query ONLY sessions belonging to current user
         const q = query(
             collection(db, COLLECTION_NAME), 
-            where("userId", "==", auth.currentUser.uid), // Filter by User ID
+            where("userId", "==", auth.currentUser.uid), 
             orderBy("createdAt", "desc")
         );
         
@@ -159,21 +164,11 @@ export async function loadSessions() {
         querySnapshot.forEach((doc) => {
             sessions.push({ id: doc.id, ...doc.data() });
         });
+        console.log(`Loaded ${sessions.length} sessions.`);
     } catch (e) {
-        // If sorting fails initially due to missing index, it might error.
         console.error("Error loading documents: ", e);
         if(e.message.includes("index")) {
-             // Fallback query without sort if index is missing
-             const qFallback = query(
-                collection(db, COLLECTION_NAME), 
-                where("userId", "==", auth.currentUser.uid)
-            );
-            const fallbackSnapshot = await getDocs(qFallback);
-            fallbackSnapshot.forEach((doc) => {
-                sessions.push({ id: doc.id, ...doc.data() });
-            });
-            // Client-side sort
-            sessions.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+             alert("Missing Index! Open console (F12) and click the link in the error message.");
         }
     }
     return sessions;
@@ -183,6 +178,7 @@ export async function deleteSessionFromCloud(id) {
     if (!db || !auth.currentUser) return;
     try {
         await deleteDoc(doc(db, COLLECTION_NAME, id));
+        console.log("Deleted session:", id);
     } catch (e) {
         console.error("Error deleting: ", e);
     }
