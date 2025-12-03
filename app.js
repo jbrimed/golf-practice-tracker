@@ -1,6 +1,7 @@
 // ================================
 // app.js — SCRATCH EDITION WITH WEEKLY PLANS
 // Features: Weekly Plan Builder, Raw Metric Logging, Dynamic Leveling
+// REFACTORED: Uses imported SKILLS array for filter rendering.
 // ================================
 
 import { DRILLS } from "./drills.js";
@@ -33,6 +34,7 @@ let selectedDrillIds = new Set();
 let userProgression = {}; 
 let activePlan = null; 
 
+// Map of all drills from drills.js for fast lookup
 const allDrillsMap = new Map(Object.values(DRILLS).flat().map(d => [d.id, d]));
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -90,7 +92,6 @@ function getDrillParams(id) {
     if (!drill) return null;
     if (drill.progression) {
         const currentLevel = userProgression[id] || 1;
-        // Find the current level params, fall back to level 1 if current level doesn't exist anymore
         const params = drill.progression.find(p => p.level === currentLevel) || drill.progression[0];
         
         return {
@@ -114,9 +115,10 @@ function generateWeekPlan() {
 
     const tasks = [];
     areas.forEach(area => {
+        // Find the top-level categories based on the checkbox value (e.g., 'driver', 'irons')
         const categoryDrills = Object.values(DRILLS[area] || {}).flat();
         if(categoryDrills.length > 0) {
-            // Pick 3 diverse drills from this category (using a set to ensure unique IDs)
+            
             let chosen = new Set();
             while(chosen.size < 3 && chosen.size < categoryDrills.length) {
                 const randomDrill = categoryDrills[Math.floor(Math.random() * categoryDrills.length)];
@@ -125,7 +127,7 @@ function generateWeekPlan() {
                     tasks.push({ 
                         id: randomDrill.id, 
                         cat: area, 
-                        done: 0, // Target completion count: 0
+                        done: 0, 
                         target: 3, // Goal: 3 successful completions this week
                     });
                 }
@@ -171,7 +173,7 @@ function renderPlanUI() {
         const isComplete = task.done >= task.target;
         
         const item = document.createElement("div");
-        item.className = `flex justify-between items-center p-3 border rounded-sm ${isComplete ? 'bg-green-50 border-green-200 opacity-90' : 'bg-white border-l-4 border-l-tech-blue border-slate-200'}`;
+        item.className = `flex justify-between items-center p-3 border rounded-sm ${isComplete ? 'bg-green-50 border-green-200 opacity-90' : 'bg-white border-l-4 border-l-4 border-l-tech-blue border-slate-200'}`;
         
         item.innerHTML = `
             <div>
@@ -288,7 +290,6 @@ function checkAndApplyPromotion(drillId, passed) {
         const nextLevel = currentLevel + 1;
         const nextLevelParams = drill.progression.find(p => p.level === nextLevel);
 
-        // Simple promotion logic: pass one session to be offered a promotion.
         if (confirm(`Promotion available for ${drill.name}!\n\nYou achieved the Level ${currentLevel} standard.\n\nDo you want to move up to the next challenge: ${nextLevelParams.name}?`)) {
             userProgression[drillId] = nextLevel;
             localStorage.setItem('golf_progression', JSON.stringify(userProgression));
@@ -328,7 +329,7 @@ async function handleSaveSession() {
             score: { raw: rawInput, numeric: evalResult.numeric }, 
             notes: note,
             level: params.currentLevel || 1,
-            scoreType: params.scoreType // Keep score type for analytics interpretation
+            scoreType: params.scoreType
         };
     });
 
@@ -360,36 +361,32 @@ function renderSkills() {
     if(!container) return;
     container.innerHTML = "";
     
-    // Manual Grouping since skills.js is not provided and needs logical grouping
-    const allDrills = Object.values(DRILLS).flat();
-    const skillMap = new Map();
-    allDrills.forEach(d => d.skills.forEach(s => skillMap.set(s, true)));
+    // Group SKILLS by their category property for the UI structure
+    const grouped = SKILLS.reduce((acc, skill) => {
+        const cat = skill.category;
+        if (!acc[cat]) acc[cat] = [];
+        acc[cat].push(skill);
+        return acc;
+    }, {});
+    
+    // Define the preferred display order
+    const order = ["Driver", "Irons", "Wedges", "Short Game", "Putting"];
 
-    const skillGroups = {
-        "Dispersion": ["driver_dispersion", "irons_distance", "wedges_distance"],
-        "Contact & Launch": ["driver_face", "irons_contact", "wedges_trajectory"],
-        "Shaping & Speed": ["driver_speed", "irons_workability", "wedges_spin"],
-        "Short Game": ["shortgame_scoring", "shortgame_pressure", "shortgame_control"],
-        "Putting": ["putting_pressure", "putting_speed", "putting_startline", "putting_read"]
-    };
-
-    Object.entries(skillGroups).forEach(([cat, skillIds]) => {
-        const relevantSkills = skillIds.filter(id => skillMap.has(id));
-        if(relevantSkills.length === 0) return;
+    order.forEach(catName => {
+        const skills = grouped[catName];
+        if(!skills || skills.length === 0) return;
         
         const h = document.createElement("div");
-        h.className = "bg-slate-100 text-[10px] font-bold text-slate-600 uppercase px-2 py-1 border-b border-t border-slate-200";
-        h.innerText = cat;
+        h.className = "bg-slate-100 text-[10px] font-bold text-slate-600 uppercase px-2 py-1 border-b border-t border-slate-200 first:border-t-0";
+        h.innerText = catName;
         container.appendChild(h);
         
-        relevantSkills.forEach(id => {
-            const labelText = id.split('_').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ').replace('Driver ', '').replace('Irons ', '').replace('Wedges ', '');
-            
+        skills.forEach(skill => {
             const lbl = document.createElement("label");
             lbl.className = "flex items-center space-x-2 py-2 px-2 border-b border-slate-100";
-            lbl.innerHTML = `<input type="checkbox" class="accent-tech-blue" value="${id}"> <span class="text-xs text-slate-700">${labelText}</span>`;
+            lbl.innerHTML = `<input type="checkbox" class="accent-tech-blue" value="${skill.id}"> <span class="text-xs text-slate-700">${skill.label}</span>`;
             lbl.querySelector("input").addEventListener("change", (e) => {
-                e.target.checked ? selectedSkills.add(id) : selectedSkills.delete(id);
+                e.target.checked ? selectedSkills.add(skill.id) : selectedSkills.delete(skill.id);
                 renderDrillSelect();
             });
             container.appendChild(lbl);
@@ -449,6 +446,7 @@ function renderSelectedDrills() {
 
         if(params.metricType === "DISPERSION_CALC") {
             placeholderText = "Enter 5-10 carry distances...";
+            // Use progression params for shots count
             inputHtml = `
             <div class="grid grid-cols-5 gap-1 mb-2">
                 ${Array(params.shots||8).fill(0).map(()=>`<input type="number" class="calc-input input-lcd bg-slate-50 border border-slate-200 text-center text-sm py-1 rounded-sm" placeholder="-" data-group="${id}">`).join('')}
@@ -459,21 +457,24 @@ function renderSelectedDrills() {
             </div>`;
         } else if (params.metricType === "RNG_MULTILOG") {
             placeholderText = "Avg Error (Calculated)";
+            const unit = params.tolerance_yards ? 'y' : (params.tolerance_feet ? 'ft' : '');
             inputHtml = `
             <div id="rng-table-${id}" class="rng-table-container">
                 <button class="rng-multi-btn w-full border border-dashed border-slate-300 text-slate-500 text-[10px] font-bold py-2 mb-2 uppercase hover:bg-slate-50" data-id="${id}" data-min="${params.randomizer.min}" data-max="${params.randomizer.max}">Generate Targets</button>
                 <div id="rng-rows-${id}" class="space-y-1"></div>
                 <div class="flex justify-between text-xs font-bold text-slate-500 uppercase mt-2">
-                    <span>Target Err: ${params.tolerance_yards || params.tolerance_feet || 'N/A'}</span>
+                    <span>Target Err: ${params.tolerance_yards || params.tolerance_feet || 'N/A'} ${unit}</span>
                     <span>Avg Err: <span id="rng-score-${id}" class="text-tech-blue">--</span></span>
                 </div>
             </div>`;
         } else if (params.scoreType === 'streak') {
              placeholderText = `Enter Max Streak (e.g., ${params.targetStreak})`;
         } else if (params.scoreType === 'score_inverse') {
-             placeholderText = `Enter Total Score (e.g., 20)`;
+             placeholderText = `Enter Total Score (e.g., ${params.targetScore || 20})`;
         } else if (params.scoreType === 'numeric_high') {
-             placeholderText = `Enter Avg Speed/Smash (e.g., 112)`;
+             placeholderText = `Enter Avg Metric (e.g., 112)`;
+        } else if (params.metricType === 'COUNT') {
+             placeholderText = `Enter count (e.g., ${params.goalThreshold || 7}/${params.targetShots || 10})`;
         }
 
 
@@ -527,8 +528,9 @@ function handleMultiTargetGen(btn) {
     let html = `<div class="grid grid-cols-4 gap-2 text-[10px] font-bold text-slate-500 mb-1"><span>Target</span><span class="text-center">Shot 1</span><span class="text-center">Shot 2</span><span class="text-right">Delta</span></div>`;
     for(let i=0; i<count; i++) {
         const t = Math.floor(Math.random()*(max-min+1))+min;
+        const unit = params.randomizer.unit || 'y';
         html += `<div class="grid grid-cols-4 gap-2 items-center mb-1 multi-row" data-target="${t}">
-            <div class="bg-slate-100 text-slate-900 font-bold text-center py-1 rounded text-xs">${t}${params.randomizer.unit || 'y'}</div>
+            <div class="bg-slate-100 text-slate-900 font-bold text-center py-1 rounded text-xs">${t}${unit}</div>
             <input type="number" class="input-lcd h-7 text-center multi-inp text-xs" placeholder="-">
             <input type="number" class="input-lcd h-7 text-center multi-inp text-xs" placeholder="-">
             <div class="text-right text-xs font-bold text-slate-500 py-1 row-delta">--</div>
@@ -605,10 +607,9 @@ async function renderAnalytics() {
         const id = "c-" + Math.random().toString(36).substr(2,9);
         box.innerHTML += `<div class="tech-card p-4 mb-4"><div class="text-xs font-bold mb-2">${name}</div><div class="h-32"><canvas id="${id}"></canvas></div></div>`;
         
-        // Determine if target line is needed (SD/Error drills tend to be lower is better)
         const drillInfo = allDrillsMap.get(Object.keys(DRILLS).flatMap(k=>DRILLS[k]).find(d=>d.name===name)?.id);
         
-        // Customize options based on score type
+        // Inverse plotting logic (lower is better for SD/Error/Score)
         const isInverse = drillInfo && (drillInfo.scoreType === 'sd' || drillInfo.scoreType === 'smart_log_avg_error' || drillInfo.scoreType === 'score_inverse');
         
         const options = {
@@ -644,5 +645,5 @@ function switchTab(t) {
     if(t === "setup") renderPlanUI();
     if(t === "history") renderHistory();
     if(t === "analytics") renderAnalytics();
-    if(t === "log") renderSelectedDrills(); 
+    if (t === "log") renderSelectedDrills(); 
 }
