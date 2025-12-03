@@ -1,6 +1,6 @@
 // ================================
-// app.js — ULTIMATE VERSION (FIREBASE AUTH)
-// Features: User Login, Cloud Sync, Auto-Save Drafts
+// app.js — ULTIMATE VERSION (FIREBASE AUTH + UX IMPROVEMENTS)
+// Features: User Login, Cloud Sync, Auto-Save Drafts, Reset Button
 // ================================
 
 import { DRILLS } from "./drills.js";
@@ -62,11 +62,9 @@ function handleAuthChange(user) {
     const userProfile = $("user-profile");
     
     if (user) {
-        // User is logged in
         if(loginScreen) loginScreen.classList.add("hidden");
         if(appScreen) appScreen.classList.remove("hidden");
         
-        // Show profile info
         if(userProfile) {
             userProfile.innerHTML = `
                 <div class="flex items-center gap-3">
@@ -84,12 +82,8 @@ function handleAuthChange(user) {
                 });
             }
         }
-
-        // Initialize App Data
         initAppData(); 
-        
     } else {
-        // User is logged out
         if(loginScreen) loginScreen.classList.remove("hidden");
         if(appScreen) appScreen.classList.add("hidden");
     }
@@ -372,9 +366,40 @@ function renderDrillSelect() {
   });
 }
 
+// NEW: Render a clear button when drills are selected
 function renderPreviewList() {
     const badge = $("drill-count-badge");
+    const container = $("drill-count-container"); // We might need to create this in HTML or just append
+    
     if(badge) badge.innerText = selectedDrillIds.size;
+
+    // Check if we need to inject a "Clear All" button
+    let clearBtn = $("clear-drills-btn");
+    const drillsHeader = $("drill-select").previousElementSibling; // The card header div
+    
+    if (selectedDrillIds.size > 0) {
+        if (!clearBtn && drillsHeader) {
+            clearBtn = document.createElement("button");
+            clearBtn.id = "clear-drills-btn";
+            clearBtn.className = "text-xs text-red-500 font-bold hover:text-red-700 ml-auto mr-2";
+            clearBtn.innerText = "Clear All";
+            clearBtn.addEventListener("click", () => {
+                if(confirm("Clear current selection?")) {
+                    selectedDrillIds.clear();
+                    selectedSkills.clear();
+                    renderSkills();
+                    renderDrillSelect();
+                    renderPreviewList();
+                    updateGoToLogButton();
+                    triggerAutoSave();
+                }
+            });
+            // Insert before the badge
+            drillsHeader.insertBefore(clearBtn, drillsHeader.lastElementChild);
+        }
+    } else {
+        if (clearBtn) clearBtn.remove();
+    }
 }
 
 // ================================
@@ -570,6 +595,7 @@ function initSaveSession() {
 // INIT & NAVIGATION
 // ================================
 function generateSessionPreset(type) {
+    // 1. RESET EXISTING SELECTION FIRST (Key change!)
     selectedDrillIds.clear(); 
     selectedSkills.clear();
     
@@ -587,6 +613,7 @@ function generateSessionPreset(type) {
         }
     });
     
+    // Force full re-render with new state
     renderSkills(); 
     renderDrillSelect(); 
     renderPreviewList(); 
@@ -719,26 +746,6 @@ function switchTab(t) {
     window.scrollTo(0,0);
 }
 
-// ----------------------
-// DATA & APP INIT
-// ----------------------
-function initAppData() {
-    createModal(); 
-    restoreDraft(); 
-    renderSkills(); 
-    renderDrillSelect(); 
-    initSaveSession();
-    
-    // Wire up events
-    document.querySelectorAll(".tab-button").forEach(b => b.addEventListener("click", ()=>switchTab(b.dataset.tab)));
-    document.querySelectorAll(".preset-btn").forEach(btn => {
-        btn.addEventListener("click", () => generateSessionPreset(btn.dataset.type));
-    });
-    
-    const goLog = $("go-to-log");
-    if(goLog) goLog.addEventListener("click", ()=> { if(selectedDrillIds.size) switchTab("log"); });
-}
-
 // Main Init: Wait for Auth
 document.addEventListener("DOMContentLoaded", () => {
     // Show login screen initially
@@ -756,34 +763,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 // Auth state listener below will handle the rest
             } catch (error) {
                 alert("Login failed: " + error.message);
-            }
-        });
-    }
-
-    // Wire up Email Login
-    const emailLoginBtn = $("email-login-btn");
-    if(emailLoginBtn) {
-        emailLoginBtn.addEventListener("click", async () => {
-            const email = $("email-input").value;
-            const password = $("password-input").value;
-            try {
-                await loginWithEmail(email, password);
-            } catch (error) {
-                alert("Login failed: " + error.message);
-            }
-        });
-    }
-
-    // Wire up Email Signup
-    const emailSignupBtn = $("email-signup-btn");
-    if(emailSignupBtn) {
-        emailSignupBtn.addEventListener("click", async () => {
-            const email = $("email-input").value;
-            const password = $("password-input").value;
-            try {
-                await signupWithEmail(email, password);
-            } catch (error) {
-                alert("Signup failed: " + error.message);
             }
         });
     }
