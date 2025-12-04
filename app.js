@@ -1,6 +1,5 @@
 // ================================
-// app.js — SCRATCH EDITION WITH WEEKLY PLANS
-// FINAL VERSION: Fixed Duplicate Declarations
+// app.js — SCRATCH ELITE: COACH MODE
 // ================================
 
 import { DRILLS } from "./drills.js";
@@ -46,6 +45,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const parsed = JSON.parse(rawPlan);
             if (!(parsed && parsed.tasks && Array.isArray(parsed.tasks))) {
                 localStorage.removeItem("golf_active_plan");
+            } else {
+                activePlan = parsed;
             }
         }
         userProgression = JSON.parse(localStorage.getItem('golf_progression') || '{}');
@@ -86,6 +87,7 @@ function handleAuthChange(user) {
 
 function initAppData() {
     try { restoreDraft(); } catch (e) { clearDraft(); }
+    renderPriorityUI(); // New Coach Mode UI
     renderPlanUI(); 
     renderSkills();
     renderDrillSelect();
@@ -110,43 +112,139 @@ function getDrillParams(id) {
 }
 
 // ----------------------
-// PLAN BUILDER LOGIC
+// NEW: COACH MODE LOGIC
 // ----------------------
-function generateWeekPlan() {
-    const checks = document.querySelectorAll('.plan-focus-check:checked');
-    const areas = Array.from(checks).map(c => c.value);
-    
-    if(areas.length === 0) { alert("Select at least one focus area."); return; }
 
-    const tasks = [];
-    areas.forEach(area => {
-        const categoryDrills = DRILLS[area] || [];
+function renderPriorityUI() {
+    const container = $("priority-container");
+    if(!container) return;
+    container.innerHTML = "";
+
+    const categories = ["Driver", "Irons", "Wedges", "Short Game", "Putting"];
+
+    categories.forEach(cat => {
+        const catId = cat.toLowerCase().replace(" ", "_");
+        // Find skills for this category
+        const catSkills = SKILLS.filter(s => s.category === cat);
         
-        if(categoryDrills.length > 0) {
-            let chosen = new Set();
-            let attempts = 0;
-            while(chosen.size < 3 && chosen.size < categoryDrills.length && attempts < 50) {
-                const randomDrill = categoryDrills[Math.floor(Math.random() * categoryDrills.length)];
-                if (!chosen.has(randomDrill.id)) {
-                    chosen.add(randomDrill.id);
-                    tasks.push({ 
-                        id: randomDrill.id, 
-                        cat: area, 
-                        done: 0, 
-                        target: 3 
-                    });
-                }
-                attempts++;
+        const div = document.createElement("div");
+        div.className = "border border-slate-200 rounded-sm p-3 bg-white";
+        div.innerHTML = `
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-xs font-bold text-slate-900 uppercase">${cat}</span>
+                <select class="plan-rank-select input-lcd text-[10px] py-1 px-2 w-28" data-cat="${catId}">
+                    <option value="4">High Priority</option>
+                    <option value="2" selected>Normal</option>
+                    <option value="1">Low Priority</option>
+                    <option value="0">Skip</option>
+                </select>
+            </div>
+            <div class="space-y-1 pl-2 border-l-2 border-slate-100" id="sub-${catId}">
+                ${catSkills.map(s => `
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" class="plan-sub-check accent-tech-blue" value="${s.id}" checked>
+                        <span class="text-[10px] text-slate-500 hover:text-slate-800 transition">${s.label}</span>
+                    </label>
+                `).join('')}
+            </div>
+        `;
+        
+        // Hide sub-skills if "Skip" is selected
+        const select = div.querySelector("select");
+        select.addEventListener("change", (e) => {
+            const sub = div.querySelector(`#sub-${catId}`);
+            if(e.target.value === "0") {
+                sub.classList.add("hidden");
+                div.classList.add("opacity-50");
+            } else {
+                sub.classList.remove("hidden");
+                div.classList.remove("opacity-50");
+            }
+        });
+
+        container.appendChild(div);
+    });
+}
+
+function generateSmartPlan() {
+    const timeBudget = parseInt($("plan-time-budget").value) || 120; // Minutes
+    const tasks = [];
+    
+    // 1. Calculate Weights
+    let totalWeight = 0;
+    const categoryConfigs = [];
+
+    document.querySelectorAll(".plan-rank-select").forEach(sel => {
+        const cat = sel.dataset.cat;
+        const weight = parseInt(sel.value);
+        
+        if (weight > 0) {
+            // Get preferred skills
+            const subChecks = document.querySelectorAll(`#sub-${cat} .plan-sub-check:checked`);
+            const preferredSkills = Array.from(subChecks).map(c => c.value);
+            
+            // Safety: If nothing checked, default to all skills in category
+            const effectiveSkills = preferredSkills.length > 0 
+                ? preferredSkills 
+                : SKILLS.filter(s => s.category.toLowerCase().replace(" ","_") === cat).map(s=>s.id);
+
+            categoryConfigs.push({ cat, weight, skills: effectiveSkills });
+            totalWeight += weight;
+        }
+    });
+
+    if (categoryConfigs.length === 0) {
+        alert("Please assign a priority to at least one category.");
+        return;
+    }
+
+    // 2. Distribute Time & Select Drills
+    categoryConfigs.forEach(config => {
+        // Allocated Minutes = (Weight / Total) * Budget
+        let allocatedMins = Math.floor((config.weight / totalWeight) * timeBudget);
+        
+        // COACH LOGIC: Minimum effective dose is 10 mins if selected
+        if (allocatedMins < 10) allocatedMins = 10;
+
+        let filledMins = 0;
+        const catDrills = DRILLS[config.cat] || [];
+        
+        // Filter drills by sub-skills
+        let validDrills = catDrills.filter(d => d.skills.some(s => config.skills.includes(s)));
+        
+        // Fallback if filtering is too strict
+        if (validDrills.length === 0) validDrills = catDrills;
+
+        // Shuffle
+        validDrills.sort(() => Math.random() - 0.5);
+
+        // Fill Bucket
+        for (const drill of validDrills) {
+            if (filledMins >= allocatedMins) break;
+            
+            // Allow slight overflow (+5m) to complete a drill
+            if (filledMins + drill.duration > allocatedMins + 5) continue;
+
+            // Avoid duplicates in the plan
+            if (!tasks.find(t => t.id === drill.id)) {
+                tasks.push({ 
+                    id: drill.id, 
+                    cat: config.cat, 
+                    done: 0, 
+                    target: 1 // Default 1 set
+                });
+                filledMins += drill.duration;
             }
         }
     });
 
-    if (tasks.length === 0) {
-        alert("No drills found for selected areas.");
-        return;
-    }
-
-    activePlan = { focusAreas: areas, tasks: tasks, created: new Date().toISOString() };
+    // 3. Save & Render
+    activePlan = { 
+        totalTime: timeBudget, 
+        tasks: tasks, 
+        created: new Date().toISOString() 
+    };
+    
     localStorage.setItem("golf_active_plan", JSON.stringify(activePlan));
     renderPlanUI();
 }
@@ -175,6 +273,7 @@ function renderPlanUI() {
     
     if(progBar) progBar.style.width = `${pct}%`;
 
+    // Group tasks by Category for cleaner display
     activePlan.tasks.forEach((task) => {
         const drill = getDrillParams(task.id);
         if (!drill) return; 
@@ -187,7 +286,7 @@ function renderPlanUI() {
         
         item.innerHTML = `
             <div>
-                <div class="text-[10px] uppercase font-bold text-slate-400">${drill.category || task.cat} - Lvl ${drill.currentLevel}</div>
+                <div class="text-[10px] uppercase font-bold text-slate-400">${drill.category || task.cat} - ${drill.duration}m</div>
                 <div class="text-xs font-bold text-slate-900">${drill.name}</div>
             </div>
             <div class="flex items-center gap-3">
@@ -249,8 +348,6 @@ function restoreDraft() {
     
     if(draft.skills) draft.skills.forEach(s => selectedSkills.add(s));
     if(draft.drills) draft.drills.forEach(id => selectedDrillIds.add(id));
-    
-    // UI updates happen in initAppData -> render...
 }
 
 // ----------------------
@@ -576,13 +673,14 @@ function setupGlobalClicks() {
             } catch(e) {
                 console.error("Google Login Failed:", e);
                 alert("Google Login failed. Check the console for details.");
-                // Removed anonymous fallback per request.
-                // UI will remain on login screen if auth fails.
             }
         }
         if (btn.dataset.action === "logout") logout().then(() => location.reload());
         if (btn.classList.contains("tab-button")) switchTab(btn.dataset.tab);
-        if (btn.id === "generate-plan-btn") generateWeekPlan();
+        
+        // --- NEW CLICK HANDLER ---
+        if (btn.id === "generate-smart-plan-btn") generateSmartPlan();
+        
         if (btn.id === "delete-plan-btn") { activePlan = null; localStorage.removeItem("golf_active_plan"); renderPlanUI(); }
         
         if (btn.classList.contains("load-plan-drill")) {
