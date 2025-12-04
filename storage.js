@@ -1,4 +1,5 @@
-// storage.js — CANVAS ENVIRONMENT & ANONYMOUS SIGN-IN FIX
+// storage.js — CANVAS ENVIRONMENT FIX
+// STRICT CONFIGURATION: Uses ONLY the platform-provided config.
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { 
@@ -21,49 +22,48 @@ const DRAFT_KEY = "golf_session_draft";
 
 let db, auth;
 
-// CRITICAL FIX: Robustly retrieve config from environment or fallback
+// STRICTLY parse the global variable. No manual fallbacks.
+// This ensures we get the valid config injected by the environment.
 let firebaseConfig;
 try {
     if (typeof __firebase_config !== 'undefined') {
         firebaseConfig = JSON.parse(__firebase_config);
+        console.log("✅ Config found. Project ID:", firebaseConfig.projectId);
     } else {
-        console.warn("⚠️ __firebase_config not found. Using fallback/placeholder.");
-        // Placeholder to prevent "projectId missing" crash on init, 
-        // though auth will still fail if this isn't replaced by real data.
-        firebaseConfig = { apiKey: "placeholder", projectId: "placeholder" }; 
+        throw new Error("Global __firebase_config is missing.");
     }
 } catch (e) {
-    console.error("Error parsing firebase config:", e);
-    firebaseConfig = { apiKey: "placeholder", projectId: "placeholder" };
+    console.error("CRITICAL: Failed to parse Firebase Config.", e);
+    alert("System Error: App configuration missing. Please reload.");
 }
 
+// Initialize Firebase services
 try {
-    const app = initializeApp(firebaseConfig);
-    db = getFirestore(app);
-    auth = getAuth(app);
-    
-    // Check initial auth state and sign in anonymously if no user is found.
-    onAuthStateChanged(auth, async (user) => {
-        if (!user) {
-             console.log("No persistent user found. Attempting Anonymous Sign-in.");
-             try {
-                await signInAnonymously(auth);
-             } catch (err) {
-                 console.warn("Anonymous sign-in failed (likely due to invalid config):", err);
-             }
-        }
-    });
-    
-    console.log("✅ Firebase Core Initialized.");
+    if (firebaseConfig) {
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+        console.log("✅ Firebase Core Initialized.");
+    }
 } catch (error) {
-    console.error("❌ Firebase Init Error (Check Configuration):", error);
+    console.error("❌ Firebase Init Error:", error);
 }
 
 // ============================================================
 // AUTHENTICATION
 // ============================================================
+
+/**
+ * Signs in the user using Google Popup.
+ * Must be called from a user-triggered event (like a button click).
+ */
 export async function loginWithGoogle() {
-    if (!auth) throw new Error("Authentication service is not ready.");
+    if (!auth) {
+        console.error("Auth object is null. Init failed.");
+        alert("System Error: Auth service not ready.");
+        return;
+    }
+    
     const provider = new GoogleAuthProvider();
     try {
         const result = await signInWithPopup(auth, provider);
@@ -71,17 +71,13 @@ export async function loginWithGoogle() {
         return result.user;
     } catch (error) {
         console.error("Login Error:", error);
+        alert("Login Failed: " + error.message);
         throw error;
     }
 }
 
 export function logout() {
-    // If the user is currently anonymous, sign them out and immediately back in
-    if (auth.currentUser && auth.currentUser.isAnonymous) {
-        return signOut(auth).then(() => {
-            return signInAnonymously(auth); 
-        });
-    }
+    if (!auth) return Promise.resolve();
     return signOut(auth);
 }
 
@@ -115,37 +111,22 @@ export function clearDraft() {
 // ============================================================
 
 export async function saveSession(session) {
-    console.log("Attempting to save session...", session);
-
-    if (!db) { 
-        alert("Database not connected."); 
-        return false; 
-    }
-    
-    const user = auth?.currentUser;
-    if (!user) {
-        console.error("❌ Save failed: No authenticated user.");
+    if (!db || !auth || !auth.currentUser) { 
         alert("You must be logged in to save history."); 
         return false; 
     }
     
-    // Prevent saving if user is anonymous to avoid filling public space unnecessarily
-    if (user.isAnonymous) {
-        alert("Session saved locally (Anonymous mode). Sign in with Google to save permanently.");
-        return true; 
-    }
+    const user = auth.currentUser;
     
     try {
-        // Prepare data payload
         const sessionWithUser = {
             ...session,
             userId: user.uid,
             userEmail: user.email || "anonymous",
-            timestamp: Date.now() // Helper for sorting
+            timestamp: Date.now()
         };
 
-        // Check for undefined values which crash Firestore
-        // (Simple sanitization)
+        // Remove undefined values to prevent Firestore crash
         const cleanSession = JSON.parse(JSON.stringify(sessionWithUser));
 
         const docRef = await addDoc(collection(db, COLLECTION_NAME), cleanSession);
@@ -156,9 +137,8 @@ export async function saveSession(session) {
 
     } catch (e) {
         console.error("❌ Firestore Write Error: ", e);
-        
         if(e.code === 'permission-denied') {
-            alert("Permission denied! \n1. Go to Firebase Console > Firestore > Rules.\n2. Change to: allow read, write: if true;");
+            alert("Error: Permission denied. Check database rules.");
         } else {
             alert("Error saving: " + e.message);
         }
@@ -169,17 +149,12 @@ export async function saveSession(session) {
 export async function loadSessions() {
     if (!db || !auth || !auth.currentUser) return [];
     
-    if (auth.currentUser.isAnonymous) {
-        console.log("User is anonymous. Skipping cloud history load.");
-        return [];
-    }
-
     const sessions = [];
     try {
         const q = query(
             collection(db, COLLECTION_NAME), 
             where("userId", "==", auth.currentUser.uid), 
-            orderBy("createdAt", "desc")
+            orderBy("timestamp", "desc") // Sort by timestamp we added
         );
         
         const querySnapshot = await getDocs(q);
@@ -189,15 +164,19 @@ export async function loadSessions() {
         console.log(`Loaded ${sessions.length} sessions.`);
     } catch (e) {
         console.error("Error loading documents: ", e);
-        if(e.message && e.message.includes("index")) {
-             alert("Missing Index! Open console (F12) and click the link in the error message.");
+        // Fallback: If index is missing, try loading without sort
+        if(e.code === 'failed-precondition') {
+             console.warn("Index missing. Loading unsorted data.");
+             const q2 = query(collection(db, COLLECTION_NAME), where("userId", "==", auth.currentUser.uid));
+             const snap = await getDocs(q2);
+             snap.forEach((doc) => sessions.push({ id: doc.id, ...doc.data() }));
         }
     }
     return sessions;
 }
 
 export async function deleteSessionFromCloud(id) {
-    if (!db || !auth.currentUser || auth.currentUser.isAnonymous) return;
+    if (!db || !auth.currentUser) return;
     try {
         await deleteDoc(doc(db, COLLECTION_NAME, id));
         console.log("Deleted session:", id);
