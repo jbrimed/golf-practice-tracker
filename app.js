@@ -1,6 +1,6 @@
 // ================================
 // app.js — SCRATCH EDITION WITH WEEKLY PLANS
-// FINAL VERSION compatible with the fixed storage.js.
+// FINAL VERSION: Fixed Duplicate Declarations
 // ================================
 
 import { DRILLS } from "./drills.js";
@@ -249,6 +249,8 @@ function restoreDraft() {
     
     if(draft.skills) draft.skills.forEach(s => selectedSkills.add(s));
     if(draft.drills) draft.drills.forEach(id => selectedDrillIds.add(id));
+    
+    // UI updates happen in initAppData -> render...
 }
 
 // ----------------------
@@ -574,7 +576,8 @@ function setupGlobalClicks() {
             } catch(e) {
                 console.error("Google Login Failed:", e);
                 alert("Google Login failed. Check the console for details.");
-                handleAuthChange(null); 
+                // Removed anonymous fallback per request.
+                // UI will remain on login screen if auth fails.
             }
         }
         if (btn.dataset.action === "logout") logout().then(() => location.reload());
