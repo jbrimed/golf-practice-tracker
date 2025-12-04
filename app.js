@@ -1,7 +1,6 @@
 // ================================
 // app.js — SCRATCH EDITION WITH WEEKLY PLANS
-// Features: Weekly Plan Builder, Raw Metric Logging, Dynamic Leveling
-// Compatible with the updated storage.js file.
+// FINAL VERSION compatible with the fixed storage.js.
 // ================================
 
 import { DRILLS } from "./drills.js";
@@ -56,7 +55,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-        // subscribeToAuth will handle the initial sign-in state (anonymous or Google)
         subscribeToAuth((user) => handleAuthChange(user));
     } catch (e) { console.error("Auth subscription failed:", e); initAppData(); }
 });
@@ -81,7 +79,6 @@ function handleAuthChange(user) {
         }
         initAppData();
     } else {
-        // Only show login if Firebase fails to provide any user (even anonymous)
         if(loginScreen) loginScreen.classList.remove("hidden");
         if(appScreen) appScreen.classList.add("hidden");
     }
@@ -577,6 +574,7 @@ function setupGlobalClicks() {
             } catch(e) {
                 console.error("Google Login Failed:", e);
                 alert("Google Login failed. Check the console for details.");
+                // Fallback to anonymous state if Google fails
                 handleAuthChange(null); 
             }
         }
