@@ -1,5 +1,5 @@
-// storage.js — CANVAS ENVIRONMENT FIX
-// STRICT CONFIGURATION: Uses ONLY the platform-provided config.
+// storage.js — STRICT GOOGLE AUTH
+// Uses platform config ONLY. No anonymous fallback.
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { 
@@ -10,8 +10,7 @@ import {
     signInWithPopup, 
     GoogleAuthProvider, 
     signOut, 
-    onAuthStateChanged,
-    signInAnonymously
+    onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 // ============================================================
@@ -22,8 +21,7 @@ const DRAFT_KEY = "golf_session_draft";
 
 let db, auth;
 
-// STRICTLY parse the global variable. No manual fallbacks.
-// This ensures we get the valid config injected by the environment.
+// STRICTLY parse the global variable.
 let firebaseConfig;
 try {
     if (typeof __firebase_config !== 'undefined') {
@@ -66,6 +64,7 @@ export async function loginWithGoogle() {
     
     const provider = new GoogleAuthProvider();
     try {
+        console.log("Attempting Google Sign-In...");
         const result = await signInWithPopup(auth, provider);
         console.log("✅ Logged in as:", result.user.email);
         return result.user;
@@ -122,7 +121,7 @@ export async function saveSession(session) {
         const sessionWithUser = {
             ...session,
             userId: user.uid,
-            userEmail: user.email || "anonymous",
+            userEmail: user.email,
             timestamp: Date.now()
         };
 
