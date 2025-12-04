@@ -1,5 +1,5 @@
 // storage.js — STRICT GOOGLE AUTH
-// Uses platform config ONLY. No anonymous fallback.
+// Fixed: Hardcoded Configuration
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { 
@@ -14,38 +14,28 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 // ============================================================
-// CANVAS ENVIRONMENT SETUP
+// CONFIGURATION & INITIALIZATION
 // ============================================================
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCt-LkGkr0_P2kRt0EMaDbWAUGM27c02K4",
+  authDomain: "golf-app-practice.firebaseapp.com",
+  projectId: "golf-app-practice",
+  storageBucket: "golf-app-practice.firebasestorage.app",
+  messagingSenderId: "438728696738",
+  appId: "1:438728696738:web:1f3cccff35c35407d748fb",
+  measurementId: "G-BZN8HXMEXK"
+};
+
+// Initialize Firebase services immediately
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+console.log("✅ Firebase Initialized with Project ID:", firebaseConfig.projectId);
+
 const COLLECTION_NAME = "sessions";
 const DRAFT_KEY = "golf_session_draft";
-
-let db, auth;
-
-// STRICTLY parse the global variable.
-let firebaseConfig;
-try {
-    if (typeof __firebase_config !== 'undefined') {
-        firebaseConfig = JSON.parse(__firebase_config);
-        console.log("✅ Config found. Project ID:", firebaseConfig.projectId);
-    } else {
-        throw new Error("Global __firebase_config is missing.");
-    }
-} catch (e) {
-    console.error("CRITICAL: Failed to parse Firebase Config.", e);
-    alert("System Error: App configuration missing. Please reload.");
-}
-
-// Initialize Firebase services
-try {
-    if (firebaseConfig) {
-        const app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-        auth = getAuth(app);
-        console.log("✅ Firebase Core Initialized.");
-    }
-} catch (error) {
-    console.error("❌ Firebase Init Error:", error);
-}
 
 // ============================================================
 // AUTHENTICATION
@@ -57,7 +47,6 @@ try {
  */
 export async function loginWithGoogle() {
     if (!auth) {
-        console.error("Auth object is null. Init failed.");
         alert("System Error: Auth service not ready.");
         return;
     }
@@ -110,7 +99,7 @@ export function clearDraft() {
 // ============================================================
 
 export async function saveSession(session) {
-    if (!db || !auth || !auth.currentUser) { 
+    if (!auth || !auth.currentUser) { 
         alert("You must be logged in to save history."); 
         return false; 
     }
@@ -125,7 +114,7 @@ export async function saveSession(session) {
             timestamp: Date.now()
         };
 
-        // Remove undefined values to prevent Firestore crash
+        // Deep copy to remove any undefined values that crash Firestore
         const cleanSession = JSON.parse(JSON.stringify(sessionWithUser));
 
         const docRef = await addDoc(collection(db, COLLECTION_NAME), cleanSession);
@@ -137,7 +126,7 @@ export async function saveSession(session) {
     } catch (e) {
         console.error("❌ Firestore Write Error: ", e);
         if(e.code === 'permission-denied') {
-            alert("Error: Permission denied. Check database rules.");
+            alert("Error: Permission denied. Check database rules in Firebase Console.");
         } else {
             alert("Error saving: " + e.message);
         }
@@ -146,14 +135,15 @@ export async function saveSession(session) {
 }
 
 export async function loadSessions() {
-    if (!db || !auth || !auth.currentUser) return [];
+    if (!auth || !auth.currentUser) return [];
     
     const sessions = [];
     try {
+        // Attempt to sort by timestamp (requires Firestore Index)
         const q = query(
             collection(db, COLLECTION_NAME), 
             where("userId", "==", auth.currentUser.uid), 
-            orderBy("timestamp", "desc") // Sort by timestamp we added
+            orderBy("timestamp", "desc")
         );
         
         const querySnapshot = await getDocs(q);
@@ -163,9 +153,10 @@ export async function loadSessions() {
         console.log(`Loaded ${sessions.length} sessions.`);
     } catch (e) {
         console.error("Error loading documents: ", e);
-        // Fallback: If index is missing, try loading without sort
+        
+        // Fallback: If index is missing, load unsorted
         if(e.code === 'failed-precondition') {
-             console.warn("Index missing. Loading unsorted data.");
+             console.warn("Index missing. Loading unsorted data as fallback.");
              const q2 = query(collection(db, COLLECTION_NAME), where("userId", "==", auth.currentUser.uid));
              const snap = await getDocs(q2);
              snap.forEach((doc) => sessions.push({ id: doc.id, ...doc.data() }));
@@ -175,7 +166,7 @@ export async function loadSessions() {
 }
 
 export async function deleteSessionFromCloud(id) {
-    if (!db || !auth.currentUser) return;
+    if (!auth.currentUser) return;
     try {
         await deleteDoc(doc(db, COLLECTION_NAME, id));
         console.log("Deleted session:", id);
