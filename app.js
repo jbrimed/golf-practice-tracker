@@ -574,7 +574,6 @@ function setupGlobalClicks() {
             } catch(e) {
                 console.error("Google Login Failed:", e);
                 alert("Google Login failed. Check the console for details.");
-                // Fallback to anonymous state if Google fails
                 handleAuthChange(null); 
             }
         }
@@ -707,7 +706,3 @@ function switchTab(t) {
     if(t === "analytics") renderAnalytics();
     if(t === "log") renderSelectedDrills(); 
 }
-
-function saveDraft(data) { localStorage.setItem("golf_draft", JSON.stringify(data)); }
-function loadDraft() { return JSON.parse(localStorage.getItem("golf_draft")); }
-function clearDraft() { localStorage.removeItem("golf_draft"); }
