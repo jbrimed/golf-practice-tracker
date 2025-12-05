@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Golf Practice Hub | Scratch Ed.</title>
+  <title>Golf Practice Hub | Coach Mode</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   
@@ -32,12 +32,15 @@
     .input-lcd:focus { background-color: white; border-color: #2563eb; outline: none; }
     .hidden { display: none !important; }
     .nav-item.active { color: #2563eb; border-top: 2px solid #2563eb; font-weight: 600; }
+    /* Custom Scrollbar for skills area */
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
   </style>
 </head>
 
 <body class="pb-24">
 
-  <!-- LOGIN -->
   <div id="login-screen" class="min-h-screen flex flex-col items-center justify-center p-6 bg-slate-50">
     <div class="w-full max-w-sm space-y-8 bg-white p-8 border border-slate-200 shadow-sm rounded-sm">
       <div class="text-center space-y-2">
@@ -48,14 +51,13 @@
     </div>
   </div>
 
-  <!-- APP -->
   <div id="app-screen" class="hidden animate-fade-in">
     
     <header class="bg-white/90 backdrop-blur border-b border-slate-200 sticky top-0 z-50">
       <div class="max-w-md mx-auto px-4 py-3 flex justify-between items-center">
         <div class="flex items-center gap-2">
           <div class="h-2 w-2 bg-tech-orange rounded-full"></div>
-          <span class="text-xs font-bold text-slate-700 uppercase tracking-wide">Active Session</span>
+          <span class="text-xs font-bold text-slate-700 uppercase tracking-wide">Coach Mode</span>
         </div>
         <div id="user-profile" class="text-right"></div>
       </div>
@@ -63,19 +65,15 @@
 
     <main class="max-w-md mx-auto px-4 py-6 space-y-8">
 
-      <!-- 1. PLAN / SETUP TAB -->
       <section id="setup" class="tab-pane space-y-6">
         
-        <!-- PLAN BUILDER UI -->
-        <div id="plan-section">
-          <!-- Active Plan View (Hidden by default) -->
+        <div id="plan-section" class="mb-8">
+          
           <div id="active-plan-view" class="hidden space-y-4">
              <div class="flex justify-between items-center px-1 border-b border-slate-200 pb-2">
-                <h3 class="text-xs text-tech-blue uppercase font-bold">Weekly Protocol</h3>
-                <button id="delete-plan-btn" class="text-[10px] text-red-500 hover:text-red-700 font-bold uppercase">Reset Plan</button>
+                <h3 class="text-xs text-tech-blue uppercase font-bold">Active Protocol</h3>
+                <button id="delete-plan-btn" class="text-[10px] text-red-500 hover:text-red-700 font-bold uppercase">Reset</button>
              </div>
-             
-             <!-- Progress Bar -->
              <div class="w-full bg-slate-100 rounded-full h-2 mb-4">
                 <div id="plan-progress-bar" class="bg-tech-blue h-2 rounded-full" style="width: 0%"></div>
              </div>
@@ -83,30 +81,38 @@
              <div id="plan-tasks-list" class="space-y-2"></div>
           </div>
 
-          <!-- Plan Creator (Visible if no plan) -->
           <div id="create-plan-view" class="space-y-4">
-             <div class="tech-card p-4">
-                <h3 class="text-sm font-bold text-slate-900 mb-1">Build Weekly Plan</h3>
-                <p class="text-xs text-slate-500 mb-4">Select focus areas. System assigns 3 tiered drills per area.</p>
-                
-                <div class="space-y-2 mb-4">
-                   <label class="flex items-center space-x-2"><input type="checkbox" class="plan-focus-check accent-tech-blue" value="driver"><span class="text-xs font-bold uppercase">Driving</span></label>
-                   <label class="flex items-center space-x-2"><input type="checkbox" class="plan-focus-check accent-tech-blue" value="irons"><span class="text-xs font-bold uppercase">Iron Play</span></label>
-                   <label class="flex items-center space-x-2"><input type="checkbox" class="plan-focus-check accent-tech-blue" value="wedges"><span class="text-xs font-bold uppercase">Wedges</span></label>
-                   <label class="flex items-center space-x-2"><input type="checkbox" class="plan-focus-check accent-tech-blue" value="short_game"><span class="text-xs font-bold uppercase">Short Game</span></label>
-                   <label class="flex items-center space-x-2"><input type="checkbox" class="plan-focus-check accent-tech-blue" value="putting"><span class="text-xs font-bold uppercase">Putting</span></label>
+             <div class="tech-card p-4 space-y-4">
+                <div class="border-b border-slate-100 pb-2">
+                    <h3 class="text-sm font-bold text-slate-900">Coach Mode</h3>
+                    <p class="text-xs text-slate-500">I'll build a weighted plan based on your priorities.</p>
                 </div>
-                <button id="generate-plan-btn" class="w-full bg-tech-blue text-white text-xs font-bold py-3 rounded-sm uppercase tracking-wider">Generate Plan</button>
+
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Session Duration</label>
+                    <select id="plan-time-budget" class="w-full input-lcd p-2 text-sm bg-slate-50">
+                        <option value="60">1 Hour</option>
+                        <option value="90">1.5 Hours</option>
+                        <option value="120" selected>2 Hours</option>
+                        <option value="150">2.5 Hours</option>
+                        <option value="180">3 Hours</option>
+                        <option value="240">4 Hours</option>
+                    </select>
+                </div>
+
+                <div id="priority-container" class="space-y-3"></div>
+
+                <button id="generate-smart-plan-btn" class="w-full bg-tech-blue text-white text-xs font-bold py-3 rounded-sm uppercase tracking-wider shadow-sm mt-4 hover:bg-blue-600 transition">
+                    Generate Plan
+                </button>
              </div>
              
-             <!-- Manual Quick Start -->
              <div class="text-center pt-2">
                  <p class="text-[10px] text-slate-400 font-bold uppercase mb-2">- OR MANUAL SELECT -</p>
              </div>
           </div>
         </div>
 
-        <!-- Standard Drill Selector (Always available) -->
         <div id="manual-selection-area">
             <div class="grid grid-cols-2 gap-3 mb-4">
                 <div id="skill-select" class="tech-card p-0 max-h-48 overflow-y-auto custom-scrollbar border-slate-200"></div>
@@ -120,7 +126,6 @@
         </button>
       </section>
 
-      <!-- 2. LOG TAB -->
       <section id="log" class="tab-pane hidden space-y-6">
         <div id="selected-drills-log" class="space-y-6"></div>
         <div class="pt-6 border-t border-slate-200">
@@ -131,13 +136,11 @@
         </div>
       </section>
 
-      <!-- 3. HISTORY TAB -->
       <section id="history" class="tab-pane hidden space-y-4">
         <h2 class="text-xs text-slate-400 uppercase border-b border-slate-200 pb-2 font-bold">History</h2>
         <div id="history-list" class="space-y-2"></div>
       </section>
 
-      <!-- 4. ANALYTICS TAB -->
       <section id="analytics" class="tab-pane hidden space-y-4">
         <h2 class="text-xs text-slate-400 uppercase border-b border-slate-200 pb-2 font-bold">Analytics</h2>
         <div id="analytics-container" class="space-y-4"></div>
@@ -145,7 +148,6 @@
 
     </main>
 
-    <!-- NAV -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 pb-safe z-50">
       <div class="max-w-md mx-auto flex justify-between">
         <button class="nav-item tab-button flex-1 py-3 flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-800 transition active" data-tab="setup"><span class="text-[10px] font-bold uppercase tracking-widest">Plan</span></button>
