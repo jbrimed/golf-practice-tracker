@@ -167,7 +167,7 @@ function renderPriorityUI() {
 }
 
 function generateSmartPlan() {
-    const timeBudget = parseInt($("plan-time-budget").value) || 120; // Minutes
+    const timeBudget = parseInt($("plan-time-budget").value) || 600; // Default 10 hours
     const tasks = [];
     
     // 1. Calculate Weights
@@ -183,7 +183,7 @@ function generateSmartPlan() {
             const subChecks = document.querySelectorAll(`#sub-${cat} .plan-sub-check:checked`);
             const preferredSkills = Array.from(subChecks).map(c => c.value);
             
-            // Safety: If nothing checked, default to all skills in category
+            // Default to all skills if none checked
             const effectiveSkills = preferredSkills.length > 0 
                 ? preferredSkills 
                 : SKILLS.filter(s => s.category.toLowerCase().replace(" ","_") === cat).map(s=>s.id);
@@ -198,50 +198,64 @@ function generateSmartPlan() {
         return;
     }
 
-    // 2. Distribute Time & Select Drills
+    // 2. Distribute Time & Assign Reps
     categoryConfigs.forEach(config => {
-        // Allocated Minutes = (Weight / Total) * Budget
+        // Step A: How much time for this category?
         let allocatedMins = Math.floor((config.weight / totalWeight) * timeBudget);
-        
-        // COACH LOGIC: Minimum effective dose is 10 mins if selected
-        if (allocatedMins < 10) allocatedMins = 10;
+        if (allocatedMins < 15) allocatedMins = 15; // Minimum 15 mins if active
 
-        let filledMins = 0;
+        // Step B: Select Core Drills (Focus on a few, don't pick 20)
         const catDrills = DRILLS[config.cat] || [];
         
-        // Filter drills by sub-skills
+        // Filter by preferred sub-skills
         let validDrills = catDrills.filter(d => d.skills.some(s => config.skills.includes(s)));
-        
-        // Fallback if filtering is too strict
         if (validDrills.length === 0) validDrills = catDrills;
 
-        // Shuffle
+        // Shuffle and pick a "Rotation" of max 4 drills to repeat this week
         validDrills.sort(() => Math.random() - 0.5);
+        const rotationSize = Math.min(validDrills.length, 4); 
+        const rotation = validDrills.slice(0, rotationSize);
 
-        // Fill Bucket
-        for (const drill of validDrills) {
-            if (filledMins >= allocatedMins) break;
-            
-            // Allow slight overflow (+5m) to complete a drill
-            if (filledMins + drill.duration > allocatedMins + 5) continue;
+        // Step C: Distribute "Reps" (Sets) to fill the time
+        let filledMins = 0;
+        
+        // Initialize tasks for the rotation
+        rotation.forEach(d => {
+            tasks.push({
+                id: d.id,
+                cat: config.cat,
+                done: 0,
+                target: 0 // Start at 0, we will add reps below
+            });
+        });
 
-            // Avoid duplicates in the plan
-            if (!tasks.find(t => t.id === drill.id)) {
-                tasks.push({ 
-                    id: drill.id, 
-                    cat: config.cat, 
-                    done: 0, 
-                    target: 1 // Default 1 set
-                });
-                filledMins += drill.duration;
+        // Round-robin assignment until time is full
+        let safety = 0;
+        while(filledMins < allocatedMins && safety < 100) {
+            for (const drill of rotation) {
+                if (filledMins >= allocatedMins) break;
+                
+                // Find the task we created above
+                const task = tasks.find(t => t.id === drill.id);
+                if (task) {
+                    task.target += 1; // Add 1 rep
+                    filledMins += drill.duration;
+                }
             }
+            safety++;
         }
+        
+        // Cleanup: Remove any drills that didn't get assigned at least 1 rep (rare edge case)
+        // Also verify we didn't overfill wildly.
     });
+
+    // Filter out empty tasks just in case
+    const finalTasks = tasks.filter(t => t.target > 0);
 
     // 3. Save & Render
     activePlan = { 
         totalTime: timeBudget, 
-        tasks: tasks, 
+        tasks: finalTasks, 
         created: new Date().toISOString() 
     };
     
