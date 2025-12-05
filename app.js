@@ -178,7 +178,7 @@ function generateBlueprint() {
     const slots = [];
     let totalWeight = 0;
     
-    // Calculate weights based on UI
+    // Calculate weights
     const categoryConfigs = [];
     document.querySelectorAll(".plan-rank-select").forEach(sel => {
         const cat = sel.dataset.cat;
@@ -199,27 +199,29 @@ function generateBlueprint() {
 
     // Distribute Slots
     categoryConfigs.forEach(config => {
-        // Time allocation
         let allocatedMins = Math.floor((config.weight / totalWeight) * timeBudget);
-        if (allocatedMins < 30) allocatedMins = 30; // Minimum category time
+        if (allocatedMins < 30) allocatedMins = 30; 
 
-        // Calculate Slot Count (Assume avg drill needs 30-45 mins of volume/week)
-        // High priority = deeper practice (more volume on fewer drills)
-        // This is a heuristic: 1 slot per ~60-90 mins of allocation maxing at 4 slots
-        let slotCount = Math.max(1, Math.round(allocatedMins / 90));
-        if (config.weight === 4) slotCount = Math.max(2, slotCount); // Force more slots for high priority
-        if (slotCount > 5) slotCount = 5; // Cap at 5 unique drills per category
+        // LOGIC CHANGE: Smaller buckets for more variety.
+        // Instead of 1 big slot, we divide total volume into "Sessions" of ~20-30 mins.
+        // Each session = 1 Slot.
+        // 1 Slot = approx 2 reps of a drill (assuming 10-15m per rep).
+        
+        const avgSessionDuration = 30; 
+        let slotCount = Math.max(1, Math.round(allocatedMins / avgSessionDuration));
+        
+        // Cap slots slightly to prevent UI clutter (e.g. max 8 slots per category)
+        if (slotCount > 8) slotCount = 8;
 
-        // Calculate target reps per slot (Weekly Volume / Slots / Drill Duration)
-        // Avg drill duration ~15 mins
-        const estimatedReps = Math.max(1, Math.round(allocatedMins / slotCount / 15));
+        // Reps per slot is now fixed/low to encourage variety
+        const repsPerSlot = 2; 
 
         for(let i=0; i<slotCount; i++) {
             slots.push({
-                id: `slot-${Date.now()}-${Math.random()}`, // Temp ID
+                id: `slot-${Date.now()}-${Math.random()}`,
                 category: config.cat,
                 allowedSkills: config.skills,
-                targetReps: estimatedReps,
+                targetReps: repsPerSlot,
                 selectedDrill: null
             });
         }
@@ -278,42 +280,55 @@ window.openDrillPicker = function(slotIndex) {
     const slot = planBlueprint.slots[slotIndex];
     const container = $("wizard-slots-container");
     
-    // Filter drills matching the slot's requirements
     const catDrills = DRILLS[slot.category] || [];
     const eligible = catDrills.filter(d => d.skills.some(s => slot.allowedSkills.includes(s)));
 
-    // Create a temporary overlay or inline list
     const pickerId = `picker-${slotIndex}`;
     const existingPicker = document.getElementById(pickerId);
     if(existingPicker) { existingPicker.remove(); return; }
 
     const pickerDiv = document.createElement("div");
     pickerDiv.id = pickerId;
-    pickerDiv.className = "mt-2 bg-slate-50 border-t border-slate-200 p-2 max-h-60 overflow-y-auto custom-scrollbar";
+    pickerDiv.className = "mt-2 bg-slate-50 border-t border-slate-200 p-2 max-h-80 overflow-y-auto custom-scrollbar shadow-inner";
     
     if(eligible.length === 0) {
         pickerDiv.innerHTML = "<div class='text-xs text-red-500'>No drills match filters. Uncheck sub-skills?</div>";
     } else {
         eligible.forEach(d => {
-            const btn = document.createElement("button");
-            btn.className = "w-full text-left text-xs p-2 hover:bg-white border-b border-slate-100 last:border-0";
-            btn.innerText = d.name;
-            btn.onclick = () => {
+            const item = document.createElement("div");
+            item.className = "border-b border-slate-200 last:border-0 py-2";
+            
+            // Layout: Title + Info Button on top row, select button on right
+            item.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div class="flex-1 pr-2">
+                        <div class="text-xs font-bold text-slate-900">${d.name}</div>
+                        <div class="text-[10px] text-slate-500 mt-0.5">${d.duration} mins • Level ${userProgression[d.id] || 1}</div>
+                    </div>
+                    <button class="select-drill-btn text-[10px] bg-slate-900 text-white px-2 py-1 rounded shadow-sm hover:bg-slate-700 uppercase font-bold">
+                        Select
+                    </button>
+                </div>
+                <details class="mt-1">
+                    <summary class="text-[10px] text-tech-blue cursor-pointer font-bold select-none">Show Description</summary>
+                    <p class="text-[10px] text-slate-600 mt-1 pl-2 border-l-2 border-slate-200 italic">
+                        ${d.description || "No description available."}
+                    </p>
+                </details>
+            `;
+            
+            // Attach click handler manually to avoid string escaping issues
+            item.querySelector(".select-drill-btn").onclick = () => {
                 planBlueprint.slots[slotIndex].selectedDrill = d.id;
                 renderWizardUI();
             };
-            pickerDiv.appendChild(btn);
+            
+            pickerDiv.appendChild(item);
         });
     }
     
-    // Insert picker after the slot clicked
     const slotDivs = container.children;
     if(slotDivs[slotIndex]) slotDivs[slotIndex].appendChild(pickerDiv);
-}
-
-window.clearSlot = function(index) {
-    planBlueprint.slots[index].selectedDrill = null;
-    renderWizardUI();
 }
 
 // 4. FINALIZE & SAVE
@@ -871,20 +886,25 @@ async function renderHistory() {
     if(!box) return;
     const sessions = await loadSessions();
     box.innerHTML = sessions.length ? "" : "<div class='text-center text-xs text-slate-400'>No history found</div>";
+    
     sessions.forEach(s => {
         const div = document.createElement("div");
-        div.className = "tech-card p-3 mb-2";
+        div.className = "tech-card p-3 mb-2 relative group"; // Added relative/group for button positioning
         div.innerHTML = `
             <div class="flex justify-between font-bold text-sm">
                 <span>${new Date(s.date).toLocaleDateString()}</span>
-                <span class="text-tech-blue">${s.drills.length} Drills</span>
+                <div class="flex items-center gap-3">
+                    <span class="text-tech-blue">${s.drills.length} Drills</span>
+                    <button class="del-hist-btn text-[10px] text-red-400 hover:text-red-600 font-bold uppercase border border-slate-200 hover:border-red-400 px-2 py-1 rounded-sm" data-id="${s.id}">
+                        Delete
+                    </button>
+                </div>
             </div>
             <div class="text-xs text-slate-500 mt-1">${s.drillResults.map(r=>`${r.name}: ${r.score.raw || r.score.numeric}`).join(', ')}</div>
         `;
         box.appendChild(div);
     });
 }
-
 async function renderAnalytics() {
     const box = $("analytics-container");
     if(!box) return;
