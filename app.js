@@ -166,24 +166,26 @@ function renderPriorityUI() {
     });
 }
 
-function generateSmartPlan() {
-    const timeBudget = parseInt($("plan-time-budget").value) || 600; // Default 10 hours
-    const tasks = [];
-    
-    // 1. Calculate Weights
-    let totalWeight = 0;
-    const categoryConfigs = [];
+// ==========================================
+// NEW: WIZARD & BLUEPRINT LOGIC
+// ==========================================
 
+let planBlueprint = null; // Temp storage for the wizard
+
+// 1. GENERATE THE SKELETON (Slots)
+function generateBlueprint() {
+    const timeBudget = parseInt($("plan-time-budget").value) || 600;
+    const slots = [];
+    let totalWeight = 0;
+    
+    // Calculate weights based on UI
+    const categoryConfigs = [];
     document.querySelectorAll(".plan-rank-select").forEach(sel => {
         const cat = sel.dataset.cat;
         const weight = parseInt(sel.value);
-        
         if (weight > 0) {
-            // Get preferred skills
             const subChecks = document.querySelectorAll(`#sub-${cat} .plan-sub-check:checked`);
             const preferredSkills = Array.from(subChecks).map(c => c.value);
-            
-            // Default to all skills if none checked
             const effectiveSkills = preferredSkills.length > 0 
                 ? preferredSkills 
                 : SKILLS.filter(s => s.category.toLowerCase().replace(" ","_") === cat).map(s=>s.id);
@@ -193,101 +195,181 @@ function generateSmartPlan() {
         }
     });
 
-    if (categoryConfigs.length === 0) {
-        alert("Please assign a priority to at least one category.");
-        return;
-    }
+    if (categoryConfigs.length === 0) { alert("Select priorities first."); return; }
 
-    // 2. Distribute Time & Assign Reps
+    // Distribute Slots
     categoryConfigs.forEach(config => {
-        // Step A: How much time for this category?
+        // Time allocation
         let allocatedMins = Math.floor((config.weight / totalWeight) * timeBudget);
-        if (allocatedMins < 15) allocatedMins = 15; // Minimum 15 mins if active
+        if (allocatedMins < 30) allocatedMins = 30; // Minimum category time
 
-        // Step B: Select Core Drills (Focus on a few, don't pick 20)
-        const catDrills = DRILLS[config.cat] || [];
-        
-        // Filter by preferred sub-skills
-        let validDrills = catDrills.filter(d => d.skills.some(s => config.skills.includes(s)));
-        if (validDrills.length === 0) validDrills = catDrills;
+        // Calculate Slot Count (Assume avg drill needs 30-45 mins of volume/week)
+        // High priority = deeper practice (more volume on fewer drills)
+        // This is a heuristic: 1 slot per ~60-90 mins of allocation maxing at 4 slots
+        let slotCount = Math.max(1, Math.round(allocatedMins / 90));
+        if (config.weight === 4) slotCount = Math.max(2, slotCount); // Force more slots for high priority
+        if (slotCount > 5) slotCount = 5; // Cap at 5 unique drills per category
 
-        // Shuffle and pick a "Rotation" of max 4 drills to repeat this week
-        validDrills.sort(() => Math.random() - 0.5);
-        const rotationSize = Math.min(validDrills.length, 4); 
-        const rotation = validDrills.slice(0, rotationSize);
+        // Calculate target reps per slot (Weekly Volume / Slots / Drill Duration)
+        // Avg drill duration ~15 mins
+        const estimatedReps = Math.max(1, Math.round(allocatedMins / slotCount / 15));
 
-        // Step C: Distribute "Reps" (Sets) to fill the time
-        let filledMins = 0;
-        
-        // Initialize tasks for the rotation
-        rotation.forEach(d => {
-            tasks.push({
-                id: d.id,
-                cat: config.cat,
-                done: 0,
-                target: 0 // Start at 0, we will add reps below
+        for(let i=0; i<slotCount; i++) {
+            slots.push({
+                id: `slot-${Date.now()}-${Math.random()}`, // Temp ID
+                category: config.cat,
+                allowedSkills: config.skills,
+                targetReps: estimatedReps,
+                selectedDrill: null
             });
-        });
-
-        // Round-robin assignment until time is full
-        let safety = 0;
-        while(filledMins < allocatedMins && safety < 100) {
-            for (const drill of rotation) {
-                if (filledMins >= allocatedMins) break;
-                
-                // Find the task we created above
-                const task = tasks.find(t => t.id === drill.id);
-                if (task) {
-                    task.target += 1; // Add 1 rep
-                    filledMins += drill.duration;
-                }
-            }
-            safety++;
         }
-        
-        // Cleanup: Remove any drills that didn't get assigned at least 1 rep (rare edge case)
-        // Also verify we didn't overfill wildly.
     });
 
-    // Filter out empty tasks just in case
-    const finalTasks = tasks.filter(t => t.target > 0);
+    planBlueprint = { totalTime: timeBudget, slots };
+    renderWizardUI();
+}
 
-    // 3. Save & Render
+// 2. RENDER THE SELECTION WIZARD
+function renderWizardUI() {
+    $("create-plan-view").classList.add("hidden");
+    $("plan-wizard-view").classList.remove("hidden");
+    const container = $("wizard-slots-container");
+    container.innerHTML = "";
+
+    planBlueprint.slots.forEach((slot, index) => {
+        const div = document.createElement("div");
+        div.className = "border border-slate-200 bg-white p-3 rounded-sm mb-2";
+        
+        if (slot.selectedDrill) {
+            // FILLED SLOT STATE
+            const drill = allDrillsMap.get(slot.selectedDrill);
+            div.className = "border border-tech-blue bg-blue-50 p-3 rounded-sm mb-2";
+            div.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <div>
+                        <div class="text-[10px] font-bold text-slate-500 uppercase">${drill.category} • ${slot.targetReps} Weekly Reps</div>
+                        <div class="text-sm font-bold text-slate-900">${drill.name}</div>
+                    </div>
+                    <button class="text-[10px] text-red-500 font-bold uppercase border border-red-200 px-2 py-1 rounded bg-white" onclick="clearSlot(${index})">Change</button>
+                </div>
+            `;
+        } else {
+            // EMPTY SLOT STATE
+            div.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <div class="text-xs font-bold text-slate-400 uppercase">${slot.category} Slot</div>
+                    <div class="text-[10px] text-slate-400">Target: ${slot.targetReps} Sessions</div>
+                </div>
+                <button class="mt-2 w-full border border-dashed border-slate-300 text-slate-500 text-xs font-bold py-2 hover:bg-slate-50" onclick="openDrillPicker(${index})">
+                    + Select Drill
+                </button>
+            `;
+        }
+        container.appendChild(div);
+    });
+    
+    // Enable/Disable Finalize Button
+    const allFilled = planBlueprint.slots.every(s => s.selectedDrill);
+    $("finalize-plan-btn").disabled = !allFilled;
+}
+
+// 3. DRILL PICKER (Uses the Manual Selection Area temporarily)
+window.openDrillPicker = function(slotIndex) {
+    const slot = planBlueprint.slots[slotIndex];
+    const container = $("wizard-slots-container");
+    
+    // Filter drills matching the slot's requirements
+    const catDrills = DRILLS[slot.category] || [];
+    const eligible = catDrills.filter(d => d.skills.some(s => slot.allowedSkills.includes(s)));
+
+    // Create a temporary overlay or inline list
+    const pickerId = `picker-${slotIndex}`;
+    const existingPicker = document.getElementById(pickerId);
+    if(existingPicker) { existingPicker.remove(); return; }
+
+    const pickerDiv = document.createElement("div");
+    pickerDiv.id = pickerId;
+    pickerDiv.className = "mt-2 bg-slate-50 border-t border-slate-200 p-2 max-h-60 overflow-y-auto custom-scrollbar";
+    
+    if(eligible.length === 0) {
+        pickerDiv.innerHTML = "<div class='text-xs text-red-500'>No drills match filters. Uncheck sub-skills?</div>";
+    } else {
+        eligible.forEach(d => {
+            const btn = document.createElement("button");
+            btn.className = "w-full text-left text-xs p-2 hover:bg-white border-b border-slate-100 last:border-0";
+            btn.innerText = d.name;
+            btn.onclick = () => {
+                planBlueprint.slots[slotIndex].selectedDrill = d.id;
+                renderWizardUI();
+            };
+            pickerDiv.appendChild(btn);
+        });
+    }
+    
+    // Insert picker after the slot clicked
+    const slotDivs = container.children;
+    if(slotDivs[slotIndex]) slotDivs[slotIndex].appendChild(pickerDiv);
+}
+
+window.clearSlot = function(index) {
+    planBlueprint.slots[index].selectedDrill = null;
+    renderWizardUI();
+}
+
+// 4. FINALIZE & SAVE
+function finalizePlan() {
+    const tasks = planBlueprint.slots.map(slot => ({
+        id: slot.selectedDrill,
+        cat: slot.category,
+        done: 0,
+        target: slot.targetReps
+    }));
+
     activePlan = { 
-        totalTime: timeBudget, 
-        tasks: finalTasks, 
+        totalTime: planBlueprint.totalTime, 
+        tasks: tasks, 
         created: new Date().toISOString() 
     };
     
     localStorage.setItem("golf_active_plan", JSON.stringify(activePlan));
+    
+    // Switch Views
+    $("plan-wizard-view").classList.add("hidden");
     renderPlanUI();
 }
+
+// ==========================================
+// UPDATED PLAN DASHBOARD (DAILY BUILDER)
+// ==========================================
 
 function renderPlanUI() {
     const activeView = $("active-plan-view");
     const createView = $("create-plan-view");
+    const wizardView = $("plan-wizard-view");
     const list = $("plan-tasks-list");
     const progBar = $("plan-progress-bar");
+    const startBtn = $("start-daily-session-btn");
 
-    if(!activeView || !createView) return;
-
+    // View Routing
     if(!activePlan) {
         activeView.classList.add("hidden");
+        wizardView.classList.add("hidden");
         createView.classList.remove("hidden");
         return;
     }
 
     activeView.classList.remove("hidden");
     createView.classList.add("hidden");
+    wizardView.classList.add("hidden");
     list.innerHTML = "";
 
+    // Overall Weekly Progress
     const doneCount = activePlan.tasks.reduce((sum, t) => sum + Math.min(t.done, t.target), 0);
     const totalTarget = activePlan.tasks.reduce((sum, t) => sum + t.target, 0);
     const pct = totalTarget === 0 ? 0 : (doneCount / totalTarget) * 100;
-    
     if(progBar) progBar.style.width = `${pct}%`;
 
-    // Group tasks by Category for cleaner display
+    // Render Drill List with Checkboxes for "Daily Session"
     activePlan.tasks.forEach((task) => {
         const drill = getDrillParams(task.id);
         if (!drill) return; 
@@ -296,24 +378,52 @@ function renderPlanUI() {
         const isComplete = task.done >= task.target;
         
         const item = document.createElement("div");
-        item.className = `flex justify-between items-center p-3 border rounded-sm ${isComplete ? 'bg-green-50 border-green-200 opacity-90' : 'bg-white border-l-4 border-l-tech-blue border-slate-200'}`;
+        item.className = `flex items-center p-3 border rounded-sm mb-2 ${isComplete ? 'bg-green-50 border-green-200' : 'bg-white border-slate-200'}`;
+        
+        // Checkbox logic
+        const checkboxId = `daily-check-${task.id}`;
         
         item.innerHTML = `
-            <div>
-                <div class="text-[10px] uppercase font-bold text-slate-400">${drill.category || task.cat} - ${drill.duration}m</div>
-                <div class="text-xs font-bold text-slate-900">${drill.name}</div>
+            <div class="mr-3">
+                <input type="checkbox" id="${checkboxId}" class="daily-session-check w-5 h-5 accent-slate-900" value="${task.id}" ${isComplete ? 'disabled' : ''}>
             </div>
-            <div class="flex items-center gap-3">
-                <span class="text-xs font-mono font-bold ${isComplete ? 'text-green-600' : 'text-tech-blue'}">${completion}/${task.target}</span>
-                <button class="load-plan-drill text-[10px] bg-slate-900 text-white px-2 py-1 rounded-sm uppercase disabled:opacity-50" 
-                        data-id="${task.id}" 
-                        ${isComplete ? 'disabled' : ''}>
-                    Load
-                </button>
+            <div class="flex-1">
+                <div class="flex justify-between">
+                    <span class="text-[10px] uppercase font-bold text-slate-400">${drill.category}</span>
+                    <span class="text-xs font-mono font-bold ${isComplete ? 'text-green-600' : 'text-tech-blue'}">
+                        ${completion} <span class="text-[10px] text-slate-400 font-normal">of</span> ${task.target}
+                    </span>
+                </div>
+                <div class="text-xs font-bold text-slate-900 ${isComplete ? 'line-through opacity-50' : ''}">${drill.name}</div>
             </div>
         `;
         list.appendChild(item);
     });
+
+    // Checkbox Listener to toggle "Start Day" button
+    const checkboxes = document.querySelectorAll(".daily-session-check");
+    checkboxes.forEach(box => {
+        box.addEventListener("change", () => {
+            const anyChecked = Array.from(checkboxes).some(c => c.checked);
+            anyChecked ? startBtn.classList.remove("hidden") : startBtn.classList.add("hidden");
+        });
+    });
+
+    startBtn.onclick = loadDailySession;
+}
+
+function loadDailySession() {
+    const checked = document.querySelectorAll(".daily-session-check:checked");
+    selectedDrillIds.clear();
+    
+    checked.forEach(box => {
+        selectedDrillIds.add(box.value);
+    });
+
+    renderSkills(); // Update filters visually
+    renderDrillSelect(); // Show the list
+    renderSelectedDrills(); // Populate the input log
+    switchTab("log");
 }
 
 // ----------------------
