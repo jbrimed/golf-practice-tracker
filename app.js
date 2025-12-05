@@ -791,6 +791,7 @@ function setupGlobalClicks() {
         const btn = e.target.closest("button");
         if (!btn) return;
 
+        // --- AUTHENTICATION ---
         if (btn.id === "google-login-btn") {
             try {
                 await loginWithGoogle();
@@ -800,22 +801,36 @@ function setupGlobalClicks() {
             }
         }
         if (btn.dataset.action === "logout") logout().then(() => location.reload());
+        
+        // --- NAVIGATION ---
         if (btn.classList.contains("tab-button")) switchTab(btn.dataset.tab);
         
-        // --- NEW CLICK HANDLER ---
-        if (btn.id === "generate-smart-plan-btn") generateSmartPlan();
+        // --- NEW: BLUEPRINT / WIZARD FLOW ---
+        // 1. User clicks "Build Skeleton"
+        if (btn.id === "generate-blueprint-btn") generateBlueprint();
         
-        if (btn.id === "delete-plan-btn") { activePlan = null; localStorage.removeItem("golf_active_plan"); renderPlanUI(); }
+        // 2. User clicks "Confirm Weekly Plan" after selecting drills
+        if (btn.id === "finalize-plan-btn") finalizePlan();
         
-        if (btn.classList.contains("load-plan-drill")) {
-            const id = btn.dataset.id;
-            selectedDrillIds.add(id);
-            renderSkills();
-            renderDrillSelect();
-            renderSelectedDrills();
-            switchTab("log");
+        // 3. User cancels the wizard
+        if (btn.id === "cancel-wizard-btn") { 
+            planBlueprint = null; 
+            renderPlanUI(); 
+        }
+
+        // --- NEW: DAILY SESSION EXECUTION ---
+        // 4. User checks boxes and clicks "Start Day Session"
+        if (btn.id === "start-daily-session-btn") loadDailySession();
+
+        // --- PLAN MANAGEMENT ---
+        if (btn.id === "delete-plan-btn") { 
+            activePlan = null; 
+            planBlueprint = null; // Clear temp data too
+            localStorage.removeItem("golf_active_plan"); 
+            renderPlanUI(); 
         }
         
+        // --- MANUAL SELECTION (Bottom of screen) ---
         if (btn.classList.contains("add-btn")) {
             const id = btn.dataset.id;
             selectedDrillIds.has(id) ? selectedDrillIds.delete(id) : selectedDrillIds.add(id);
@@ -824,17 +839,21 @@ function setupGlobalClicks() {
             updateStartButton();
         }
         
+        // --- LOGGING & UTILS ---
         if (btn.id === "go-to-log") switchTab("log");
         if (btn.id === "save-session") handleSaveSession();
         
         if (btn.classList.contains("rng-multi-btn")) handleMultiTargetGen(btn);
         
         if (btn.classList.contains("del-hist-btn")) {
-            if(confirm("Delete this record?")) { await deleteSessionFromCloud(btn.dataset.id); renderHistory(); renderAnalytics(); }
+            if(confirm("Delete this record?")) { 
+                await deleteSessionFromCloud(btn.dataset.id); 
+                renderHistory(); 
+                renderAnalytics(); 
+            }
         }
     });
 }
-
 function setupGlobalInputs() {
     document.body.addEventListener("input", (e) => {
         if(e.target.classList.contains("calc-input")) calculateDispersion(e.target.dataset.group);
