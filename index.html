@@ -1,211 +1,195 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title></title>
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="2575.5">
-  <style type="text/css">
-    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
-    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Golf Practice Hub | Coach Mode</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'], },
+          colors: {
+            slate: { 50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 800: '#1e293b', 900: '#0f172a' },
+            tech: { blue: '#2563eb', orange: '#f97316' }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body { background-color: #f8fafc; color: #1e293b; -webkit-font-smoothing: antialiased; }
+    .tech-card { background: white; border: 1px solid #e2e8f0; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .input-lcd { background-color: #f1f5f9; border: 1px solid #cbd5e1; color: #0f172a; font-family: 'JetBrains Mono', monospace; text-align: right; transition: all 0.2s; }
+    .input-lcd:focus { background-color: white; border-color: #2563eb; outline: none; }
+    .hidden { display: none !important; }
+    .nav-item.active { color: #2563eb; border-top: 2px solid #2563eb; font-weight: 600; }
+    /* Custom Scrollbar for skills area */
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
   </style>
 </head>
-<body>
-<p class="p1">&lt;!DOCTYPE html&gt;</p>
-<p class="p1">&lt;html lang="en"&gt;</p>
-<p class="p1">&lt;head&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;meta charset="UTF-8"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;title&gt;Golf Practice Hub | Coach Mode&lt;/title&gt;</p>
-<p class="p2"><span class="Apple-converted-space">  </span></p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;script src="https://cdn.tailwindcss.com"&gt;&lt;/script&gt;</p>
-<p class="p2"><span class="Apple-converted-space">  </span></p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;link rel="preconnect" href="https://fonts.googleapis.com"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;link rel="preconnect" href="https://fonts.gstatic.com" crossorigin&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;script&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>tailwind.config = {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>theme: {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>extend: {</p>
-<p class="p1"><span class="Apple-converted-space">          </span>fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'], },</p>
-<p class="p1"><span class="Apple-converted-space">          </span>colors: {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>slate: { 50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 800: '#1e293b', 900: '#0f172a' },</p>
-<p class="p1"><span class="Apple-converted-space">            </span>tech: { blue: '#2563eb', orange: '#f97316' }</p>
-<p class="p1"><span class="Apple-converted-space">          </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">      </span>}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;/script&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;style&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>body { background-color: #f8fafc; color: #1e293b; -webkit-font-smoothing: antialiased; }</p>
-<p class="p1"><span class="Apple-converted-space">    </span>.tech-card { background: white; border: 1px solid #e2e8f0; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }</p>
-<p class="p1"><span class="Apple-converted-space">    </span>.input-lcd { background-color: #f1f5f9; border: 1px solid #cbd5e1; color: #0f172a; font-family: 'JetBrains Mono', monospace; text-align: right; transition: all 0.2s; }</p>
-<p class="p1"><span class="Apple-converted-space">    </span>.input-lcd:focus { background-color: white; border-color: #2563eb; outline: none; }</p>
-<p class="p1"><span class="Apple-converted-space">    </span>.hidden { display: none !important; }</p>
-<p class="p1"><span class="Apple-converted-space">    </span>.nav-item.active { color: #2563eb; border-top: 2px solid #2563eb; font-weight: 600; }</p>
-<p class="p1"><span class="Apple-converted-space">    </span>/* Custom Scrollbar for skills area */</p>
-<p class="p1"><span class="Apple-converted-space">    </span>.custom-scrollbar::-webkit-scrollbar { width: 4px; }</p>
-<p class="p1"><span class="Apple-converted-space">    </span>.custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }</p>
-<p class="p1"><span class="Apple-converted-space">    </span>.custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;/style&gt;</p>
-<p class="p1">&lt;/head&gt;</p>
-<p class="p2"><br></p>
-<p class="p1">&lt;body class="pb-24"&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;div id="login-screen" class="min-h-screen flex flex-col items-center justify-center p-6 bg-slate-50"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="w-full max-w-sm space-y-8 bg-white p-8 border border-slate-200 shadow-sm rounded-sm"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="text-center space-y-2"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;h1 class="text-lg font-bold tracking-tight text-slate-900"&gt;Scratch Log&lt;/h1&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;p class="text-xs text-slate-500"&gt;Performance Tracking System&lt;/p&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;button id="google-login-btn" class="w-full bg-slate-900 text-white font-bold py-3 rounded-sm hover:bg-slate-800 transition text-xs uppercase tracking-wide"&gt;Sign in with Google&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;div id="app-screen" class="hidden animate-fade-in"&gt;</p>
-<p class="p2"><span class="Apple-converted-space">    </span></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;header class="bg-white/90 backdrop-blur border-b border-slate-200 sticky top-0 z-50"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="max-w-md mx-auto px-4 py-3 flex justify-between items-center"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="flex items-center gap-2"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">          </span>&lt;div class="h-2 w-2 bg-tech-orange rounded-full"&gt;&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">          </span>&lt;span class="text-xs font-bold text-slate-700 uppercase tracking-wide"&gt;Coach Mode&lt;/span&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="user-profile" class="text-right"&gt;&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/header&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;main class="max-w-md mx-auto px-4 py-6 space-y-8"&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;section id="setup" class="tab-pane space-y-6"&gt;</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="plan-section" class="mb-8"&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">          </span>&lt;div id="active-plan-view" class="hidden space-y-4"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">             </span>&lt;div class="flex justify-between items-center px-1 border-b border-slate-200 pb-2"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;h3 class="text-xs text-tech-blue uppercase font-bold"&gt;Weekly Protocol&lt;/h3&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;button id="delete-plan-btn" class="text-[10px] text-red-500 hover:text-red-700 font-bold uppercase"&gt;Reset Week&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">             </span>&lt;/div&gt;</p>
-<p class="p2"><span class="Apple-converted-space">             </span></p>
-<p class="p1"><span class="Apple-converted-space">             </span>&lt;div class="w-full bg-slate-100 rounded-full h-2"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;div id="plan-progress-bar" class="bg-tech-blue h-2 rounded-full" style="width: 0%"&gt;&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">             </span>&lt;/div&gt;</p>
-<p class="p2"><span class="Apple-converted-space">             </span></p>
-<p class="p1"><span class="Apple-converted-space">             </span>&lt;div class="text-[10px] text-slate-400 text-center uppercase font-bold mt-1"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>Select drills to build today's session</p>
-<p class="p1"><span class="Apple-converted-space">             </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">             </span>&lt;div id="plan-tasks-list" class="space-y-2"&gt;&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">             </span>&lt;button id="start-daily-session-btn" class="w-full bg-slate-900 text-white text-xs font-bold py-3 rounded-sm uppercase tracking-wider shadow-sm hidden"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>Start Day Session</p>
-<p class="p1"><span class="Apple-converted-space">             </span>&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">          </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">          </span>&lt;div id="plan-wizard-view" class="hidden space-y-4"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="tech-card p-4 bg-blue-50 border-blue-100"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;h3 class="text-sm font-bold text-slate-900 mb-1"&gt;Weekly Skeleton&lt;/h3&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;p class="text-xs text-slate-500"&gt;I've calculated your volume. Select specific drills to fill the slots.&lt;/p&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;div id="wizard-slots-container" class="space-y-3"&gt;&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;button id="finalize-plan-btn" class="w-full bg-tech-blue text-white text-xs font-bold py-3 rounded-sm uppercase tracking-wider shadow-sm disabled:opacity-50"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>Confirm Weekly Plan</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;button id="cancel-wizard-btn" class="w-full text-slate-400 text-[10px] font-bold py-2 uppercase"&gt;Cancel&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">          </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">          </span>&lt;div id="create-plan-view" class="space-y-4"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">             </span>&lt;div class="tech-card p-4 space-y-4"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="border-b border-slate-100 pb-2"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>&lt;h3 class="text-sm font-bold text-slate-900"&gt;New Weekly Plan&lt;/h3&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>&lt;p class="text-xs text-slate-500"&gt;Set your budget and priorities. Choose Auto or Manual drill selection.&lt;/p&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>&lt;label class="block text-[10px] font-bold uppercase text-slate-500 mb-1"&gt;Weekly Time Budget&lt;/label&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>&lt;select id="plan-time-budget" class="w-full input-lcd p-2 text-sm bg-slate-50"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                        </span>&lt;option value="180"&gt;3 Hours&lt;/option&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                        </span>&lt;option value="300"&gt;5 Hours&lt;/option&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                        </span>&lt;option value="480"&gt;8 Hours&lt;/option&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                        </span>&lt;option value="600" selected&gt;10 Hours&lt;/option&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                        </span>&lt;option value="900"&gt;15 Hours&lt;/option&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                        </span>&lt;option value="1200"&gt;20 Hours&lt;/option&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>&lt;/select&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;div class="flex gap-2 p-1 bg-slate-100 rounded-sm"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>&lt;button id="mode-auto" class="flex-1 py-2 text-[10px] font-bold uppercase rounded-sm bg-white shadow-sm border border-slate-200"&gt;Auto-Select&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>&lt;button id="mode-manual" class="flex-1 py-2 text-[10px] font-bold uppercase rounded-sm text-slate-500"&gt;Manual Selection&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;div id="priority-container" class="space-y-3"&gt;&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;button id="generate-blueprint-btn" class="w-full bg-tech-blue text-white text-xs font-bold py-3 rounded-sm uppercase tracking-wider shadow-sm mt-4 hover:bg-blue-600 transition"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>Generate Weekly Protocol</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">             </span>&lt;/div&gt;</p>
-<p class="p2"><span class="Apple-converted-space">             </span></p>
-<p class="p1"><span class="Apple-converted-space">             </span>&lt;div class="relative py-4"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                 </span>&lt;div class="absolute inset-0 flex items-center"&gt;&lt;span class="w-full border-t border-slate-200"&gt;&lt;/span&gt;&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                 </span>&lt;div class="relative flex justify-center text-[10px] uppercase font-bold"&gt;&lt;span class="bg-slate-50 px-2 text-slate-400"&gt;Quick Start&lt;/span&gt;&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">             </span>&lt;/div&gt;</p>
-<p class="p2"><span class="Apple-converted-space">             </span></p>
-<p class="p1"><span class="Apple-converted-space">             </span>&lt;button id="quick-session-btn" class="w-full border border-slate-900 text-slate-900 text-xs font-bold py-3 rounded-sm uppercase tracking-wider hover:bg-slate-900 hover:text-white transition"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                 </span>Start Empty Session</p>
-<p class="p1"><span class="Apple-converted-space">             </span>&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">          </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="manual-selection-area"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="grid grid-cols-2 gap-3 mb-4"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;div id="skill-select" class="tech-card p-0 max-h-48 overflow-y-auto custom-scrollbar border-slate-200"&gt;&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;div id="drill-select" class="space-y-1 min-h-[50px]"&gt;&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;button id="go-to-log" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-sm shadow-md transition uppercase tracking-widest disabled:opacity-30 disabled:shadow-none text-sm mt-4"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">          </span>Start Session</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;/section&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;section id="log" class="tab-pane hidden space-y-6"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="selected-drills-log" class="space-y-6"&gt;&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="pt-6 border-t border-slate-200"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">          </span>&lt;textarea id="session-notes" rows="3" class="w-full input-lcd p-3 text-sm rounded-sm text-left resize-none bg-white" placeholder="Session Notes..."&gt;&lt;/textarea&gt;</p>
-<p class="p1"><span class="Apple-converted-space">          </span>&lt;button id="save-session" class="mt-4 w-full border-2 border-slate-900 text-slate-900 font-bold text-sm py-3 hover:bg-slate-900 hover:text-white transition uppercase"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>Finish &amp; Save</p>
-<p class="p1"><span class="Apple-converted-space">          </span>&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;/section&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;section id="history" class="tab-pane hidden space-y-4"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;h2 class="text-xs text-slate-400 uppercase border-b border-slate-200 pb-2 font-bold"&gt;History&lt;/h2&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="history-list" class="space-y-2"&gt;&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;/section&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;section id="analytics" class="tab-pane hidden space-y-4"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;h2 class="text-xs text-slate-400 uppercase border-b border-slate-200 pb-2 font-bold"&gt;Analytics&lt;/h2&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="analytics-container" class="space-y-4"&gt;&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;/section&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/main&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 pb-safe z-50"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="max-w-md mx-auto flex justify-between"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;button class="nav-item tab-button flex-1 py-3 flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-800 transition active" data-tab="setup"&gt;&lt;span class="text-[10px] font-bold uppercase tracking-widest"&gt;Plan&lt;/span&gt;&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;button class="nav-item tab-button flex-1 py-3 flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-800 transition" data-tab="log"&gt;&lt;span class="text-[10px] font-bold uppercase tracking-widest"&gt;Input&lt;/span&gt;&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;button class="nav-item tab-button flex-1 py-3 flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-800 transition" data-tab="history"&gt;&lt;span class="text-[10px] font-bold uppercase tracking-widest"&gt;Logs&lt;/span&gt;&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;button class="nav-item tab-button flex-1 py-3 flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-800 transition" data-tab="analytics"&gt;&lt;span class="text-[10px] font-bold uppercase tracking-widest"&gt;Stats&lt;/span&gt;&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/nav&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;script type="module" src="./app.js"&gt;&lt;/script&gt;</p>
-<p class="p1">&lt;/body&gt;</p>
-<p class="p1">&lt;/html&gt;</p>
+
+<body class="pb-24">
+
+  <div id="login-screen" class="min-h-screen flex flex-col items-center justify-center p-6 bg-slate-50">
+    <div class="w-full max-w-sm space-y-8 bg-white p-8 border border-slate-200 shadow-sm rounded-sm">
+      <div class="text-center space-y-2">
+        <h1 class="text-lg font-bold tracking-tight text-slate-900">Scratch Log</h1>
+        <p class="text-xs text-slate-500">Performance Tracking System</p>
+      </div>
+      <button id="google-login-btn" class="w-full bg-slate-900 text-white font-bold py-3 rounded-sm hover:bg-slate-800 transition text-xs uppercase tracking-wide">Sign in with Google</button>
+    </div>
+  </div>
+
+  <div id="app-screen" class="hidden animate-fade-in">
+    
+    <header class="bg-white/90 backdrop-blur border-b border-slate-200 sticky top-0 z-50">
+      <div class="max-w-md mx-auto px-4 py-3 flex justify-between items-center">
+        <div class="flex items-center gap-2">
+          <div class="h-2 w-2 bg-tech-orange rounded-full"></div>
+          <span class="text-xs font-bold text-slate-700 uppercase tracking-wide">Coach Mode</span>
+        </div>
+        <div id="user-profile" class="text-right"></div>
+      </div>
+    </header>
+
+    <main class="max-w-md mx-auto px-4 py-6 space-y-8">
+
+      <section id="setup" class="tab-pane space-y-6">
+        
+        <div id="plan-section" class="mb-8">
+
+          <div id="active-plan-view" class="hidden space-y-4">
+             <div class="flex justify-between items-center px-1 border-b border-slate-200 pb-2">
+                <h3 class="text-xs text-tech-blue uppercase font-bold">Weekly Protocol</h3>
+                <button id="delete-plan-btn" class="text-[10px] text-red-500 hover:text-red-700 font-bold uppercase">Reset Week</button>
+             </div>
+             
+             <div class="w-full bg-slate-100 rounded-full h-2">
+                <div id="plan-progress-bar" class="bg-tech-blue h-2 rounded-full" style="width: 0%"></div>
+             </div>
+             
+             <div class="text-[10px] text-slate-400 text-center uppercase font-bold mt-1">
+                Select drills to build today's session
+             </div>
+
+             <div id="plan-tasks-list" class="space-y-2"></div>
+
+             <button id="start-daily-session-btn" class="w-full bg-slate-900 text-white text-xs font-bold py-3 rounded-sm uppercase tracking-wider shadow-sm hidden">
+                Start Day Session
+             </button>
+          </div>
+
+          <div id="plan-wizard-view" class="hidden space-y-4">
+            <div class="tech-card p-4 bg-blue-50 border-blue-100">
+                <h3 class="text-sm font-bold text-slate-900 mb-1">Weekly Skeleton</h3>
+                <p class="text-xs text-slate-500">I've calculated your volume. Select specific drills to fill the slots.</p>
+            </div>
+            <div id="wizard-slots-container" class="space-y-3"></div>
+            <button id="finalize-plan-btn" class="w-full bg-tech-blue text-white text-xs font-bold py-3 rounded-sm uppercase tracking-wider shadow-sm disabled:opacity-50">
+                Confirm Weekly Plan
+            </button>
+            <button id="cancel-wizard-btn" class="w-full text-slate-400 text-[10px] font-bold py-2 uppercase">Cancel</button>
+          </div>
+
+          <div id="create-plan-view" class="space-y-4">
+             <div class="tech-card p-4 space-y-4">
+                <div class="border-b border-slate-100 pb-2">
+                    <h3 class="text-sm font-bold text-slate-900">New Weekly Plan</h3>
+                    <p class="text-xs text-slate-500">Set your budget and priorities. Choose Auto or Manual drill selection.</p>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Weekly Time Budget</label>
+                    <select id="plan-time-budget" class="w-full input-lcd p-2 text-sm bg-slate-50">
+                        <option value="180">3 Hours</option>
+                        <option value="300">5 Hours</option>
+                        <option value="480">8 Hours</option>
+                        <option value="600" selected>10 Hours</option>
+                        <option value="900">15 Hours</option>
+                        <option value="1200">20 Hours</option>
+                    </select>
+                </div>
+
+                <div class="flex gap-2 p-1 bg-slate-100 rounded-sm">
+                    <button id="mode-auto" class="flex-1 py-2 text-[10px] font-bold uppercase rounded-sm bg-white shadow-sm border border-slate-200">Auto-Select</button>
+                    <button id="mode-manual" class="flex-1 py-2 text-[10px] font-bold uppercase rounded-sm text-slate-500">Manual Selection</button>
+                </div>
+
+                <div id="priority-container" class="space-y-3"></div>
+
+                <button id="generate-blueprint-btn" class="w-full bg-tech-blue text-white text-xs font-bold py-3 rounded-sm uppercase tracking-wider shadow-sm mt-4 hover:bg-blue-600 transition">
+                    Generate Weekly Protocol
+                </button>
+             </div>
+             
+             <div class="relative py-4">
+                 <div class="absolute inset-0 flex items-center"><span class="w-full border-t border-slate-200"></span></div>
+                 <div class="relative flex justify-center text-[10px] uppercase font-bold"><span class="bg-slate-50 px-2 text-slate-400">Quick Start</span></div>
+             </div>
+             
+             <button id="quick-session-btn" class="w-full border border-slate-900 text-slate-900 text-xs font-bold py-3 rounded-sm uppercase tracking-wider hover:bg-slate-900 hover:text-white transition">
+                 Start Empty Session
+             </button>
+          </div>
+
+        </div>
+
+        <div id="manual-selection-area">
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div id="skill-select" class="tech-card p-0 max-h-48 overflow-y-auto custom-scrollbar border-slate-200"></div>
+            </div>
+            
+            <div id="drill-select" class="space-y-1 min-h-[50px]"></div>
+        </div>
+        
+        <button id="go-to-log" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-sm shadow-md transition uppercase tracking-widest disabled:opacity-30 disabled:shadow-none text-sm mt-4">
+          Start Session
+        </button>
+      </section>
+
+      <section id="log" class="tab-pane hidden space-y-6">
+        <div id="selected-drills-log" class="space-y-6"></div>
+        <div class="pt-6 border-t border-slate-200">
+          <textarea id="session-notes" rows="3" class="w-full input-lcd p-3 text-sm rounded-sm text-left resize-none bg-white" placeholder="Session Notes..."></textarea>
+          <button id="save-session" class="mt-4 w-full border-2 border-slate-900 text-slate-900 font-bold text-sm py-3 hover:bg-slate-900 hover:text-white transition uppercase">
+            Finish & Save
+          </button>
+        </div>
+      </section>
+
+      <section id="history" class="tab-pane hidden space-y-4">
+        <h2 class="text-xs text-slate-400 uppercase border-b border-slate-200 pb-2 font-bold">History</h2>
+        <div id="history-list" class="space-y-2"></div>
+      </section>
+
+      <section id="analytics" class="tab-pane hidden space-y-4">
+        <h2 class="text-xs text-slate-400 uppercase border-b border-slate-200 pb-2 font-bold">Analytics</h2>
+        <div id="analytics-container" class="space-y-4"></div>
+      </section>
+
+    </main>
+
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 pb-safe z-50">
+      <div class="max-w-md mx-auto flex justify-between">
+        <button class="nav-item tab-button flex-1 py-3 flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-800 transition active" data-tab="setup"><span class="text-[10px] font-bold uppercase tracking-widest">Plan</span></button>
+        <button class="nav-item tab-button flex-1 py-3 flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-800 transition" data-tab="log"><span class="text-[10px] font-bold uppercase tracking-widest">Input</span></button>
+        <button class="nav-item tab-button flex-1 py-3 flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-800 transition" data-tab="history"><span class="text-[10px] font-bold uppercase tracking-widest">Logs</span></button>
+        <button class="nav-item tab-button flex-1 py-3 flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-800 transition" data-tab="analytics"><span class="text-[10px] font-bold uppercase tracking-widest">Stats</span></button>
+      </div>
+    </nav>
+  </div>
+
+  <script type="module" src="./app.js"></script>
 </body>
 </html>
