@@ -785,25 +785,66 @@ function calculateDispersion(id) {
 }
 
 function handleMultiTargetGen(btn) {
-    // ... (rest of handleMultiTargetGen remains unchanged)
     const id = btn.dataset.id;
-    const min = parseInt(btn.dataset.min);
-    const max = parseInt(btn.dataset.max);
     const rowsContainer = $(`rng-rows-${id}`);
     const params = getDrillParams(id);
-    const count = params.randomizer.count || 5;
+    const randomizer = params.randomizer;
+    const count = randomizer.count || 5;
 
-    let html = `<div class="grid grid-cols-4 gap-2 text-[10px] font-bold text-slate-500 mb-1"><span>Target</span><span class="text-center">Shot 1</span><span class="text-center">Shot 2</span><span class="text-right">Delta</span></div>`;
-    for(let i=0; i<count; i++) {
-        const t = Math.floor(Math.random()*(max-min+1))+min;
-        const unit = params.randomizer.unit || 'y';
-        html += `<div class="grid grid-cols-4 gap-2 items-center mb-1 multi-row" data-target="${t}">
-            <div class="bg-slate-100 text-slate-900 font-bold text-center py-1 rounded text-xs">${t}${unit}</div>
-            <input type="number" class="input-lcd h-7 text-center multi-inp text-xs" placeholder="-">
-            <input type="number" class="input-lcd h-7 text-center multi-inp text-xs" placeholder="-">
-            <div class="text-right text-xs font-bold text-slate-500 py-1 row-delta">--</div>
-        </div>`;
+    let targets = [];
+    let unit = 'y';
+
+    // 1. Determine targets based on randomizer type
+    if (randomizer.widths || randomizer.shapes) {
+        // Handle drills that pick from an array (e.g., Fairway Width, Random Shape)
+        const options = randomizer.widths || randomizer.shapes;
+        for (let i = 0; i < count; i++) {
+            targets.push(options[Math.floor(Math.random() * options.length)]);
+        }
+        unit = randomizer.widths ? 'y' : ''; // Use 'y' for widths, none for shapes
+    } else if (randomizer.min !== undefined && randomizer.max !== undefined) {
+        // Handle drills that pick from a numeric range (e.g., RNG Proximity Matrix)
+        const min = parseInt(randomizer.min);
+        const max = parseInt(randomizer.max);
+        for (let i = 0; i < count; i++) {
+            targets.push(Math.floor(Math.random() * (max - min + 1)) + min);
+        }
+        unit = randomizer.unit || 'y';
+    } else {
+        rowsContainer.innerHTML = "<div class='text-xs text-red-500'>Error: Invalid randomizer configuration.</div>";
+        btn.classList.add("hidden");
+        return;
     }
+
+    // 2. Render the rows based on the determined targets
+    let html = `<div class="grid grid-cols-4 gap-2 text-[10px] font-bold text-slate-500 mb-1"><span>Target</span><span class="text-center">Shot 1</span><span class="text-center">Shot 2</span><span class="text-right">Delta</span></div>`;
+    
+    // Determine shots per target (defaults to 2 for number logging, 1 for simple logging)
+    const shotsPerTarget = randomizer.shotsPerTarget !== undefined 
+        ? randomizer.shotsPerTarget 
+        : (typeof targets[0] === 'number' ? 2 : 1); 
+
+    targets.forEach((t) => {
+        let inputFields = '';
+        if (shotsPerTarget > 0) {
+            for(let i = 0; i < shotsPerTarget; i++) {
+                // If the target is a number (like 25y), use number inputs. Otherwise, use a text placeholder.
+                const inputType = typeof t === 'number' ? 'number' : 'text';
+                const inputPlaceholder = inputType === 'text' ? 'Hit "Yes"' : '-';
+                inputFields += `<input type="${inputType}" class="input-lcd h-7 text-center multi-inp text-xs" placeholder="${inputPlaceholder}">`;
+            }
+        }
+        
+        // Only show Delta column if shotsPerTarget > 0 (i.e., we expect a number input)
+        const deltaHtml = shotsPerTarget > 0 ? `<div class="text-right text-xs font-bold text-slate-500 py-1 row-delta">--</div>` : '';
+        
+        html += `<div class="grid grid-cols-${shotsPerTarget + 2} gap-2 items-center mb-1 multi-row" data-target="${t}">
+            <div class="bg-slate-100 text-slate-900 font-bold text-center py-1 rounded text-xs">${t}${unit}</div>
+            ${inputFields}
+            ${deltaHtml}
+        </div>`;
+    });
+
     rowsContainer.innerHTML = html;
     btn.classList.add("hidden");
 }
