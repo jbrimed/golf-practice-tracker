@@ -1,5 +1,6 @@
 // ================================
 // app.js — SCRATCH ELITE: COACH MODE
+// FINAL VERSION with Wizard, Auto/Manual Select, and Quick Session
 // ================================
 
 import { DRILLS } from "./drills.js";
@@ -31,6 +32,8 @@ let selectedSkills = new Set();
 let selectedDrillIds = new Set();
 let userProgression = {}; 
 let activePlan = null; 
+let planBlueprint = null; // Temp storage for the weekly plan wizard
+let selectionMode = 'auto'; // 'auto' or 'manual'
 
 const allDrillsMap = new Map(Object.values(DRILLS).flat().map(d => [d.id, d]));
 
@@ -87,12 +90,14 @@ function handleAuthChange(user) {
 
 function initAppData() {
     try { restoreDraft(); } catch (e) { clearDraft(); }
-    renderPriorityUI(); // New Coach Mode UI
+    renderPriorityUI(); 
     renderPlanUI(); 
     renderSkills();
     renderDrillSelect();
     renderSelectedDrills(); 
     updateStartButton();
+    // Set initial button state for auto/manual mode
+    document.getElementById("mode-auto")?.click();
 }
 
 function getDrillParams(id) {
@@ -112,7 +117,7 @@ function getDrillParams(id) {
 }
 
 // ----------------------
-// NEW: COACH MODE LOGIC
+// NEW: COACH MODE LOGIC (Blueprint, Wizard, Auto/Manual)
 // ----------------------
 
 function renderPriorityUI() {
@@ -124,7 +129,6 @@ function renderPriorityUI() {
 
     categories.forEach(cat => {
         const catId = cat.toLowerCase().replace(" ", "_");
-        // Find skills for this category
         const catSkills = SKILLS.filter(s => s.category === cat);
         
         const div = document.createElement("div");
@@ -166,12 +170,6 @@ function renderPriorityUI() {
     });
 }
 
-// ==========================================
-// NEW: WIZARD & BLUEPRINT LOGIC
-// ==========================================
-
-let planBlueprint = null; // Temp storage for the wizard
-
 // 1. GENERATE THE SKELETON (Slots)
 function generateBlueprint() {
     const timeBudget = parseInt($("plan-time-budget").value) || 600;
@@ -202,36 +200,44 @@ function generateBlueprint() {
         let allocatedMins = Math.floor((config.weight / totalWeight) * timeBudget);
         if (allocatedMins < 30) allocatedMins = 30; 
 
-        // LOGIC CHANGE: Smaller buckets for more variety.
-        // Instead of 1 big slot, we divide total volume into "Sessions" of ~20-30 mins.
-        // Each session = 1 Slot.
-        // 1 Slot = approx 2 reps of a drill (assuming 10-15m per rep).
-        
-        const avgSessionDuration = 30; 
-        let slotCount = Math.max(1, Math.round(allocatedMins / avgSessionDuration));
-        
-        // Cap slots slightly to prevent UI clutter (e.g. max 8 slots per category)
-        if (slotCount > 8) slotCount = 8;
-
-        // Reps per slot is now fixed/low to encourage variety
-        const repsPerSlot = 2; 
+        const avgSessionDuration = 30; // 30 mins per session slot
+        let slotCount = Math.max(1, Math.min(8, Math.round(allocatedMins / avgSessionDuration)));
+        const repsPerSlot = 2; // Fixed low reps for variety
 
         for(let i=0; i<slotCount; i++) {
+            let selectedDrill = null;
+            
+            // AUTO-SELECT LOGIC: (Only runs if mode is 'auto')
+            if (selectionMode === 'auto') {
+                const catDrills = DRILLS[config.cat] || [];
+                // Filter by allowed skills
+                const eligible = catDrills.filter(d => d.skills.some(s => config.skills.includes(s)));
+                if (eligible.length > 0) {
+                    // Pick a random drill from the eligible list
+                    selectedDrill = eligible[Math.floor(Math.random() * eligible.length)].id;
+                }
+            }
+
             slots.push({
                 id: `slot-${Date.now()}-${Math.random()}`,
                 category: config.cat,
                 allowedSkills: config.skills,
                 targetReps: repsPerSlot,
-                selectedDrill: null
+                selectedDrill: selectedDrill
             });
         }
     });
 
     planBlueprint = { totalTime: timeBudget, slots };
-    renderWizardUI();
+    
+    if (selectionMode === 'auto') {
+        finalizePlan(); // Skip wizard if auto
+    } else {
+        renderWizardUI(); // Go to selection page
+    }
 }
 
-// 2. RENDER THE SELECTION WIZARD
+// 2. RENDER THE SELECTION WIZARD (Manual Drill Picker)
 function renderWizardUI() {
     $("create-plan-view").classList.add("hidden");
     $("plan-wizard-view").classList.remove("hidden");
@@ -331,6 +337,11 @@ window.openDrillPicker = function(slotIndex) {
     if(slotDivs[slotIndex]) slotDivs[slotIndex].appendChild(pickerDiv);
 }
 
+window.clearSlot = function(index) {
+    planBlueprint.slots[index].selectedDrill = null;
+    renderWizardUI();
+}
+
 // 4. FINALIZE & SAVE
 function finalizePlan() {
     const tasks = planBlueprint.slots.map(slot => ({
@@ -353,9 +364,9 @@ function finalizePlan() {
     renderPlanUI();
 }
 
-// ==========================================
-// UPDATED PLAN DASHBOARD (DAILY BUILDER)
-// ==========================================
+// ------------------------------------------
+// PLAN DASHBOARD (DAILY BUILDER)
+// ------------------------------------------
 
 function renderPlanUI() {
     const activeView = $("active-plan-view");
@@ -391,25 +402,26 @@ function renderPlanUI() {
 
         const completion = Math.min(task.done, task.target);
         const isComplete = task.done >= task.target;
+        const isFinished = task.done === task.target;
         
         const item = document.createElement("div");
-        item.className = `flex items-center p-3 border rounded-sm mb-2 ${isComplete ? 'bg-green-50 border-green-200' : 'bg-white border-slate-200'}`;
+        item.className = `flex items-center p-3 border rounded-sm mb-2 ${isFinished ? 'bg-green-50 border-green-200' : 'bg-white border-slate-200'}`;
         
         // Checkbox logic
         const checkboxId = `daily-check-${task.id}`;
         
         item.innerHTML = `
             <div class="mr-3">
-                <input type="checkbox" id="${checkboxId}" class="daily-session-check w-5 h-5 accent-slate-900" value="${task.id}" ${isComplete ? 'disabled' : ''}>
+                <input type="checkbox" id="${checkboxId}" class="daily-session-check w-5 h-5 accent-slate-900" value="${task.id}" ${isFinished ? 'disabled' : ''}>
             </div>
             <div class="flex-1">
                 <div class="flex justify-between">
                     <span class="text-[10px] uppercase font-bold text-slate-400">${drill.category}</span>
-                    <span class="text-xs font-mono font-bold ${isComplete ? 'text-green-600' : 'text-tech-blue'}">
+                    <span class="text-xs font-mono font-bold ${isFinished ? 'text-green-600' : 'text-tech-blue'}">
                         ${completion} <span class="text-[10px] text-slate-400 font-normal">of</span> ${task.target}
                     </span>
                 </div>
-                <div class="text-xs font-bold text-slate-900 ${isComplete ? 'line-through opacity-50' : ''}">${drill.name}</div>
+                <div class="text-xs font-bold text-slate-900 ${isFinished ? 'line-through opacity-50' : ''}">${drill.name}</div>
             </div>
         `;
         list.appendChild(item);
@@ -435,9 +447,12 @@ function loadDailySession() {
         selectedDrillIds.add(box.value);
     });
 
-    renderSkills(); // Update filters visually
-    renderDrillSelect(); // Show the list
-    renderSelectedDrills(); // Populate the input log
+    // Clear main notes field
+    if ($("session-notes")) $("session-notes").value = "";
+
+    // Clear selection UI on the Log tab and populate new drills
+    renderSelectedDrills();
+    
     switchTab("log");
 }
 
@@ -445,6 +460,7 @@ function loadDailySession() {
 // AUTO-SAVE & DRAFT
 // ----------------------
 function triggerAutoSave() {
+    // ... (rest of triggerAutoSave remains unchanged)
     const drillData = {};
     selectedDrillIds.forEach(id => {
         const scoreInput = document.querySelector(`.drill-score-input[data-id="${id}"]`);
@@ -493,6 +509,7 @@ function restoreDraft() {
 // SCORING & PROMOTION
 // ----------------------
 function evaluateResult(drill, rawScore) {
+    // ... (rest of evaluateResult remains unchanged)
     let numeric = 0;
     if (rawScore.includes('/')) {
         const parts = rawScore.split('/');
@@ -516,6 +533,7 @@ function evaluateResult(drill, rawScore) {
 }
 
 function checkAndApplyPromotion(drillId, passed) {
+    // ... (rest of checkAndApplyPromotion remains unchanged)
     if (!passed) return;
     
     const drill = allDrillsMap.get(drillId);
@@ -551,10 +569,13 @@ async function handleSaveSession() {
 
         // Update Plan if exists
         if(activePlan) {
-            const task = activePlan.tasks.find(t => t.id === id && t.done < t.target);
-            if(task && evalResult.passed) {
-                task.done += 1;
-                localStorage.setItem("golf_active_plan", JSON.stringify(activePlan));
+            // Only mark completion if the drill was part of the *active* daily session and the user passed
+            if (evalResult.passed) {
+                const task = activePlan.tasks.find(t => t.id === id && t.done < t.target);
+                if(task) {
+                    task.done += 1;
+                    localStorage.setItem("golf_active_plan", JSON.stringify(activePlan));
+                }
             }
         }
 
@@ -595,6 +616,7 @@ async function handleSaveSession() {
 // UI RENDERERS (Standard)
 // ----------------------
 function renderSkills() {
+    // ... (rest of renderSkills remains unchanged)
     const container = $("skill-select");
     if(!container) return;
     container.innerHTML = "";
@@ -631,6 +653,7 @@ function renderSkills() {
 }
 
 function renderDrillSelect() {
+    // ... (rest of renderDrillSelect remains unchanged)
     const container = $("drill-select");
     if(!container) return;
     container.innerHTML = "";
@@ -667,6 +690,7 @@ function renderDrillSelect() {
 }
 
 function renderSelectedDrills() {
+    // ... (rest of renderSelectedDrills remains unchanged)
     const container = $("selected-drills-log");
     if(!container) return;
     container.innerHTML = "";
@@ -729,6 +753,7 @@ function renderSelectedDrills() {
 }
 
 function calculateDispersion(id) {
+    // ... (rest of calculateDispersion remains unchanged)
     const inputs = document.querySelectorAll(`.calc-input[data-group="${id}"]`);
     const vals = Array.from(inputs).map(i => parseFloat(i.value)).filter(v => !isNaN(v));
     const sdEl = $(`calc-sd-${id}`);
@@ -746,6 +771,7 @@ function calculateDispersion(id) {
 }
 
 function handleMultiTargetGen(btn) {
+    // ... (rest of handleMultiTargetGen remains unchanged)
     const id = btn.dataset.id;
     const min = parseInt(btn.dataset.min);
     const max = parseInt(btn.dataset.max);
@@ -769,6 +795,7 @@ function handleMultiTargetGen(btn) {
 }
 
 function calculateRngScore(container) {
+    // ... (rest of calculateRngScore remains unchanged)
     const id = container.id.replace("rng-table-", "");
     let totalErr = 0, count = 0;
     container.querySelectorAll(".multi-row").forEach(row => {
@@ -820,27 +847,45 @@ function setupGlobalClicks() {
         // --- NAVIGATION ---
         if (btn.classList.contains("tab-button")) switchTab(btn.dataset.tab);
         
-        // --- NEW: BLUEPRINT / WIZARD FLOW ---
-        // 1. User clicks "Build Skeleton"
+        // --- MODE TOGGLES (New) ---
+        if (btn.id === "mode-auto") {
+            selectionMode = 'auto';
+            btn.classList.add("bg-white", "shadow-sm", "border-slate-200");
+            $("mode-manual").classList.remove("bg-white", "shadow-sm", "border-slate-200");
+            $("mode-manual").classList.add("text-slate-500");
+        }
+        if (btn.id === "mode-manual") {
+            selectionMode = 'manual';
+            btn.classList.add("bg-white", "shadow-sm", "border-slate-200");
+            $("mode-auto").classList.remove("bg-white", "shadow-sm", "border-slate-200");
+            $("mode-auto").classList.add("text-slate-500");
+        }
+        
+        // --- BLUEPRINT / WIZARD FLOW ---
         if (btn.id === "generate-blueprint-btn") generateBlueprint();
-        
-        // 2. User clicks "Confirm Weekly Plan" after selecting drills
         if (btn.id === "finalize-plan-btn") finalizePlan();
-        
-        // 3. User cancels the wizard
         if (btn.id === "cancel-wizard-btn") { 
             planBlueprint = null; 
             renderPlanUI(); 
         }
 
-        // --- NEW: DAILY SESSION EXECUTION ---
-        // 4. User checks boxes and clicks "Start Day Session"
+        // --- DAILY SESSION EXECUTION ---
         if (btn.id === "start-daily-session-btn") loadDailySession();
+        
+        // --- QUICK SESSION (New) ---
+        if (btn.id === "quick-session-btn") {
+            selectedDrillIds.clear();
+            // Note: Keep manual selection area for drill picking
+            renderDrillSelect();
+            updateStartButton();
+            switchTab("setup"); 
+            switchTab("log"); // Jump to log page
+        }
 
         // --- PLAN MANAGEMENT ---
         if (btn.id === "delete-plan-btn") { 
             activePlan = null; 
-            planBlueprint = null; // Clear temp data too
+            planBlueprint = null; 
             localStorage.removeItem("golf_active_plan"); 
             renderPlanUI(); 
         }
@@ -869,7 +914,9 @@ function setupGlobalClicks() {
         }
     });
 }
+
 function setupGlobalInputs() {
+    // ... (rest of setupGlobalInputs remains unchanged)
     document.body.addEventListener("input", (e) => {
         if(e.target.classList.contains("calc-input")) calculateDispersion(e.target.dataset.group);
         if(e.target.classList.contains("multi-inp")) calculateRngScore(e.target.closest(".rng-table-container"));
@@ -889,7 +936,7 @@ async function renderHistory() {
     
     sessions.forEach(s => {
         const div = document.createElement("div");
-        div.className = "tech-card p-3 mb-2 relative group"; // Added relative/group for button positioning
+        div.className = "tech-card p-3 mb-2 relative group"; 
         div.innerHTML = `
             <div class="flex justify-between font-bold text-sm">
                 <span>${new Date(s.date).toLocaleDateString()}</span>
@@ -905,7 +952,9 @@ async function renderHistory() {
         box.appendChild(div);
     });
 }
+
 async function renderAnalytics() {
+    // ... (rest of renderAnalytics remains unchanged)
     const box = $("analytics-container");
     if(!box) return;
     const sessions = await loadSessions();
