@@ -401,27 +401,42 @@ function renderPlanUI() {
         if (!drill) return; 
 
         const completion = Math.min(task.done, task.target);
-        const isComplete = task.done >= task.target;
         const isFinished = task.done === task.target;
         
+        // --- FIX: Map the category ID (task.cat) to a display name ---
+        const categoryMap = {
+            'driver': 'Driving', 
+            'irons': 'Irons', 
+            'wedges': 'Wedges', 
+            'short_game': 'Short Game', 
+            'putting': 'Putting'
+        };
+        const categoryName = categoryMap[task.cat] || task.cat;
+        // -----------------------------------------------------------
+        
         const item = document.createElement("div");
-        item.className = `flex items-center p-3 border rounded-sm mb-2 ${isFinished ? 'bg-green-50 border-green-200' : 'bg-white border-slate-200'}`;
+        item.className = `flex items-start p-3 border rounded-sm mb-2 ${isFinished ? 'bg-green-50 border-green-200' : 'bg-white border-slate-200'}`;
         
         // Checkbox logic
         const checkboxId = `daily-check-${task.id}`;
         
         item.innerHTML = `
-            <div class="mr-3">
+            <div class="mr-3 mt-1">
                 <input type="checkbox" id="${checkboxId}" class="daily-session-check w-5 h-5 accent-slate-900" value="${task.id}" ${isFinished ? 'disabled' : ''}>
             </div>
             <div class="flex-1">
                 <div class="flex justify-between">
-                    <span class="text-[10px] uppercase font-bold text-slate-400">${drill.category}</span>
+                    <span class="text-[10px] uppercase font-bold text-slate-400">${categoryName} • Lvl ${drill.currentLevel || 1}</span>
                     <span class="text-xs font-mono font-bold ${isFinished ? 'text-green-600' : 'text-tech-blue'}">
                         ${completion} <span class="text-[10px] text-slate-400 font-normal">of</span> ${task.target}
                     </span>
                 </div>
                 <div class="text-xs font-bold text-slate-900 ${isFinished ? 'line-through opacity-50' : ''}">${drill.name}</div>
+                
+                <p class="text-[10px] text-slate-500 mt-1 pl-2 border-l-2 border-slate-200 italic">
+                    ${drill.description}
+                </p>
+                
             </div>
         `;
         list.appendChild(item);
@@ -438,7 +453,6 @@ function renderPlanUI() {
 
     startBtn.onclick = loadDailySession;
 }
-
 function loadDailySession() {
     const checked = document.querySelectorAll(".daily-session-check:checked");
     selectedDrillIds.clear();
